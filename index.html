@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Videoquiz – prof. Antonio Guida</title>
+<meta name="description" content="Videoquiz: video di YouTube con quesiti interattivi, recupero degli errori e report per l'insegnante. App del prof. Antonio Guida.">
+<meta name="theme-color" content="#3355d6">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Crect%20x%3D%222%22%20y%3D%224%22%20width%3D%2234%22%20height%3D%2227%22%20rx%3D%228%22%20fill%3D%22%233355d6%22/%3E%3Cpath%20d%3D%22M15%2011v13l11-6.5z%22%20fill%3D%22%23fff%22/%3E%3Ccircle%20cx%3D%2231%22%20cy%3D%2230%22%20r%3D%228%22%20fill%3D%22%23ef7d00%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f2f4fa; --surface:#fff; --soft:#f6f7fb; --text:#1c2333; --muted:#5f6b80; --line:#dfe4ee; --line2:#c9d0de;
+  --primary:#3355d6; --primary-d:#2643b3; --primary-l:#e9eeff;
+  --accent:#ef7d00; --accent-d:#d56f00; --accent-l:#fff3e2;
+  --ok:#218a42; --ok-l:#e5f5ea; --bad:#d4380d; --bad-l:#fdece6; --danger:#d32f2f; --warn:#b76e00; --warn-l:#fff6dc;
+  --radius:14px; --shadow:0 1px 2px rgba(22,34,70,.06),0 6px 20px rgba(22,34,70,.07);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;background:var(--bg);color:var(--text);font:16px/1.45 'Nunito',system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif}
+main{flex:1;width:100%}
+h1,h2,h3{line-height:1.2;margin:0 0 .35em;font-weight:800}
+h1{font-size:1.55rem} h2{font-size:1.2rem} h3{font-size:1.05rem}
+p{margin:0 0 .8em}
+a{color:var(--primary)}
+code{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:0 .3em;font-size:.92em}
+.muted{color:var(--muted)}
+.center{text-align:center}
+.mt{margin-top:.6em}
+.kicker{text-transform:uppercase;letter-spacing:.06em;font-size:.78rem;font-weight:800;color:var(--primary);margin:0 0 .25em}
+.ico{width:20px;height:20px;fill:currentColor;flex:none}
+
+/* ---------- pulsanti ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.45em;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:10px;padding:.5em 1em;font:inherit;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s,border-color .15s,box-shadow .15s;min-height:40px;white-space:nowrap;position:relative;-webkit-tap-highlight-color:transparent}
+.btn:hover{background:var(--soft);border-color:var(--line2)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn:focus-visible,.icon-btn:focus-visible,.cbtn:focus-visible{outline:3px solid var(--primary-l);outline-offset:1px}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 2px 6px rgba(51,85,214,.25)}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.accent{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 2px 6px rgba(239,125,0,.3)}
+.btn.accent:hover{background:var(--accent-d)}
+.btn.success{background:var(--ok);border-color:var(--ok);color:#fff;box-shadow:0 2px 8px rgba(33,138,66,.3)}
+.btn.success:hover{background:#1b7437}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn.danger-ghost{color:var(--danger);border-color:#f0c5c5;background:#fff}
+.btn.danger-ghost:hover{background:#fff3f3}
+.btn.ghost{background:transparent}
+.btn.sm{min-height:34px;padding:.3em .75em;font-size:.9rem}
+.btn.big{min-height:50px;font-size:1.05rem;padding:.65em 1.3em}
+.btn.block{width:100%}
+.btn .ico{width:19px;height:19px}
+.btn.loading{color:transparent!important;pointer-events:none}
+.btn.loading .ico{opacity:0}
+.btn.loading::after{content:"";position:absolute;left:50%;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border:3px solid rgba(255,255,255,.55);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}
+.btn:not(.primary):not(.accent):not(.success):not(.danger).loading::after{border-color:#d3d9e6;border-top-color:var(--primary)}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:10px;border:1px solid transparent;background:transparent;color:var(--muted);cursor:pointer;flex:none;padding:0}
+.icon-btn:hover{background:var(--soft);color:var(--text);border-color:var(--line)}
+.icon-btn.danger:hover{color:var(--danger);background:#fff3f3;border-color:#f0c5c5}
+.link-btn{background:none;border:0;color:var(--primary);font:inherit;font-weight:700;cursor:pointer;padding:.3em 0}
+.link-btn:hover{text-decoration:underline}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ---------- campi ---------- */
+.fld{display:flex;flex-direction:column;gap:.3em;margin-bottom:.9em;min-width:0}
+.fld>span{font-weight:700;font-size:.92rem;color:#374157}
+input[type=text],input[type=email],input[type=password],input[type=number],textarea,select{font:inherit;color:inherit;border:1.5px solid var(--line);border-radius:10px;padding:.55em .75em;background:#fff;width:100%;min-height:42px}
+textarea{resize:vertical;line-height:1.4}
+select{cursor:pointer}
+input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-l)}
+.static{min-height:42px;display:flex;align-items:center;padding:0 .75em;border-radius:10px;background:var(--soft);border:1.5px dashed var(--line);font-weight:700;color:var(--muted)}
+.check{display:flex;align-items:center;gap:.55em;font-weight:600;cursor:pointer;margin:.35em 0}
+.check input{width:18px;height:18px;accent-color:var(--primary);flex:none}
+.hint{color:var(--muted);font-size:.9rem}
+.err{color:var(--danger);font-weight:700;font-size:.93rem;margin:.2em 0 .7em}
+.err:empty{margin:0}
+.pw-wrap{position:relative;display:block}
+.pw-wrap input{padding-right:46px}
+.pw-eye{position:absolute;right:3px;top:50%;transform:translateY(-50%)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:.8em}
+.msg{border-radius:10px;padding:.6em .85em;margin:0 0 .8em;font-weight:600;font-size:.94rem}
+.msg.info{background:var(--primary-l);color:#23398f}
+.msg.ok{background:var(--ok-l);color:#185f2f}
+.msg.bad{background:var(--bad-l);color:#9a2a0a}
+
+/* ---------- struttura ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:1.1rem}
+.card+.card{margin-top:1rem}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:.6em;margin-bottom:.7em}
+.card-head h2{margin:0}
+.count{display:inline-flex;align-items:center;justify-content:center;min-width:1.7em;height:1.7em;padding:0 .45em;border-radius:99px;background:var(--primary-l);color:var(--primary);font-size:.85rem;vertical-align:middle;margin-left:.2em}
+.page{max-width:1100px;margin:0 auto;padding:1.4rem 16px 2.5rem}
+.page.wide{max-width:1400px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.2rem}
+.page-head h1{margin-bottom:.15em}
+.page-head p{margin:0}
+.head-actions{display:flex;gap:.5em;flex-wrap:wrap;align-items:center}
+.empty{text-align:center;color:var(--muted);padding:2.5rem 1rem;border:2px dashed var(--line);border-radius:var(--radius);background:rgba(255,255,255,.5)}
+.empty h3{color:var(--text)}
+.loading-row{color:var(--muted);padding:1.5rem;text-align:center}
+.file-warn{background:var(--warn-l);color:#6d4300;border-bottom:1px solid #f1d58f;padding:.6em 16px;font-weight:700;font-size:.92rem;text-align:center}
+
+/* ---------- barra superiore ---------- */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:.8rem;padding:.55rem 16px;background:rgba(255,255,255,.92);backdrop-filter:saturate(1.4) blur(8px);-webkit-backdrop-filter:saturate(1.4) blur(8px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:.5em;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:var(--text);flex:none}
+.brand-name{font-weight:900;font-size:1.15rem;letter-spacing:-.01em}
+.logo{display:inline-flex;width:34px;height:34px;flex:none}
+.logo svg{width:100%;height:100%}
+.logo.big{width:58px;height:58px}
+.crumbs{flex:1;min-width:0;display:flex;align-items:center;gap:.3em;overflow:hidden;white-space:nowrap;font-size:.93rem;color:var(--muted)}
+.crumbs button{background:none;border:0;font:inherit;color:var(--primary);font-weight:700;cursor:pointer;padding:.2em .1em;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.crumbs button:hover{text-decoration:underline}
+.crumbs .cur{font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis}
+.crumbs .sep{opacity:.5}
+.user-btn{display:flex;align-items:center;gap:.5em;background:none;border:1px solid transparent;border-radius:99px;padding:.2em .6em .2em .2em;cursor:pointer;font:inherit;color:var(--text);flex:none;max-width:45vw}
+.user-btn:hover{background:var(--soft);border-color:var(--line)}
+.avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f6ef7,#2b44b8);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+.user-email{font-weight:700;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- menu a comparsa ---------- */
+.pop{position:fixed;z-index:80;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(22,34,70,.18);padding:.35em;min-width:210px}
+.pop-item{display:flex;align-items:center;gap:.6em;width:100%;background:none;border:0;border-radius:8px;padding:.6em .75em;font:inherit;font-weight:700;color:var(--text);cursor:pointer;text-align:left}
+.pop-item:hover{background:var(--soft)}
+.pop-item.danger{color:var(--danger)}
+.pop-info{padding:.5em .75em;color:var(--muted);font-size:.85rem;border-bottom:1px solid var(--line);margin-bottom:.3em;word-break:break-all}
+
+/* ---------- caricamento ---------- */
+.boot{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;color:var(--muted);text-align:center;padding:16px}
+.spinner{width:42px;height:42px;border:4px solid var(--primary-l);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+
+/* ---------- accesso ---------- */
+.auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:2rem 16px}
+.auth-card{width:100%;max-width:420px;padding:1.6rem}
+.auth-brand{display:flex;align-items:center;gap:.9rem;margin-bottom:1.3rem}
+.auth-brand h1{margin:0;font-size:1.7rem}
+.auth-brand p{margin:0;font-size:.92rem}
+.tabs{display:grid;grid-template-columns:1fr 1fr;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:1.2rem}
+.tabs button{border:0;background:transparent;border-radius:9px;padding:.55em;font:inherit;font-weight:800;color:var(--muted);cursor:pointer}
+.tabs button.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(22,34,70,.12)}
+.auth-links{text-align:center;margin-top:.8rem}
+
+/* ---------- archivio ---------- */
+.toolbar{margin-bottom:1rem}
+.search{position:relative;max-width:380px}
+.search input{padding-left:40px}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);display:flex}
+.test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+.test-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
+.thumb{position:relative;aspect-ratio:16/9;background:#dfe3ee center/cover no-repeat;cursor:pointer}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.nothumb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700;background:repeating-linear-gradient(45deg,#eef1f7,#eef1f7 10px,#e6eaf3 10px,#e6eaf3 20px)}
+.badge-q{position:absolute;right:8px;bottom:8px;background:rgba(15,22,40,.8);color:#fff;border-radius:8px;padding:.15em .55em;font-size:.8rem;font-weight:800}
+.tc-body{padding:.85rem .95rem .95rem;display:flex;flex-direction:column;gap:.35em;flex:1}
+.tc-body h3{margin:0;font-size:1.05rem;word-break:break-word}
+.tc-meta{font-size:.85rem;color:var(--muted);margin:0}
+.tc-actions{display:flex;gap:.4em;align-items:center;margin-top:auto;padding-top:.5em}
+.tc-actions .btn{flex:1}
+
+/* ---------- editor ---------- */
+.ed-head{align-items:center}
+.ed-title-wrap{flex:1;min-width:240px}
+.title-input{font-size:1.35rem!important;font-weight:800!important;border-color:transparent!important;background:transparent!important;padding-left:.3em!important;margin-left:-.3em}
+.title-input:hover{border-color:var(--line)!important;background:#fff!important}
+.title-input:focus{background:#fff!important;border-color:var(--primary)!important}
+.save-state{font-size:.85rem;font-weight:700;color:var(--muted)}
+.save-state.dirty{color:var(--accent-d)}
+.save-state.saved{color:var(--ok)}
+.ed-grid{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:1rem;align-items:start}
+.url-row{display:flex;gap:.5em}
+.url-row input{flex:1;min-width:0}
+.video-box{position:relative;width:100%;aspect-ratio:16/9;background:#0d1220;border-radius:12px;overflow:hidden}
+.video-box .vb-host,.video-box iframe{position:absolute;inset:0;width:100%!important;height:100%!important;border:0}
+.vb-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:1.5rem;color:#c3cbe0;font-weight:700}
+.tl{position:relative;height:34px;margin:.7rem 4px .3rem;cursor:pointer}
+.tl-track{position:absolute;left:0;right:0;top:14px;height:6px;border-radius:6px;background:#dde2ee}
+.tl-cur{position:absolute;top:6px;width:3px;height:22px;margin-left:-1px;background:var(--primary);border-radius:2px;pointer-events:none}
+.tl-mark{position:absolute;top:3px;width:26px;height:26px;margin-left:-13px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:var(--accent);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center}
+.tl-mark span{transform:rotate(45deg);color:#fff;font-weight:900;font-size:.72rem}
+.tl-mark:hover{background:var(--accent-d);z-index:2}
+.ed-add-row{display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;margin:.5rem 0 .6rem}
+.ed-time{display:flex;flex-direction:column;line-height:1.15}
+.ed-time span{font-size:.8rem}
+.ed-time b{font-size:1.35rem;font-variant-numeric:tabular-nums}
+.q-list{display:flex;flex-direction:column;gap:.55em}
+.q-item{display:flex;gap:.7em;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:.65em .7em;background:#fff}
+.q-item:hover{border-color:var(--line2)}
+.q-num{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none;font-size:.9rem}
+.q-main{flex:1;min-width:0}
+.q-meta{display:flex;gap:.4em;flex-wrap:wrap;margin-bottom:.2em}
+.q-text{font-size:.93rem;word-break:break-word;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.q-acts{display:flex;flex-direction:row;gap:2px;align-self:center;flex:none}
+.time-chip{display:inline-flex;align-items:center;gap:.25em;background:#eef1f8;color:#374157;border-radius:7px;padding:.05em .5em;font-size:.8rem;font-weight:800;font-variant-numeric:tabular-nums}
+.type-chip{display:inline-flex;align-items:center;border-radius:7px;padding:.05em .5em;font-size:.78rem;font-weight:800;background:var(--primary-l);color:var(--primary)}
+.type-chip.tf{background:#f1e8ff;color:#6b3fc4}
+.type-chip.fill{background:#e3f6f5;color:#0f7a74}
+.q-empty{color:var(--muted);text-align:center;padding:1.2rem .5rem;border:2px dashed var(--line);border-radius:12px;font-size:.93rem}
+.grading .g-row{display:flex;align-items:center;justify-content:space-between;gap:.8em;padding:.45em 0;border-bottom:1px solid var(--line)}
+.grading .g-row:last-of-type{border-bottom:0}
+.grading .g-row label{font-weight:600;font-size:.93rem}
+.g-in{display:flex;align-items:center;gap:.3em;font-weight:800}
+.g-in input,.g-in select{width:84px;min-height:36px;padding:.3em .5em;text-align:right}
+.g-example{background:var(--soft);border-radius:10px;padding:.6em .8em;font-size:.9rem;margin:.6em 0}
+
+/* editor del quesito */
+.qe-time-row{display:flex;gap:.5em;align-items:flex-end;flex-wrap:wrap;margin-bottom:.9em}
+.qe-time-row .fld{margin:0;width:190px}
+.qe-time-row input{font-variant-numeric:tabular-nums;font-weight:800}
+.seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;margin-bottom:1em;flex-wrap:wrap}
+.seg button{flex:1;border:0;background:transparent;border-radius:9px;padding:.55em .6em;font:inherit;font-weight:800;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(22,34,70,.12)}
+.opt-row{display:flex;align-items:center;gap:.45em;margin-bottom:.45em}
+.opt-letter{width:26px;text-align:center;font-weight:900;color:var(--muted);flex:none}
+.opt-ok{display:flex;align-items:center;gap:.3em;flex:none;cursor:pointer;border:1.5px solid var(--line);border-radius:9px;padding:.35em .5em;font-size:.8rem;font-weight:800;color:var(--muted);user-select:none}
+.opt-ok input{width:17px;height:17px;accent-color:var(--ok);margin:0}
+.opt-ok.on{border-color:var(--ok);background:var(--ok-l);color:var(--ok)}
+.opt-row input[type=text]{flex:1;min-width:0}
+.fill-prev{background:var(--soft);border-radius:10px;padding:.7em .9em;line-height:2;margin-top:.4em}
+.fill-prev .b{display:inline-block;min-width:4em;border-bottom:2px solid var(--primary);color:var(--primary);font-weight:800;padding:0 .3em;line-height:1.3}
+
+/* ---------- assegnazioni ---------- */
+.as-list{display:flex;flex-direction:column;gap:.8rem}
+.as-item{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:1rem 1.1rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.as-main{flex:1;min-width:220px}
+.as-main h3{margin:0 0 .2em;word-break:break-word}
+.as-meta{display:flex;gap:.5em;flex-wrap:wrap;align-items:center;font-size:.87rem;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:.3em;border-radius:99px;padding:.1em .6em;font-size:.78rem;font-weight:800}
+.badge.open{background:var(--ok-l);color:var(--ok)}
+.badge.closed{background:#eceff5;color:var(--muted)}
+.as-acts{display:flex;gap:.4em;flex-wrap:wrap;align-items:center}
+.copy-row{display:flex;gap:.5em}
+.copy-row input{flex:1;min-width:0;font-weight:700;background:var(--soft)}
+.btn-row{display:flex;gap:.5em;flex-wrap:wrap;margin:.3em 0 .8em}
+.btn-col{display:flex;flex-direction:column;gap:.6em;margin-top:1rem}
+
+/* ---------- report ---------- */
+.table-card{padding:0;overflow:hidden}
+.table-wrap{overflow:auto;max-height:calc(100vh - 230px)}
+table.rep{border-collapse:separate;border-spacing:0;width:100%;font-size:.92rem}
+table.rep th,table.rep td{padding:.5em .65em;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
+table.rep thead th{position:sticky;top:0;background:#f4f6fb;z-index:2;font-weight:800;font-size:.85rem;color:#374157}
+table.rep thead tr:nth-child(2) th{top:37px}
+table.rep th.qh{text-align:center;border-left:1px solid var(--line)}
+table.rep th.qh small{display:block;font-weight:700;color:var(--muted);font-size:.75rem}
+table.rep th.sub{text-align:center;font-size:.75rem;color:var(--muted)}
+table.rep th.sub.l,table.rep td.pt{border-left:1px solid var(--line)}
+table.rep td.pt,table.rep td.tr{text-align:center;font-variant-numeric:tabular-nums}
+table.rep tbody tr{cursor:pointer}
+table.rep tbody tr:hover td{background:#f7f9ff}
+table.rep .sticky{position:sticky;left:0;background:#fff;z-index:1}
+table.rep thead .sticky{z-index:3;background:#f4f6fb}
+table.rep th.sortable{cursor:pointer;user-select:none}
+table.rep th.sortable:hover{color:var(--primary)}
+table.rep th .arrow{font-size:.7em;margin-left:.2em;color:var(--primary)}
+td.voto{font-weight:900;font-size:1rem}
+.v-hi{color:var(--ok)} .v-mid{color:var(--warn)} .v-lo{color:var(--danger)}
+td.tr{font-weight:800}
+td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:var(--danger)}
+.rd-head{display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:.8rem}
+.rd-name{font-size:1.2rem;font-weight:900}
+.rd-voto{background:var(--primary-l);color:var(--primary);border-radius:12px;padding:.35em .8em;font-weight:900;font-size:1.3rem}
+.rd-q{border:1px solid var(--line);border-radius:12px;padding:.75em .9em;margin-bottom:.6em}
+.rd-qh{display:flex;gap:.45em;flex-wrap:wrap;align-items:center;font-weight:800;margin-bottom:.3em}
+.rd-qt{margin-bottom:.35em;word-break:break-word}
+.rd-correct{font-size:.88rem;color:var(--ok);font-weight:700;margin-bottom:.35em}
+.rd-att{margin:0;padding-left:1.2em;font-size:.9rem}
+.rd-att li{margin:.15em 0}
+.rd-att .ok b{color:var(--ok)} .rd-att .bad b{color:var(--danger)}
+
+/* ---------- finestre ---------- */
+.modal-ov{position:fixed;inset:0;z-index:90;background:rgba(15,22,40,.5);display:flex;align-items:flex-start;justify-content:center;padding:5vh 12px;overflow:auto;animation:fade .15s ease}
+.modal{background:#fff;border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.25);width:100%;max-width:480px;display:flex;flex-direction:column;max-height:none}
+.modal.wide{max-width:720px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:.5em;padding:1rem 1.1rem .4rem}
+.modal-head h2{margin:0}
+.modal-body{padding:.5rem 1.1rem 1rem}
+.modal-body p:last-child{margin-bottom:0}
+.modal-foot{display:flex;justify-content:flex-end;gap:.5em;flex-wrap:wrap;padding:.8rem 1.1rem 1.1rem;border-top:1px solid var(--line)}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+
+/* ---------- avvisi ---------- */
+.toasts{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:.5em;align-items:center;width:calc(100% - 24px);max-width:520px;pointer-events:none}
+.toast{background:#1f2740;color:#fff;border-radius:12px;padding:.7em 1em;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:up .2s ease;pointer-events:auto;font-size:.95rem}
+.toast.ok{background:#1d6b36}
+.toast.bad{background:#b3261e}
+.toast.out{opacity:0;transform:translateY(8px);transition:.35s}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.diag{position:fixed;left:8px;right:8px;bottom:8px;z-index:300;background:#fff4f4;border:1px solid #f0b4b4;color:#8a1c1c;border-radius:10px;padding:.5em .8em;font:12px/1.4 ui-monospace,Consolas,monospace;max-height:30vh;overflow:auto}
+.diag button{float:right;background:none;border:0;font-weight:900;cursor:pointer;color:#8a1c1c}
+
+/* ---------- area alunno ---------- */
+.preview-bar{position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:center;gap:1em;flex-wrap:wrap;background:#fff3e2;border-bottom:1px solid #f4cf98;color:#7a4300;padding:.5em 16px;font-size:.93rem}
+.stu-wrap{max-width:980px;margin:0 auto;padding:1.4rem 16px 2.5rem}
+.s-card{background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:1.5rem;max-width:760px;margin:0 auto}
+.s-card.narrow{max-width:460px}
+.s-card.center{text-align:center}
+.s-card.center .logo{margin:0 auto .6rem}
+.s-brand{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem}
+.s-brand h1{margin:0}
+.s-brand p{margin:0}
+.s-who{font-weight:700;color:var(--muted)}
+.howto{background:var(--soft);border:1px solid var(--line);border-radius:14px;padding:1rem 1.1rem;margin:1rem 0 1.2rem}
+.howto ol{margin:.3em 0 .6em;padding-left:1.3em}
+.howto li{margin:.35em 0}
+.watch-head{margin-bottom:.8rem}
+.watch-head h2{margin:0 0 .15em}
+.watch-head p{margin:0}
+.pwrap{background:#0d1220;border-radius:16px;overflow:hidden;box-shadow:0 10px 30px rgba(15,22,40,.25)}
+.pwrap .video-box{border-radius:0}
+.shield{position:absolute;inset:0;z-index:2;cursor:pointer}
+.bigplay{position:absolute;left:50%;top:50%;width:84px;height:84px;margin:-42px 0 0 -42px;border-radius:50%;border:0;background:rgba(51,85,214,.92);color:#fff;cursor:pointer;z-index:3;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(0,0,0,.4);padding:0}
+.bigplay .ico{width:46px;height:46px;margin-left:4px}
+.bigplay:hover{background:var(--primary)}
+.ctrl{display:flex;align-items:center;gap:.35em;padding:.45em .6em;background:#141b2e;color:#fff}
+.cbtn{width:40px;height:40px;border:0;border-radius:10px;background:transparent;color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:none;padding:0}
+.cbtn:hover{background:rgba(255,255,255,.12)}
+.cbtn:disabled{opacity:.35;cursor:default}
+.cbtn .ico{width:24px;height:24px}
+.prog{position:relative;flex:1;height:34px;cursor:pointer;touch-action:none;min-width:60px;margin:0 .3em}
+.prog-bar{position:absolute;left:0;right:0;top:14px;height:6px;border-radius:6px;background:rgba(255,255,255,.18);overflow:hidden}
+.prog-seg{position:absolute;top:0;bottom:0;background:rgba(239,125,0,.45)}
+.prog-reach{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.28)}
+.prog-fill{position:absolute;left:0;top:0;bottom:0;background:#6d8bff}
+.prog-marks{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+.pm{position:absolute;top:11px;width:4px;height:12px;margin-left:-2px;border-radius:2px;background:var(--accent)}
+.pm.done{background:rgba(255,255,255,.55)}
+.prog-knob{position:absolute;top:10px;width:14px;height:14px;margin-left:-7px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.4);pointer-events:none}
+.ctime{font-size:.85rem;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;color:#dbe2f5}
+.pwrap:fullscreen{display:flex;flex-direction:column;justify-content:center;border-radius:0;background:#000}
+.pwrap:fullscreen .video-box{flex:1;aspect-ratio:auto;height:auto}
+.pwrap:-webkit-full-screen{display:flex;flex-direction:column;justify-content:center;border-radius:0;background:#000;width:100%;height:100%}
+.pwrap:-webkit-full-screen .video-box{flex:1;aspect-ratio:auto;height:auto}
+.watch-foot{display:flex;align-items:center;justify-content:space-between;gap:.8em;flex-wrap:wrap;margin-top:.7rem;font-weight:700}
+.qov{position:fixed;inset:0;z-index:60;background:rgba(10,16,32,.62);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto;animation:fade .2s ease}
+.qcard{background:#fff;color:var(--text);border-radius:18px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:640px;padding:1.3rem 1.3rem 1.1rem}
+.qc-head{display:flex;align-items:center;justify-content:space-between;gap:.5em;margin-bottom:.8rem}
+.qc-n{font-weight:900;color:var(--accent-d);text-transform:uppercase;letter-spacing:.04em;font-size:.88rem}
+.qc-text{font-size:1.15rem;font-weight:800;margin-bottom:.8em;word-break:break-word}
+.qc-note{font-size:.88rem;color:var(--muted);font-weight:700;margin:-.4em 0 .8em}
+.opt{display:flex;gap:.75em;align-items:flex-start;border:2px solid var(--line);border-radius:12px;padding:.75em .9em;margin-bottom:.55em;cursor:pointer;font-weight:600;transition:border-color .12s,background .12s}
+.opt:hover{border-color:var(--line2)}
+.opt input{width:20px;height:20px;margin:.1em 0 0;flex:none;accent-color:var(--primary)}
+.opt.sel{border-color:var(--primary);background:var(--primary-l)}
+.opt .ol{font-weight:900;color:var(--muted)}
+.tf-row{display:grid;grid-template-columns:1fr 1fr;gap:.7em;margin-bottom:.5em}
+.tf-btn{border:2px solid var(--line);border-radius:14px;background:#fff;padding:1em;font:inherit;font-size:1.15rem;font-weight:900;cursor:pointer;color:var(--text)}
+.tf-btn:hover{border-color:var(--line2)}
+.tf-btn.sel{border-color:var(--primary);background:var(--primary-l);color:var(--primary)}
+.fill-instr{font-weight:800;margin-bottom:.6em}
+.fill-text{font-size:1.1rem;line-height:2.5;background:var(--soft);border-radius:12px;padding:.6em .9em;margin-bottom:.6em;word-break:break-word}
+.fill-text input.blank{display:inline-block;width:8em;min-height:0;height:2em;padding:.1em .45em;border:0;border-bottom:2.5px solid var(--primary);border-radius:8px 8px 0 0;background:#fff;font-weight:800;color:var(--primary);vertical-align:baseline;max-width:100%}
+.fill-text input.blank:focus{box-shadow:0 0 0 3px var(--primary-l)}
+.score{display:flex;flex-direction:column;align-items:center;margin:.5rem 0 1rem}
+.score-num{font-size:3.2rem;font-weight:900;line-height:1;color:var(--primary);font-variant-numeric:tabular-nums}
+.score-lbl{font-weight:800;color:var(--muted)}
+.note{border-radius:12px;padding:.8em 1em;margin-bottom:1rem;font-weight:600}
+.note.ok{background:var(--ok-l);color:#185f2f}
+.note.bad{background:var(--bad-l);color:#8a2a0c}
+.note.wait{background:var(--primary-l);color:#23398f}
+.r-list{display:flex;flex-direction:column;gap:.55em}
+.r-item{display:flex;align-items:center;gap:.8em;border:1.5px solid var(--line);border-radius:12px;padding:.7em .8em;flex-wrap:wrap}
+.r-item.ok{border-color:#bfe3c9;background:#f6fcf8}
+.r-item.bad{border-color:#f3c3b3;background:#fff8f5}
+.r-item.wait{border-color:#c9d5fb;background:#f7f9ff}
+.r-ico{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex:none}
+.r-item.ok .r-ico{background:var(--ok)}
+.r-item.bad .r-ico{background:var(--bad)}
+.r-item.wait .r-ico{background:var(--primary)}
+.r-ico .ico{width:20px;height:20px}
+.r-main{flex:1;min-width:180px}
+.r-top{display:flex;align-items:center;gap:.45em;flex-wrap:wrap;font-weight:800}
+.r-text{font-size:.92rem;color:#374157;word-break:break-word}
+.r-state{font-size:.85rem;font-weight:800;margin-top:.15em}
+.r-item.ok .r-state{color:var(--ok)}
+.r-item.bad .r-state{color:var(--bad)}
+.r-item.wait .r-state{color:var(--primary)}
+.r-send{margin-top:1.2rem}
+.big-ok{width:76px;height:76px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;box-shadow:0 8px 24px rgba(33,138,66,.35)}
+.big-ok .ico{width:44px;height:44px}
+.sent-grade{display:inline-block;background:var(--primary-l);color:var(--primary);font-weight:900;font-size:1.6rem;border-radius:14px;padding:.3em .9em;margin:.3em 0 .8em}
+
+.foot{text-align:center;color:var(--muted);font-size:.83rem;padding:1.2rem 16px 1.5rem}
+.foot a{color:inherit}
+
+/* ---------- schermi piccoli ---------- */
+@media (max-width:900px){
+  .ed-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  h1{font-size:1.35rem}
+  .page{padding-top:1rem}
+  .crumbs{display:none}
+  .topbar{justify-content:space-between}
+  .user-email{display:none}
+  .user-btn{padding:.2em}
+  .head-actions .btn .lbl{display:none}
+  .head-actions .btn{padding:.5em .7em}
+  .s-card{padding:1.1rem}
+  .ctrl{gap:.1em;padding:.35em .35em}
+  .cbtn{width:36px;height:36px}
+  .ctime{font-size:.75rem}
+  .qov{padding:10px 8px}
+  .qcard{padding:1rem}
+  .row2{grid-template-columns:1fr}
+  .url-row{flex-direction:column}
+  .score-num{font-size:2.6rem}
+}
+
+/* ---------- stampa ---------- */
+@media print{
+  body{background:#fff}
+  .topbar,.no-print,.toasts,.diag,.file-warn,.foot{display:none!important}
+  .page{max-width:none;padding:0}
+  .card{box-shadow:none;border:0}
+  .table-wrap{max-height:none;overflow:visible}
+  table.rep{font-size:9pt}
+  table.rep thead th{position:static}
+  table.rep .sticky{position:static}
+  table.rep td:last-child,table.rep th:last-child{display:none}
+}
+
+/* ---------- aggiunte ---------- */
+.fill-prev,.fill-text,.rd-qt{white-space:pre-wrap}
+.r-act{display:flex;flex-direction:column;align-items:stretch;flex:none}
+.qe .fld textarea{min-height:64px}
+.qe-sec{margin-top:.2em}
+.s-card.center .btn.block{margin-top:.5em}
+.watch-head h2{word-break:break-word}
+.big-ok:empty{display:none}
+
+@media (max-width:640px){
+  .q-item{flex-wrap:wrap}
+  .q-main{min-width:calc(100% - 50px)}
+  .q-acts{width:100%;justify-content:flex-end;margin-top:-.2em}
+  .r-act{width:100%;padding-left:46px}
+  .r-act .btn{width:100%}
+}
+
+</style>
+<script>
+(function(){
+  function show(msg){
+    if(!msg || msg === 'Script error.') return;
+    var d=document.getElementById('diag'); if(!d) return;
+    d.hidden=false;
+    if(!d.firstChild){ d.innerHTML='<button type="button" onclick="this.parentNode.hidden=true">x</button><b>Dettagli tecnici (utili da comunicare):</b>'; }
+    var p=document.createElement('div'); p.textContent=msg; d.appendChild(p);
+  }
+  window.addEventListener('error', function(e){ show((e.message||'Errore') + (e.filename ? ' [' + String(e.filename).split('/').pop() + ':' + e.lineno + ']' : '')); });
+  window.addEventListener('unhandledrejection', function(e){ var r=e.reason; show('Promise: ' + ((r && (r.code || r.message)) || r)); });
+  setTimeout(function(){ if(!window.__vqReady){ var m=document.getElementById('bootMsg'); if(m){ m.textContent='Impossibile avviare l\'app: controlla la connessione a internet e ricarica la pagina.'; } } }, 15000);
+})();
+</script>
+</head>
+<body>
+<div id="fileWarn" class="file-warn" hidden>Stai aprendo l'app come file dal computer: l'accesso, il database e i video di YouTube funzionano solo quando l'app è pubblicata online (per esempio su GitHub Pages).</div>
+
+<header id="topbar" class="topbar" hidden>
+  <button id="brandBtn" class="brand" type="button" title="Torna ai miei test"><span class="logo"></span><span class="brand-name">Videoquiz</span></button>
+  <nav id="crumbs" class="crumbs" aria-label="Percorso"></nav>
+  <button id="userBtn" class="user-btn" type="button" title="Account"><span class="avatar" id="userAvatar">?</span><span id="userEmail" class="user-email"></span></button>
+</header>
+
+<main>
+  <!-- CARICAMENTO -->
+  <section id="v-loading" class="view">
+    <div class="boot"><div class="spinner"></div><p id="bootMsg">Caricamento…</p></div>
+  </section>
+
+  <!-- ACCESSO INSEGNANTE -->
+  <section id="v-auth" class="view" hidden>
+    <div class="auth-wrap">
+      <div class="auth-card card">
+        <div class="auth-brand"><span class="logo big"></span><div><h1>Videoquiz</h1><p class="muted">Video di YouTube con quesiti interattivi<br>Area riservata agli insegnanti</p></div></div>
+        <div class="tabs" id="authTabs"><button type="button" data-mode="login" class="active">Accedi</button><button type="button" data-mode="register">Registrati</button></div>
+        <form id="authForm" novalidate>
+          <label class="fld"><span>Email</span><input type="email" id="authEmail" autocomplete="email" autocapitalize="off" spellcheck="false"></label>
+          <div class="fld"><span>Password</span><div class="pw-wrap"><input type="password" id="authPassword" autocomplete="current-password"><button type="button" class="icon-btn pw-eye" data-for="authPassword" aria-label="Mostra la password"></button></div></div>
+          <div class="fld" id="confirmWrap" hidden><span>Conferma password</span><div class="pw-wrap"><input type="password" id="authConfirm" autocomplete="new-password"><button type="button" class="icon-btn pw-eye" data-for="authConfirm" aria-label="Mostra la password"></button></div></div>
+          <p class="hint" id="authNote" hidden>La password deve contenere almeno 6 caratteri.</p>
+          <div class="err" id="authError"></div>
+          <button type="submit" class="btn primary big block" id="authSubmit">Accedi</button>
+          <div class="auth-links"><button type="button" class="link-btn" id="forgotBtn">Password dimenticata?</button></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ARCHIVIO DEI TEST -->
+  <section id="v-archive" class="view page" hidden>
+    <div class="page-head">
+      <div><h1>I miei test</h1><p class="muted">Crea un test partendo da un video di YouTube, poi assegnalo alle tue classi.</p></div>
+      <button class="btn primary" id="newTestBtn" type="button"></button>
+    </div>
+    <div class="toolbar"><div class="search"><span class="search-ico"></span><input type="text" id="testSearch" placeholder="Cerca un test…" autocomplete="off"></div></div>
+    <div id="testList" class="test-grid"></div>
+  </section>
+
+  <!-- EDITOR DEL TEST -->
+  <section id="v-editor" class="view page wide" hidden>
+    <div class="page-head ed-head">
+      <div class="ed-title-wrap"><p class="kicker">Titolo del test</p><input type="text" id="edTitle" class="title-input" maxlength="120" placeholder="Titolo del test"></div>
+      <div class="head-actions">
+        <span id="edState" class="save-state"></span>
+        <button class="btn" id="edPreviewBtn" type="button"></button>
+        <button class="btn" id="edAssignBtn" type="button"></button>
+        <button class="btn primary" id="edSaveBtn" type="button"></button>
+      </div>
+    </div>
+    <div class="ed-grid">
+      <div class="ed-left">
+        <div class="card">
+          <div class="fld"><span>Link del video YouTube</span>
+            <div class="url-row"><input type="text" id="edUrl" placeholder="https://www.youtube.com/watch?v=…" autocapitalize="off" spellcheck="false" autocomplete="off"><button class="btn primary" id="edLoadBtn" type="button">Carica video</button></div>
+          </div>
+          <div id="edVideoMsg" class="msg" hidden></div>
+          <div class="video-box" id="edVideoBox"><div class="vb-host"></div><div class="vb-empty" id="edEmpty">Incolla il link di un video di YouTube e premi «Carica video».</div></div>
+          <div class="tl" id="edTl" title="Clicca per spostarti nel video"><div class="tl-track"></div><div class="tl-marks" id="edTlMarks"></div><div class="tl-cur" id="edTlCur" hidden></div></div>
+          <div class="ed-add-row">
+            <div class="ed-time"><span class="muted">Tempo attuale</span><b id="edTime">0:00,0</b></div>
+            <button class="btn accent big" id="edAddQ" type="button" disabled></button>
+          </div>
+          <p class="hint">Avvia il video e, nel punto in cui vuoi che si fermi, premi «Aggiungi quesito qui»: il video si mette in pausa e puoi scrivere il quesito. Il minuto esatto si può correggere anche dopo.</p>
+        </div>
+      </div>
+      <div class="ed-right">
+        <div class="card">
+          <div class="card-head"><h2>Quesiti <span class="count" id="edQCount">0</span></h2></div>
+          <div id="edQList" class="q-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Criteri di valutazione</h2></div>
+          <div id="edGrading"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ASSEGNAZIONI -->
+  <section id="v-assign" class="view page" hidden>
+    <div class="page-head">
+      <div><p class="kicker">Assegnazioni del test</p><h1 id="asTitle"></h1><p class="muted" id="asSub"></p></div>
+      <div class="head-actions"><button class="btn" id="asEditBtn" type="button"></button><button class="btn primary" id="asNewBtn" type="button"></button></div>
+    </div>
+    <div id="asList" class="as-list"></div>
+  </section>
+
+  <!-- REPORT DI UN'ASSEGNAZIONE -->
+  <section id="v-reports" class="view page wide" hidden>
+    <div class="page-head">
+      <div><p class="kicker" id="rpKicker"></p><h1 id="rpTitle"></h1><p class="muted" id="rpSummary"></p></div>
+      <div class="head-actions no-print"><button class="btn" id="rpLinkBtn" type="button"></button><button class="btn" id="rpCsvBtn" type="button"></button><button class="btn" id="rpPrintBtn" type="button"></button></div>
+    </div>
+    <div class="card table-card"><div id="rpTable" class="table-wrap"></div></div>
+    <p class="hint no-print">Clicca su una riga per vedere tutte le risposte e i tentativi dell'alunno. «Punti» è il valore del quesito (1 = risolto al primo tentativo); «Tent.» è il numero di tentativi che sono serviti per rispondere correttamente.</p>
+  </section>
+
+  <!-- AREA ALUNNO (anche anteprima insegnante) -->
+  <section id="v-student" class="view" hidden>
+    <div id="previewBar" class="preview-bar" hidden><span><b>ANTEPRIMA</b> · stai provando il test come un alunno: nessun report verrà inviato.</span><button id="exitPreview" class="btn sm" type="button">Esci dall'anteprima</button></div>
+    <div class="stu-wrap">
+
+      <div class="s-screen" id="sResume" hidden>
+        <div class="s-card narrow center">
+          <span class="logo big"></span>
+          <h1>Test in corso</h1>
+          <p>Su questo dispositivo c'è un test già iniziato da <b id="resWho"></b>.</p>
+          <div class="err" id="resErr"></div>
+          <button class="btn primary big block" id="resGo" type="button">Riprendi il test</button>
+          <button class="btn ghost block mt" id="resNew" type="button">Sono un altro alunno: ricomincia da capo</button>
+        </div>
+      </div>
+
+      <div class="s-screen" id="sLogin" hidden>
+        <div class="s-card narrow">
+          <div class="s-brand"><span class="logo big"></span><div><h1>Videoquiz</h1><p class="muted">Video con quesiti</p></div></div>
+          <p>Prima di iniziare, inserisci i tuoi dati e la password che ti ha dato l'insegnante.</p>
+          <form id="sLoginForm" autocomplete="off" novalidate>
+            <label class="fld"><span>Cognome</span><input type="text" id="sCognome" maxlength="60" autocomplete="off"></label>
+            <label class="fld"><span>Nome</span><input type="text" id="sNome" maxlength="60" autocomplete="off"></label>
+            <div class="row2">
+              <label class="fld"><span>Classe</span><input type="text" id="sClasse" maxlength="20" placeholder="es. 2A" autocomplete="off"></label>
+              <div class="fld"><span>Data</span><div class="static" id="sDate"></div></div>
+            </div>
+            <label class="fld"><span>Password del test</span><input type="text" id="sPwd" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></label>
+            <div class="err" id="sLoginErr"></div>
+            <button class="btn primary big block" id="sLoginBtn" type="submit">Accedi al test</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="s-screen" id="sIntro" hidden>
+        <div class="s-card">
+          <p class="kicker" id="iAssign"></p>
+          <h1 id="iTitle"></h1>
+          <p class="s-who" id="iWho"></p>
+          <div class="howto">
+            <h3>Come funziona</h3>
+            <ol>
+              <li>Guarda il video con attenzione: si fermerà <b id="iN"></b> per farti una domanda.</li>
+              <li>Rispondi e premi «Conferma risposta»: il video ripartirà da solo. Non saprai subito se la risposta è giusta.</li>
+              <li>Alla fine del video vedrai il punteggio e quali risposte sono sbagliate.</li>
+              <li>Per ogni risposta sbagliata rivedrai la parte di video che serve e risponderai di nuovo, finché saranno tutte corrette.</li>
+              <li>Solo allora potrai premere «Invia» e il tuo lavoro arriverà all'insegnante.</li>
+            </ol>
+            <p class="hint">Meno tentativi ti serviranno, più alto sarà il voto.</p>
+          </div>
+          <button class="btn primary big block" id="iStart" type="button"></button>
+        </div>
+      </div>
+
+      <div class="s-screen" id="sWatch" hidden>
+        <div class="watch-head"><h2 id="whTitle"></h2><p id="whSub" class="muted"></p></div>
+        <div class="pwrap" id="pwrap">
+          <div class="video-box" id="stuVideoBox"><div class="vb-host"></div><div class="shield" id="shield" hidden></div><button type="button" class="bigplay" id="bigPlay" aria-label="Avvia il video"></button></div>
+          <div class="ctrl">
+            <button type="button" class="cbtn" id="cPlay" aria-label="Avvia o metti in pausa"></button>
+            <button type="button" class="cbtn" id="cBack" aria-label="Indietro di 10 secondi" title="Indietro di 10 secondi"></button>
+            <div class="prog" id="prog"><div class="prog-bar"><div class="prog-seg" id="progSeg" hidden></div><div class="prog-reach" id="progReach"></div><div class="prog-fill" id="progFill"></div></div><div class="prog-marks" id="progMarks"></div><div class="prog-knob" id="progKnob"></div></div>
+            <span class="ctime" id="cTime">0:00 / 0:00</span>
+            <button type="button" class="cbtn" id="cMute" aria-label="Audio"></button>
+            <button type="button" class="cbtn" id="cFs" aria-label="Schermo intero" title="Schermo intero"></button>
+          </div>
+          <div class="qov" id="qov" hidden>
+            <div class="qcard" role="dialog" aria-modal="true" aria-labelledby="qcN">
+              <div class="qc-head"><span class="qc-n" id="qcN"></span><span class="type-chip" id="qcType"></span></div>
+              <div class="qc-body" id="qcBody"></div>
+              <div class="err" id="qcErr"></div>
+              <button type="button" class="btn primary big block" id="qcConfirm">Conferma risposta</button>
+            </div>
+          </div>
+        </div>
+        <div class="watch-foot"><span id="wCount" class="muted"></span><button type="button" class="btn sm" id="wBack" hidden>Torna all'elenco dei quesiti</button></div>
+        <p class="hint center" id="wHint"></p>
+      </div>
+
+      <div class="s-screen" id="sResults" hidden>
+        <div class="s-card">
+          <p class="kicker" id="rKicker"></p>
+          <div class="score"><div class="score-num" id="rScore"></div><div class="score-lbl">risposte corrette</div></div>
+          <div class="note" id="rNote"></div>
+          <div class="r-list" id="rList"></div>
+          <div class="r-send" id="rSendBox" hidden>
+            <button class="btn success big block" id="rSend" type="button"></button>
+            <div class="err" id="rSendErr"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-screen" id="sSent" hidden>
+        <div class="s-card narrow center">
+          <div class="big-ok"></div>
+          <h1 id="sentTitle">Test inviato!</h1>
+          <p id="sentMsg"></p>
+          <div id="sentGrade" class="sent-grade" hidden></div>
+          <p class="hint" id="sentHint">Puoi chiudere questa pagina.</p>
+          <div id="sentPreviewBtns" class="btn-col" hidden><button class="btn" id="sentShowReport" type="button">Vedi il report come lo vedrebbe l'insegnante</button><button class="btn primary" id="sentExitPreview" type="button">Torna all'editor</button></div>
+        </div>
+      </div>
+
+      <div class="s-screen" id="sError" hidden>
+        <div class="s-card narrow center">
+          <span class="logo big"></span>
+          <h1 id="eTitle"></h1>
+          <p id="eMsg"></p>
+          <button class="btn primary" id="eRetry" type="button" hidden>Ricarica la pagina</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a></footer>
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<div id="diag" class="diag" hidden></div>
+
+<script type="module">
+/* =====================================================================
+   Videoquiz - app del prof. Antonio Guida
+   Video di YouTube con quesiti, recupero degli errori, assegnazioni e report
+   ===================================================================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+/* ---------- configurazione Firebase (progetto "videoquiz") ---------- */
+const firebaseConfig = {
+  apiKey: "AIzaSyAf8Nb3TWSYdpw5O4a5K9_hbCdAdn-9hw8",
+  authDomain: "videoquiz-84724.firebaseapp.com",
+  projectId: "videoquiz-84724",
+  storageBucket: "videoquiz-84724.firebasestorage.app",
+  messagingSenderId: "816364009796",
+  appId: "1:816364009796:web:c503e8471364624ec6bf11"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+auth.languageCode = 'it';
+const db = getFirestore(fbApp);
+window.__vqReady = true;
+
+/* =====================================================================
+   COSTANTI E UTILITA'
+   ===================================================================== */
+const TYPE_LABEL = { mc: 'Risposta multipla', tf: 'Vero o falso', fill: 'Completamento' };
+const DEFAULT_GRADING = { minGrade: 4, p2: 50, p3: 25, p4: 10, showGrade: false };
+
+const ICONS = {
+  play: 'M8 5v14l11-7z',
+  pause: 'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
+  rewind: 'M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z',
+  fullscreen: 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z',
+  volume: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
+  mute: 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z',
+  add: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+  edit: 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z',
+  delete: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z',
+  copy: 'M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z',
+  link: 'M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z',
+  eye: 'M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z',
+  eyeoff: 'M12 7c2.76 0 5 2.24 5 5 0 .65-.13 1.26-.36 1.83l2.92 2.92c1.51-1.26 2.7-2.89 3.43-4.75-1.73-4.39-6-7.5-11-7.5-1.4 0-2.74.25-3.98.7l2.16 2.16C10.74 7.13 11.35 7 12 7zM2 4.27l2.28 2.28.46.46A11.8 11.8 0 001 12c1.73 4.39 6 7.5 11 7.5 1.55 0 3.03-.3 4.38-.84l.42.42L19.73 22 21 20.73 3.27 3 2 4.27zM7.53 9.8l1.55 1.55c-.05.21-.08.43-.08.65 0 1.66 1.34 3 3 3 .22 0 .44-.03.65-.08l1.55 1.55c-.67.33-1.41.53-2.2.53-2.76 0-5-2.24-5-5 0-.79.2-1.53.53-2.2zm4.31-.78l3.15 3.15.02-.16c0-1.66-1.34-3-3-3l-.17.01z',
+  back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+  assign: 'M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z',
+  download: 'M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z',
+  logout: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
+  check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  close: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  lock: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',
+  lockopen: 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z',
+  table: 'M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z',
+  replay: 'M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z',
+  send: 'M2.01 21L23 12 2.01 3 2 10l15 2-15 2z',
+  more: 'M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z',
+  print: 'M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z',
+  search: 'M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z',
+  clock: 'M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z',
+  hourglass: 'M6 2v6h.01L6 8.01 10 12l-4 4 .01.01H6V22h12v-5.99h-.01L18 16l-4-4 4-3.99-.01-.01H18V2H6zm10 14.5V20H8v-3.5l4-4 4 4zm-4-5l-4-4V4h8v3.5l-4 4z',
+  refresh: 'M17.65 6.35A7.958 7.958 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+  open: 'M19 19H5V5h7V3H5a2 2 0 00-2 2v14a2 2 0 002 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z',
+  person: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z'
+};
+const LOGO_SVG = '<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="2" y="4" width="34" height="27" rx="8" fill="#3355d6"/><path d="M15 11v13l11-6.5z" fill="#fff"/><circle cx="31" cy="30" r="8" fill="#ef7d00" stroke="#fff" stroke-width="2"/><text x="31" y="34" text-anchor="middle" font-size="11" font-weight="900" fill="#fff" font-family="Arial,sans-serif">?</text></svg>';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad2 = n => String(n).padStart(2, '0');
+function ico(n) { return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="' + (ICONS[n] || '') + '"/></svg>'; }
+function bl(icon, label) { return ico(icon) + '<span class="lbl">' + esc(label) + '</span>'; }
+function el(html) { const t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstElementChild; }
+function clean(o) { return JSON.parse(JSON.stringify(o)); }
+function newId() { return 'q' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function trunc(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '\u2026' : s; }
+
+function fmtTime(sec, tenths) {
+  sec = Number(sec);
+  if (!isFinite(sec) || sec < 0) sec = 0;
+  sec = tenths ? Math.round(sec * 10) / 10 : Math.floor(sec);
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec - h * 3600 - m * 60;
+  const whole = Math.floor(s + 1e-9);
+  let str = pad2(whole);
+  if (tenths) str += ',' + (Math.round((s - whole) * 10) % 10);
+  return (h ? h + ':' + pad2(m) : m) + ':' + str;
+}
+function parseTime(str) {
+  str = String(str == null ? '' : str).trim().replace(/,/g, '.');
+  if (!str) return NaN;
+  const parts = str.split(':');
+  if (parts.length > 3) return NaN;
+  let t = 0;
+  for (const p of parts) {
+    if (!/^\d+(\.\d+)?$/.test(p)) return NaN;
+    t = t * 60 + parseFloat(p);
+  }
+  return t;
+}
+function fmtDate(ms) { const d = new Date(ms || Date.now()); return pad2(d.getDate()) + '/' + pad2(d.getMonth() + 1) + '/' + d.getFullYear(); }
+function fmtDateLong(ms) { return new Date(ms || Date.now()).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' }); }
+function fmtHour(ms) { const d = new Date(ms); return pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function tsToMs(v) { if (!v) return 0; if (typeof v === 'number') return v; if (typeof v.toMillis === 'function') return v.toMillis(); if (v.seconds) return v.seconds * 1000; return 0; }
+function fmtNum(n, d) { n = Number(n); if (!isFinite(n)) n = 0; return n.toLocaleString('it-IT', { maximumFractionDigits: d == null ? 2 : d }); }
+function nameCase(s) { return String(s || '').trim().replace(/\s+/g, ' ').toLowerCase().replace(/(^|[\s'\u2019-])(\p{L})/gu, (m, a, b) => a + b.toUpperCase()); }
+function genPassword() {
+  const L = 'abcdefghjkmnpqrstuvwxyz', D = '23456789';
+  const r = new Uint32Array(6); crypto.getRandomValues(r);
+  let s = '';
+  for (let i = 0; i < 4; i++) s += L[r[i] % L.length];
+  for (let i = 4; i < 6; i++) s += D[r[i] % D.length];
+  return s;
+}
+const normPwd = p => String(p || '').trim().toLowerCase();
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+function pubKeyFor(aid, pwd) { return sha256('vq1|' + aid + '|' + normPwd(pwd)); }
+
+function parseYouTubeId(input) {
+  const s = String(input || '').trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(s)) return s;
+  let u;
+  try { u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s); } catch (e) { return null; }
+  const host = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+  let id = null;
+  if (host === 'youtu.be') id = u.pathname.split('/')[1];
+  else if (host === 'youtube.com' || host === 'youtube-nocookie.com' || host.endsWith('.youtube.com')) {
+    if (u.searchParams.get('v')) id = u.searchParams.get('v');
+    else { const m = u.pathname.match(/^\/(?:embed|shorts|live|v|e)\/([A-Za-z0-9_-]{11})/); if (m) id = m[1]; }
+  }
+  return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+}
+
+/* ---------- quesiti ---------- */
+function parseFill(tpl) {
+  const parts = []; const re = /\[([^\[\]]*)\]/g; let last = 0, m;
+  tpl = String(tpl || '');
+  while ((m = re.exec(tpl))) {
+    if (m.index > last) parts.push({ t: 'txt', v: tpl.slice(last, m.index) });
+    parts.push({ t: 'blank', alts: m[1].split('/').map(x => x.trim()).filter(Boolean) });
+    last = re.lastIndex;
+  }
+  if (last < tpl.length) parts.push({ t: 'txt', v: tpl.slice(last) });
+  return parts;
+}
+const letter = i => String.fromCharCode(65 + i);
+function qPlain(q) {
+  if (q.type === 'fill') {
+    const body = parseFill(q.fillText).map(p => p.t === 'txt' ? p.v : '_____').join('');
+    return ((q.text ? q.text + ' ' : '') + body).replace(/\s+/g, ' ').trim();
+  }
+  return q.text || '';
+}
+function qCorrectText(q) {
+  if (q.type === 'mc') return (q.correct || []).map(i => letter(i) + ') ' + (q.options || [])[i]).join(' | ');
+  if (q.type === 'tf') return q.tf ? 'Vero' : 'Falso';
+  if (q.type === 'fill') return parseFill(q.fillText).filter(p => p.t === 'blank').map(p => p.alts.join(' / ')).join(' | ');
+  return '';
+}
+function normAns(s, ignoreCase) {
+  let x = String(s || '').normalize('NFC').replace(/[\u2018\u2019\u02bc`\u00b4]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
+  x = x.replace(/[.;:!?]+$/, '').trim();
+  return ignoreCase ? x.toLowerCase() : x;
+}
+function checkAnswer(q, v) {
+  if (q.type === 'mc') {
+    const a = [...v].sort((x, y) => x - y), b = [...(q.correct || [])].sort((x, y) => x - y);
+    return a.length === b.length && a.every((x, i) => x === b[i]);
+  }
+  if (q.type === 'tf') return v === !!q.tf;
+  if (q.type === 'fill') {
+    const blanks = parseFill(q.fillText).filter(p => p.t === 'blank');
+    const ic = q.ignoreCase !== false;
+    return blanks.length === v.length && blanks.every((b, i) => b.alts.some(alt => normAns(alt, ic) === normAns(v[i], ic)));
+  }
+  return false;
+}
+
+/* ---------- valutazione ---------- */
+function clampPct(v) { v = Math.round(Number(v)); if (!isFinite(v)) v = 0; return Math.min(100, Math.max(0, v)); }
+function normGrading(g) {
+  const x = Object.assign({}, DEFAULT_GRADING, g || {});
+  x.minGrade = Math.min(6, Math.max(1, Math.round(Number(x.minGrade) || 4)));
+  ['p2', 'p3', 'p4'].forEach(k => { x[k] = clampPct(x[k]); });
+  x.showGrade = !!x.showGrade;
+  return x;
+}
+function valueForTries(tries, g) {
+  if (tries <= 0) return 0;
+  if (tries === 1) return 1;
+  if (tries === 2) return g.p2 / 100;
+  if (tries === 3) return g.p3 / 100;
+  return g.p4 / 100;
+}
+function computeVoto(values, g) {
+  if (!values.length) return 10;
+  const avg = values.reduce((a, b) => a + b, 0) / values.length;
+  return Math.round((g.minGrade + (10 - g.minGrade) * avg) * 10) / 10;
+}
+
+/* ---------- avvisi e finestre ---------- */
+function toast(msg, type, ms) {
+  const t = el('<div class="toast ' + (type || '') + '"></div>');
+  t.textContent = msg;
+  $('#toasts').appendChild(t);
+  setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, ms || 3500);
+}
+function showDiag(msg) {
+  const d = $('#diag'); if (!d) return;
+  d.hidden = false;
+  if (!d.firstChild) d.innerHTML = '<button type="button" onclick="this.parentNode.hidden=true">\u00d7</button><b>Dettagli tecnici (utili da comunicare):</b>';
+  const p = document.createElement('div'); p.textContent = msg; d.appendChild(p);
+}
+
+function modal(opts) {
+  const { title, body, buttons = [], wide = false, dismissible = true, focus } = opts;
+  return new Promise(resolve => {
+    const ov = el('<div class="modal-ov"><div class="modal' + (wide ? ' wide' : '') + '" role="dialog" aria-modal="true"><div class="modal-head"><h2></h2><button type="button" class="icon-btn modal-x" aria-label="Chiudi">' + ico('close') + '</button></div><div class="modal-body"></div><div class="modal-foot"></div></div></div>');
+    $('h2', ov).textContent = title;
+    const bodyEl = $('.modal-body', ov);
+    if (typeof body === 'string') bodyEl.innerHTML = body; else if (body) bodyEl.appendChild(body);
+    const foot = $('.modal-foot', ov);
+    let closed = false;
+    const close = val => {
+      if (closed) return; closed = true;
+      ov.remove(); document.removeEventListener('keydown', onKey); resolve(val);
+    };
+    buttons.forEach(b => {
+      const btn = el('<button type="button" class="btn ' + (b.cls || '') + '"></button>');
+      btn.innerHTML = b.html || esc(b.label);
+      btn.addEventListener('click', async () => {
+        if (b.onClick) {
+          const r = await b.onClick(bodyEl, btn);
+          if (r === false) return;
+          close(r === undefined ? b.value : r);
+        } else close(b.value);
+      });
+      foot.appendChild(btn);
+    });
+    if (!buttons.length) foot.remove();
+    $('.modal-x', ov).addEventListener('click', () => close(null));
+    if (dismissible) ov.addEventListener('mousedown', e => { if (e.target === ov) close(null); });
+    const onKey = e => {
+      if (e.key !== 'Escape') return;
+      const all = $$('.modal-ov');
+      if (all[all.length - 1] === ov) close(null);
+    };
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ov);
+    const f = focus ? $(focus, bodyEl) : $('input:not([readonly]),textarea,select', bodyEl);
+    if (f) setTimeout(() => { try { f.focus(); } catch (e) { } }, 40);
+  });
+}
+async function confirmBox(title, html, okLabel, danger) {
+  const r = await modal({ title, body: '<p>' + html + '</p>', buttons: [{ label: 'Annulla', cls: 'ghost', value: false }, { label: okLabel || 'Conferma', cls: danger ? 'danger' : 'primary', value: true }] });
+  return r === true;
+}
+async function promptBox(title, label, value, okLabel, max) {
+  const body = el('<div><label class="fld"><span></span><input type="text"></label><div class="err"></div></div>');
+  $('span', body).textContent = label;
+  const inp = $('input', body); inp.value = value || ''; inp.maxLength = max || 120;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); body.closest('.modal').querySelector('.modal-foot .btn:last-child').click(); } });
+  return modal({
+    title, body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: okLabel || 'OK', cls: 'primary', onClick: () => {
+        const v = inp.value.trim();
+        if (!v) { $('.err', body).textContent = 'Il campo non pu\u00f2 essere vuoto.'; return false; }
+        return v;
+      }
+    }]
+  });
+}
+async function copyText(txt) {
+  try { await navigator.clipboard.writeText(txt); toast('Copiato negli appunti.', 'ok', 2000); }
+  catch (e) {
+    const ta = el('<textarea style="position:fixed;left:-9999px;top:0"></textarea>');
+    ta.value = txt; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); toast('Copiato negli appunti.', 'ok', 2000); }
+    catch (_) { toast('Copia non riuscita: seleziona il testo e copialo a mano.', 'bad'); }
+    ta.remove();
+  }
+}
+
+/* menu a comparsa */
+let popEl = null;
+function closePop() { if (popEl) { popEl.remove(); popEl = null; } }
+function popMenu(anchor, items, info) {
+  closePop();
+  const m = el('<div class="pop"></div>');
+  if (info) { const i = el('<div class="pop-info"></div>'); i.textContent = info; m.appendChild(i); }
+  items.forEach(it => {
+    const b = el('<button type="button" class="pop-item' + (it.danger ? ' danger' : '') + '">' + (it.icon ? ico(it.icon) : '') + '<span></span></button>');
+    $('span', b).textContent = it.label;
+    b.addEventListener('click', e => { e.stopPropagation(); closePop(); it.onClick(); });
+    m.appendChild(b);
+  });
+  document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect();
+  const mw = m.offsetWidth, mh = m.offsetHeight;
+  const left = Math.min(window.innerWidth - mw - 8, Math.max(8, r.right - mw));
+  let top = r.bottom + 6;
+  if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+  m.style.left = left + 'px'; m.style.top = top + 'px';
+  popEl = m;
+  setTimeout(() => document.addEventListener('click', closePop, { once: true }), 0);
+}
+window.addEventListener('scroll', closePop, { passive: true });
+window.addEventListener('resize', closePop);
+
+function dbError(ex, ctx) {
+  console.error(ctx || 'db', ex);
+  const code = (ex && ex.code) || '';
+  let msg;
+  if (/index/i.test((ex && ex.message) || '') && code === 'failed-precondition') { msg = 'Il database chiede di creare un indice: apri il link che trovi nei dettagli tecnici in basso (serve una sola volta).'; showDiag(ex.message); toast(msg, 'bad', 9000); return; }
+  if (code === 'permission-denied' || /insufficient permissions/i.test(ex && ex.message)) msg = 'Permesso negato dal database. Controlla di aver incollato e pubblicato le regole di Firestore.';
+  else if (code === 'unavailable') msg = 'Database non raggiungibile. Controlla la connessione a internet e riprova.';
+  else if (code === 'failed-precondition' || code === 'not-found') msg = 'Il database non risulta pronto: controlla di aver creato Firestore Database nel progetto Firebase.';
+  else msg = 'Errore del database: ' + (code || (ex && ex.message) || ex);
+  toast(msg, 'bad', 7000);
+  if (code) showDiag((ctx || 'db') + ': ' + code + ' - ' + ((ex && ex.message) || ''));
+}
+
+/* ---------- lettore YouTube ---------- */
+let ytPromise = null;
+function loadYT() {
+  if (window.YT && window.YT.Player) return Promise.resolve(window.YT);
+  if (ytPromise) return ytPromise;
+  ytPromise = new Promise((resolve, reject) => {
+    const prev = window.onYouTubeIframeAPIReady;
+    window.onYouTubeIframeAPIReady = () => { if (typeof prev === 'function') prev(); resolve(window.YT); };
+    const s = document.createElement('script');
+    s.src = 'https://www.youtube.com/iframe_api'; s.async = true;
+    s.onerror = () => { ytPromise = null; reject(new Error('yt-load')); };
+    document.head.appendChild(s);
+    setTimeout(() => { if (!(window.YT && window.YT.Player)) { ytPromise = null; reject(new Error('yt-timeout')); } }, 20000);
+  });
+  return ytPromise;
+}
+function playerVars(teacher) {
+  const v = { rel: 0, playsinline: 1, iv_load_policy: 3, modestbranding: 1, cc_load_policy: 0 };
+  if (teacher) { v.controls = 1; v.fs = 1; } else { v.controls = 0; v.disablekb = 1; v.fs = 0; }
+  if (/^https?:$/.test(location.protocol)) v.origin = location.origin;
+  return v;
+}
+function ytErrorText(code) {
+  if (code === 2) return 'Il link del video non \u00e8 valido.';
+  if (code === 5) return 'Il video non pu\u00f2 essere riprodotto in questo browser.';
+  if (code === 100) return 'Il video non esiste pi\u00f9 oppure \u00e8 privato.';
+  if (code === 101 || code === 150) return 'Il proprietario di questo video non permette di riprodurlo fuori da YouTube: scegli un altro video.';
+  if (code === 152 || code === 153) return 'Il lettore di YouTube non si avvia quando l\'app \u00e8 aperta come file dal computer: usa l\'app pubblicata online (GitHub Pages).';
+  return 'Errore del lettore YouTube (codice ' + code + ').';
+}
+
+/* =====================================================================
+   STATO GENERALE E NAVIGAZIONE (INSEGNANTE)
+   ===================================================================== */
+const S = { user: null, entered: false, tests: [], assigns: [], repCounts: {}, view: 'v-loading', ed: null, curTest: null, curAssign: null, reports: [], unsubReports: null, sort: { key: 'cognome', dir: 1 } };
+
+function showView(id) {
+  $$('main > .view').forEach(v => { v.hidden = v.id !== id; });
+  S.view = id;
+  $('#topbar').hidden = !['v-archive', 'v-editor', 'v-assign', 'v-reports'].includes(id);
+  closePop();
+  window.scrollTo(0, 0);
+}
+function setCrumbs(items) {
+  const nav = $('#crumbs'); nav.innerHTML = '';
+  items.forEach((it, i) => {
+    if (i) nav.appendChild(el('<span class="sep">\u203a</span>'));
+    if (it.go && i < items.length - 1) { const b = el('<button type="button"></button>'); b.textContent = it.label; b.onclick = it.go; nav.appendChild(b); }
+    else { const s = el('<span class="cur"></span>'); s.textContent = it.label; nav.appendChild(s); }
+  });
+}
+async function nav(fn) {
+  if (S.view === 'v-editor' && S.ed) { const ok = await leaveEditor(); if (!ok) return; }
+  if (S.unsubReports) { S.unsubReports(); S.unsubReports = null; }
+  closePop();
+  await fn();
+}
+
+/* =====================================================================
+   ACCESSO INSEGNANTE
+   ===================================================================== */
+let authMode = 'login';
+function setAuthMode(m) {
+  authMode = m;
+  $$('#authTabs button').forEach(b => b.classList.toggle('active', b.dataset.mode === m));
+  $('#confirmWrap').hidden = m !== 'register';
+  $('#authNote').hidden = m !== 'register';
+  $('#forgotBtn').hidden = m === 'register';
+  $('#authSubmit').textContent = m === 'register' ? 'Crea il mio account' : 'Accedi';
+  $('#authPassword').setAttribute('autocomplete', m === 'register' ? 'new-password' : 'current-password');
+  $('#authError').textContent = '';
+}
+function authErr(ex) {
+  const c = (ex && ex.code) || '';
+  const map = {
+    'auth/invalid-email': 'Indirizzo email non valido.',
+    'auth/missing-email': 'Inserisci il tuo indirizzo email.',
+    'auth/user-disabled': 'Questo account \u00e8 stato disattivato.',
+    'auth/user-not-found': 'Email o password non corretti.',
+    'auth/wrong-password': 'Email o password non corretti.',
+    'auth/invalid-credential': 'Email o password non corretti.',
+    'auth/invalid-login-credentials': 'Email o password non corretti.',
+    'auth/email-already-in-use': 'Esiste gi\u00e0 un account con questa email: usa \u00abAccedi\u00bb.',
+    'auth/weak-password': 'Password troppo debole: usa almeno 6 caratteri.',
+    'auth/too-many-requests': 'Troppi tentativi. Attendi qualche minuto e riprova.',
+    'auth/network-request-failed': 'Problema di connessione. Controlla internet e riprova.',
+    'auth/operation-not-allowed': 'L\'accesso con email e password non \u00e8 ancora attivo nel progetto Firebase (Authentication > Metodo di accesso).',
+    'auth/configuration-not-found': 'Authentication non \u00e8 ancora attivo nel progetto Firebase.',
+    'auth/unauthorized-domain': 'Questo sito non \u00e8 autorizzato nel progetto Firebase (Authentication > Impostazioni > Domini autorizzati).',
+    'auth/requires-recent-login': 'Per sicurezza esci, accedi di nuovo e ripeti l\'operazione.'
+  };
+  return map[c] || ('Errore: ' + (c || (ex && ex.message) || ex));
+}
+
+function wireTeacher() {
+  $$('#authTabs button').forEach(b => b.addEventListener('click', () => setAuthMode(b.dataset.mode)));
+  $$('.pw-eye').forEach(b => {
+    b.innerHTML = ico('eye');
+    b.addEventListener('click', () => {
+      const inp = document.getElementById(b.dataset.for);
+      const show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      b.innerHTML = ico(show ? 'eyeoff' : 'eye');
+    });
+  });
+  $('#authForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const email = $('#authEmail').value.trim(), pass = $('#authPassword').value, err = $('#authError');
+    err.textContent = '';
+    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = 'Inserisci un indirizzo email valido.'; return; }
+    if (pass.length < 6) { err.textContent = 'La password deve contenere almeno 6 caratteri.'; return; }
+    if (authMode === 'register' && pass !== $('#authConfirm').value) { err.textContent = 'Le due password non coincidono.'; return; }
+    const btn = $('#authSubmit'); btn.disabled = true; btn.classList.add('loading');
+    try {
+      const cred = authMode === 'register' ? await createUserWithEmailAndPassword(auth, email, pass) : await signInWithEmailAndPassword(auth, email, pass);
+      if (cred && cred.user) await enterApp(cred.user);
+    } catch (ex) { console.error(ex); err.textContent = authErr(ex); }
+    btn.disabled = false; btn.classList.remove('loading');
+  });
+  $('#forgotBtn').addEventListener('click', forgotPassword);
+
+  $('#brandBtn').addEventListener('click', () => nav(loadArchive));
+  $('#userBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    popMenu($('#userBtn'), [
+      { label: 'Esci', icon: 'logout', onClick: () => nav(async () => { await signOut(auth); }) },
+      { label: 'Elimina account', icon: 'delete', danger: true, onClick: deleteAccountFlow }
+    ], S.user ? S.user.email : '');
+  });
+
+  $('#newTestBtn').innerHTML = bl('add', 'Nuovo test');
+  $('#newTestBtn').addEventListener('click', newTest);
+  $('#testSearch').addEventListener('input', renderArchive);
+  $('.search-ico').innerHTML = ico('search');
+  $('#testList').addEventListener('click', onArchiveClick);
+
+  $('#edPreviewBtn').innerHTML = bl('eye', 'Anteprima alunno');
+  $('#edAssignBtn').innerHTML = bl('assign', 'Assegnazioni');
+  $('#edSaveBtn').innerHTML = bl('check', 'Salva');
+  $('#edSaveBtn').addEventListener('click', () => edSave());
+  $('#edPreviewBtn').addEventListener('click', edPreview);
+  $('#edAssignBtn').addEventListener('click', () => { const id = S.ed.id; nav(() => openAssignments(id)); });
+  $('#edLoadBtn').addEventListener('click', edLoadVideo);
+  $('#edUrl').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); edLoadVideo(); } });
+  $('#edTitle').addEventListener('input', () => { if (S.ed) { S.ed.test.title = $('#edTitle').value; markDirty(); } });
+  $('#edAddQ').addEventListener('click', edAddQuestion);
+  $('#edQList').addEventListener('click', onQListClick);
+  $('#edTl').addEventListener('click', onTimelineClick);
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && S.view === 'v-editor' && S.ed) { e.preventDefault(); edSave(); }
+  });
+  window.addEventListener('beforeunload', e => { if (S.ed && S.ed.dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+  $('#asEditBtn').innerHTML = bl('edit', 'Modifica il test');
+  $('#asNewBtn').innerHTML = bl('add', 'Nuova assegnazione');
+  $('#asEditBtn').addEventListener('click', () => { const id = S.curTest.id; nav(() => openEditor(id)); });
+  $('#asNewBtn').addEventListener('click', newAssignment);
+  $('#asList').addEventListener('click', onAssignClick);
+
+  $('#rpLinkBtn').innerHTML = bl('link', 'Link e password');
+  $('#rpCsvBtn').innerHTML = bl('download', 'Esporta per Excel');
+  $('#rpPrintBtn').innerHTML = bl('print', 'Stampa');
+  $('#rpLinkBtn').addEventListener('click', () => showLinkModal(S.curAssign));
+  $('#rpCsvBtn').addEventListener('click', exportCSV);
+  $('#rpPrintBtn').addEventListener('click', () => window.print());
+  $('#rpTable').addEventListener('click', onReportTableClick);
+}
+
+function initTeacher() {
+  setAuthMode('login');
+  onAuthStateChanged(auth, user => {
+    if (user) enterApp(user);
+    else {
+      S.user = null; S.entered = false;
+      if (S.ed) { destroyEditorPlayer(); S.ed = null; }
+      if (S.unsubReports) { S.unsubReports(); S.unsubReports = null; }
+      S.tests = []; S.assigns = [];
+      showView('v-auth');
+    }
+  });
+}
+async function enterApp(user) {
+  if (S.entered && S.user && S.user.uid === user.uid) return;
+  S.user = user; S.entered = true;
+  $('#userEmail').textContent = user.email || '';
+  $('#userAvatar').textContent = (user.email || '?').charAt(0).toUpperCase();
+  $('#authPassword').value = ''; $('#authConfirm').value = '';
+  await loadArchive();
+}
+async function forgotPassword() {
+  const body = el('<div><p>Scrivi l\'email con cui ti sei registrato: riceverai un messaggio con il link per scegliere una nuova password.</p><label class="fld"><span>Email</span><input type="email" autocapitalize="off" spellcheck="false"></label><div class="err"></div></div>');
+  $('input', body).value = $('#authEmail').value.trim();
+  const ok = await modal({
+    title: 'Recupera la password', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: 'Invia il link', cls: 'primary', onClick: async (b, btn) => {
+        const email = $('input', body).value.trim();
+        if (!/^\S+@\S+\.\S+$/.test(email)) { $('.err', body).textContent = 'Inserisci un indirizzo email valido.'; return false; }
+        btn.classList.add('loading');
+        try { await sendPasswordResetEmail(auth, email); return true; }
+        catch (ex) { btn.classList.remove('loading'); $('.err', body).textContent = authErr(ex); return false; }
+      }
+    }]
+  });
+  if (ok) modal({ title: 'Controlla la posta', body: '<p>Se l\'indirizzo \u00e8 registrato, tra poco riceverai un\'email con il link per reimpostare la password. Se non la trovi, controlla anche nella cartella <b>Spam</b>.</p>', buttons: [{ label: 'Ho capito', cls: 'primary', value: true }] });
+}
+async function deleteAccountFlow() {
+  const body = el('<div><p>L\'account e <b>tutti i tuoi dati</b> (test, assegnazioni e report degli alunni) verranno eliminati definitivamente. L\'operazione non si pu\u00f2 annullare.</p><label class="fld"><span>Per confermare, scrivi la tua password</span><input type="password" autocomplete="current-password"></label><div class="err"></div></div>');
+  await modal({
+    title: 'Elimina account', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: 'Elimina definitivamente', cls: 'danger', onClick: async (b, btn) => {
+        const pwd = $('input', body).value, errEl = $('.err', body);
+        if (!pwd) { errEl.textContent = 'Scrivi la password.'; return false; }
+        btn.disabled = true; btn.classList.add('loading');
+        try {
+          const u = auth.currentUser;
+          await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, pwd));
+          if (S.ed) { S.ed.dirty = false; destroyEditorPlayer(); S.ed = null; }
+          if (S.unsubReports) { S.unsubReports(); S.unsubReports = null; }
+          await deleteAllUserData(u.uid);
+          await deleteUser(u);
+          toast('Account eliminato.', 'ok');
+          return true;
+        } catch (ex) {
+          console.error(ex);
+          errEl.textContent = (ex.code || '').startsWith('auth/') ? authErr(ex) : 'Errore durante l\'eliminazione: ' + (ex.code || ex.message);
+          btn.disabled = false; btn.classList.remove('loading');
+          return false;
+        }
+      }
+    }]
+  });
+}
+async function batchDelete(refs) {
+  for (let i = 0; i < refs.length; i += 400) {
+    const b = writeBatch(db);
+    refs.slice(i, i + 400).forEach(r => b.delete(r));
+    await b.commit();
+  }
+}
+async function deleteAllUserData(uid) {
+  const [ts, as, rs] = await Promise.all([
+    getDocs(query(collection(db, 'tests'), where('ownerUid', '==', uid))),
+    getDocs(query(collection(db, 'assignments'), where('ownerUid', '==', uid))),
+    getDocs(query(collection(db, 'reports'), where('ownerUid', '==', uid)))
+  ]);
+  const refs = [];
+  rs.forEach(d => refs.push(d.ref));
+  as.forEach(d => { const k = d.data().pubKey; if (k) refs.push(doc(db, 'pubs', k)); refs.push(d.ref); });
+  ts.forEach(d => refs.push(d.ref));
+  await batchDelete(refs);
+}
+
+/* =====================================================================
+   ARCHIVIO DEI TEST
+   ===================================================================== */
+async function loadArchive() {
+  showView('v-archive');
+  setCrumbs([{ label: 'I miei test' }]);
+  $('#testList').innerHTML = '<div class="loading-row">Caricamento dei test\u2026</div>';
+  try {
+    const uid = S.user.uid;
+    const [ts, as] = await Promise.all([
+      getDocs(query(collection(db, 'tests'), where('ownerUid', '==', uid))),
+      getDocs(query(collection(db, 'assignments'), where('ownerUid', '==', uid)))
+    ]);
+    S.tests = ts.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    S.assigns = as.docs.map(d => Object.assign({ id: d.id }, d.data()));
+    renderArchive();
+  } catch (ex) {
+    dbError(ex, 'archivio');
+    $('#testList').innerHTML = '<div class="empty"><h3>Impossibile caricare i test</h3><p>Se hai appena creato il progetto, controlla di aver creato il database Firestore e di aver pubblicato le regole.</p></div>';
+  }
+}
+function renderArchive() {
+  if (S.view !== 'v-archive') return;
+  const q = ($('#testSearch').value || '').trim().toLowerCase();
+  const list = S.tests.filter(t => !q || (t.title || '').toLowerCase().includes(q)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  const box = $('#testList');
+  if (!S.tests.length) {
+    box.innerHTML = '<div class="empty" style="grid-column:1/-1"><h3>Non hai ancora creato nessun test</h3><p>Premi \u00abNuovo test\u00bb, incolla il link di un video di YouTube e scegli i punti in cui il video si fermer\u00e0 per fare una domanda.</p></div>';
+    return;
+  }
+  if (!list.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">Nessun test corrisponde alla ricerca.</div>'; return; }
+  box.innerHTML = list.map(t => {
+    const nA = S.assigns.filter(a => a.testId === t.id).length;
+    const nQ = (t.questions || []).length;
+    const thumb = t.videoId ? '<img src="https://i.ytimg.com/vi/' + esc(t.videoId) + '/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">' : '<div class="nothumb">Nessun video</div>';
+    return '<article class="test-card" data-id="' + esc(t.id) + '">' +
+      '<div class="thumb" data-act="edit">' + thumb + '<span class="badge-q">' + nQ + (nQ === 1 ? ' quesito' : ' quesiti') + '</span></div>' +
+      '<div class="tc-body"><h3>' + esc(t.title || 'Senza titolo') + '</h3>' +
+      '<p class="tc-meta">' + nA + (nA === 1 ? ' assegnazione' : ' assegnazioni') + ' \u00b7 modificato il ' + fmtDate(t.updatedAt) + '</p>' +
+      '<div class="tc-actions"><button type="button" class="btn primary sm" data-act="edit">' + ico('edit') + ' Modifica</button><button type="button" class="btn sm" data-act="assign">' + ico('assign') + ' Assegnazioni</button><button type="button" class="icon-btn" data-act="menu" title="Altre azioni">' + ico('more') + '</button></div></div></article>';
+  }).join('');
+}
+function onArchiveClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const card = b.closest('.test-card'); const id = card && card.dataset.id; if (!id) return;
+  const act = b.dataset.act;
+  if (act === 'edit') nav(() => openEditor(id));
+  else if (act === 'assign') nav(() => openAssignments(id));
+  else if (act === 'menu') {
+    e.stopPropagation();
+    popMenu(b, [
+      { label: 'Rinomina', icon: 'edit', onClick: () => renameTest(id) },
+      { label: 'Duplica', icon: 'copy', onClick: () => duplicateTest(id) },
+      { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteTest(id) }
+    ]);
+  }
+}
+async function newTest() {
+  const title = await promptBox('Nuovo test', 'Titolo del test', '', 'Crea il test');
+  if (!title) return;
+  const now = Date.now();
+  const data = { ownerUid: S.user.uid, title, videoId: '', videoUrl: '', videoTitle: '', duration: 0, questions: [], grading: Object.assign({}, DEFAULT_GRADING), createdAt: now, updatedAt: now };
+  try {
+    const ref = await addDoc(collection(db, 'tests'), data);
+    S.tests.push(Object.assign({ id: ref.id }, data));
+    openEditor(ref.id);
+  } catch (ex) { dbError(ex, 'nuovo test'); }
+}
+async function renameTest(id) {
+  const t = S.tests.find(x => x.id === id); if (!t) return;
+  const title = await promptBox('Rinomina il test', 'Nuovo titolo', t.title, 'Rinomina');
+  if (!title || title === t.title) return;
+  try {
+    const now = Date.now();
+    await updateDoc(doc(db, 'tests', id), { title, updatedAt: now });
+    t.title = title; t.updatedAt = now;
+    for (const a of S.assigns.filter(x => x.testId === id)) { try { await updateDoc(doc(db, 'pubs', a.pubKey), { 'test.title': title }); } catch (e) { console.warn(e); } }
+    renderArchive(); toast('Test rinominato.', 'ok');
+  } catch (ex) { dbError(ex, 'rinomina'); }
+}
+async function duplicateTest(id) {
+  const t = S.tests.find(x => x.id === id); if (!t) return;
+  const title = await promptBox('Duplica il test', 'Titolo della copia', (t.title || '') + ' (copia)', 'Duplica');
+  if (!title) return;
+  const now = Date.now();
+  const data = clean({ ownerUid: S.user.uid, title, videoId: t.videoId || '', videoUrl: t.videoUrl || '', videoTitle: t.videoTitle || '', duration: t.duration || 0, questions: t.questions || [], grading: normGrading(t.grading), createdAt: now, updatedAt: now });
+  try {
+    const ref = await addDoc(collection(db, 'tests'), data);
+    S.tests.push(Object.assign({ id: ref.id }, data));
+    renderArchive(); toast('Copia creata.', 'ok');
+  } catch (ex) { dbError(ex, 'duplica'); }
+}
+async function deleteTest(id) {
+  const t = S.tests.find(x => x.id === id); if (!t) return;
+  const mine = S.assigns.filter(a => a.testId === id);
+  const extra = mine.length ? ' Verranno eliminate anche le sue <b>' + mine.length + ' assegnazioni</b> con tutti i report degli alunni.' : '';
+  if (!await confirmBox('Eliminare il test?', 'Il test \u00ab' + esc(t.title) + '\u00bb verr\u00e0 eliminato definitivamente.' + extra, 'Elimina', true)) return;
+  try {
+    const refs = [];
+    if (mine.length) {
+      const rs = await getDocs(query(collection(db, 'reports'), where('ownerUid', '==', S.user.uid), where('testId', '==', id)));
+      rs.forEach(d => refs.push(d.ref));
+    }
+    mine.forEach(a => { if (a.pubKey) refs.push(doc(db, 'pubs', a.pubKey)); refs.push(doc(db, 'assignments', a.id)); });
+    refs.push(doc(db, 'tests', id));
+    await batchDelete(refs);
+    S.tests = S.tests.filter(x => x.id !== id);
+    S.assigns = S.assigns.filter(a => a.testId !== id);
+    renderArchive(); toast('Test eliminato.', 'ok');
+  } catch (ex) { dbError(ex, 'elimina test'); }
+}
+
+/* =====================================================================
+   EDITOR DEL TEST
+   ===================================================================== */
+function openEditor(testId) {
+  const t = S.tests.find(x => x.id === testId);
+  if (!t) return loadArchive();
+  const data = clean(t); delete data.id;
+  data.questions = (data.questions || []).slice().sort((a, b) => a.time - b.time);
+  data.grading = normGrading(data.grading);
+  S.ed = { id: testId, test: data, dirty: false, player: null, ready: false, timer: null, videoError: false };
+  showView('v-editor');
+  setCrumbs([{ label: 'I miei test', go: () => nav(loadArchive) }, { label: t.title || 'Test' }]);
+  $('#edTitle').value = data.title || '';
+  $('#edUrl').value = data.videoUrl || (data.videoId ? 'https://www.youtube.com/watch?v=' + data.videoId : '');
+  $('#edVideoMsg').hidden = true;
+  setSaveState('');
+  $('#edAddQ').disabled = true;
+  $('#edAddQ').innerHTML = ico('add') + ' Aggiungi quesito qui';
+  $('#edTime').textContent = fmtTime(0, true);
+  $('#edTlCur').hidden = true;
+  $('#edVideoBox .vb-host').innerHTML = '';
+  $('#edEmpty').hidden = false;
+  renderQList(); renderGrading();
+  if (data.videoId) mountEditorPlayer(data.videoId);
+}
+function setSaveState(s) {
+  const e = $('#edState');
+  e.className = 'save-state' + (s ? ' ' + s : '');
+  e.textContent = s === 'dirty' ? 'Modifiche non salvate' : s === 'saved' ? 'Salvato' : '';
+}
+function markDirty() { if (!S.ed) return; S.ed.dirty = true; setSaveState('dirty'); }
+function edMsg(text, type) { const m = $('#edVideoMsg'); if (!text) { m.hidden = true; return; } m.hidden = false; m.className = 'msg ' + (type || 'info'); m.textContent = text; }
+
+async function edLoadVideo() {
+  const E = S.ed; if (!E) return;
+  const raw = $('#edUrl').value.trim();
+  const id = parseYouTubeId(raw);
+  if (!id) { edMsg('Link non valido. Copia l\'indirizzo del video da YouTube, per esempio https://www.youtube.com/watch?v=\u2026 oppure https://youtu.be/\u2026', 'bad'); return; }
+  if (E.test.videoId && E.test.videoId !== id && E.test.questions.length) {
+    if (!await confirmBox('Cambiare video?', 'I quesiti gi\u00e0 creati resteranno agli stessi minuti anche nel nuovo video. Vuoi continuare?', 'Cambia video')) return;
+  }
+  if (E.test.videoId !== id) { E.test.duration = 0; E.test.videoTitle = ''; }
+  E.test.videoId = id; E.test.videoUrl = raw;
+  markDirty();
+  mountEditorPlayer(id);
+}
+function destroyEditorPlayer() {
+  const E = S.ed; if (!E) return;
+  clearInterval(E.timer); E.timer = null;
+  try { if (E.player && E.player.destroy) E.player.destroy(); } catch (e) { }
+  E.player = null; E.ready = false;
+}
+async function mountEditorPlayer(id) {
+  const E = S.ed; if (!E) return;
+  destroyEditorPlayer();
+  E.videoError = false;
+  $('#edAddQ').disabled = true;
+  edMsg('Caricamento del video\u2026', 'info');
+  let YT;
+  try { YT = await loadYT(); } catch (e) { edMsg('Impossibile caricare il lettore di YouTube. Controlla la connessione a internet e riprova.', 'bad'); return; }
+  if (S.ed !== E) return;
+  $('#edEmpty').hidden = true;
+  $('#edVideoBox .vb-host').innerHTML = '<div id="edPlayer"></div>';
+  E.player = new YT.Player('edPlayer', {
+    videoId: id, width: '100%', height: '100%', playerVars: playerVars(true),
+    events: {
+      onReady: () => { if (S.ed !== E) return; E.ready = true; edAfterReady(); },
+      onError: ev => { if (S.ed !== E) return; E.videoError = true; $('#edAddQ').disabled = true; edMsg(ytErrorText(ev.data), 'bad'); },
+      onStateChange: () => { if (S.ed === E) edTick(); }
+    }
+  });
+  E.timer = setInterval(edTick, 200);
+}
+function edAfterReady() {
+  const E = S.ed; if (!E || !E.player) return;
+  let title = '';
+  try { const d = E.player.getVideoData && E.player.getVideoData(); title = (d && d.title) || ''; } catch (e) { }
+  if (title) E.test.videoTitle = title;
+  const d = E.player.getDuration ? E.player.getDuration() : 0;
+  if (d > 0) E.test.duration = Math.round(d * 10) / 10;
+  if (!E.videoError) {
+    $('#edAddQ').disabled = false;
+    edMsg('Video pronto' + (title ? ': \u00ab' + title + '\u00bb' : '') + (E.test.duration ? ' \u00b7 durata ' + fmtTime(E.test.duration) : '') + '.', 'ok');
+  }
+  $('#edTlCur').hidden = false;
+  renderTimeline();
+}
+function edTick() {
+  const E = S.ed; if (!E || !E.ready || !E.player || typeof E.player.getCurrentTime !== 'function') return;
+  let t = 0, d = 0;
+  try { t = E.player.getCurrentTime() || 0; d = E.player.getDuration() || 0; } catch (e) { return; }
+  if (d > 0 && Math.abs(d - (E.test.duration || 0)) > 0.5) { E.test.duration = Math.round(d * 10) / 10; renderTimeline(); }
+  $('#edTime').textContent = fmtTime(t, true);
+  if (!$('#edAddQ').disabled) $('#edAddQ').innerHTML = ico('add') + ' Aggiungi quesito qui (' + fmtTime(t, true) + ')';
+  const dd = E.test.duration || d;
+  if (dd > 0) $('#edTlCur').style.left = Math.min(100, t / dd * 100) + '%';
+}
+function edSeek(t) {
+  const E = S.ed; if (!E || !E.ready) return;
+  try {
+    const st = E.player.getPlayerState();
+    E.player.seekTo(t, true);
+    if (st !== 1 && st !== 3) setTimeout(() => { try { E.player.pauseVideo(); } catch (e) { } }, 400);
+  } catch (e) { }
+}
+function renderTimeline() {
+  const E = S.ed; if (!E) return;
+  const d = E.test.duration || 0;
+  const marks = $('#edTlMarks');
+  if (!d) { marks.innerHTML = ''; return; }
+  marks.innerHTML = E.test.questions.map((q, i) => '<button type="button" class="tl-mark" style="left:' + Math.min(100, q.time / d * 100).toFixed(3) + '%" data-id="' + esc(q.id) + '" title="Quesito ' + (i + 1) + ' \u00b7 ' + fmtTime(q.time, true) + '"><span>' + (i + 1) + '</span></button>').join('');
+}
+function onTimelineClick(e) {
+  const E = S.ed; if (!E || !E.ready) return;
+  const mk = e.target.closest('.tl-mark');
+  if (mk) { const q = E.test.questions.find(x => x.id === mk.dataset.id); if (q) edSeek(q.time); return; }
+  const d = E.test.duration || (E.player.getDuration && E.player.getDuration()) || 0; if (!d) return;
+  const r = $('#edTl').getBoundingClientRect();
+  edSeek(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * d);
+}
+function renderQList() {
+  const E = S.ed; if (!E) return;
+  E.test.questions.sort((a, b) => a.time - b.time);
+  const Q = E.test.questions;
+  $('#edQCount').textContent = Q.length;
+  const box = $('#edQList');
+  if (!Q.length) box.innerHTML = '<div class="q-empty">Nessun quesito. Avvia il video e, nel punto in cui vuoi fermarlo, premi \u00abAggiungi quesito qui\u00bb.</div>';
+  else box.innerHTML = Q.map((q, i) => '<div class="q-item" data-id="' + esc(q.id) + '"><div class="q-num">' + (i + 1) + '</div><div class="q-main"><div class="q-meta"><span class="time-chip">' + fmtTime(q.time, true) + '</span><span class="type-chip ' + q.type + '">' + TYPE_LABEL[q.type] + '</span></div><div class="q-text">' + esc(qPlain(q)) + '</div></div><div class="q-acts"><button type="button" class="icon-btn" data-act="go" title="Vai a questo punto del video">' + ico('play') + '</button><button type="button" class="icon-btn" data-act="edit" title="Modifica">' + ico('edit') + '</button><button type="button" class="icon-btn danger" data-act="del" title="Elimina">' + ico('delete') + '</button></div></div>').join('');
+  renderTimeline();
+  gradingExample();
+}
+async function onQListClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const E = S.ed; const id = b.closest('.q-item').dataset.id;
+  const q = E.test.questions.find(x => x.id === id); if (!q) return;
+  if (b.dataset.act === 'go') edSeek(q.time);
+  else if (b.dataset.act === 'edit') {
+    const nq = await editQuestion(q);
+    if (nq && S.ed === E) { E.test.questions = E.test.questions.map(x => x.id === id ? nq : x); markDirty(); renderQList(); }
+  } else if (b.dataset.act === 'del') {
+    const n = E.test.questions.indexOf(q) + 1;
+    if (await confirmBox('Eliminare il quesito?', 'Il quesito ' + n + ' (' + fmtTime(q.time, true) + ') verr\u00e0 eliminato.', 'Elimina', true)) {
+      E.test.questions = E.test.questions.filter(x => x.id !== id); markDirty(); renderQList();
+    }
+  }
+}
+async function edAddQuestion() {
+  const E = S.ed; if (!E || !E.ready) return;
+  let t = 0;
+  try { E.player.pauseVideo(); t = E.player.getCurrentTime() || 0; } catch (e) { }
+  const q = await editQuestion(null, Math.round(t * 10) / 10);
+  if (q && S.ed === E) { E.test.questions.push(q); markDirty(); renderQList(); }
+}
+
+/* finestra per creare/modificare un quesito */
+function editQuestion(orig, presetTime) {
+  const E = S.ed;
+  const q = Object.assign({ id: newId(), time: presetTime || 0, type: 'mc', text: '', options: ['', '', '', ''], correct: [], tf: null, fillText: '', ignoreCase: true }, orig ? clean(orig) : {});
+  if (!Array.isArray(q.options) || !q.options.length) q.options = ['', '', '', ''];
+  while (q.options.length < 2) q.options.push('');
+  const body = el('<div class="qe">' +
+    '<div class="qe-time-row"><label class="fld"><span>Momento della fermata</span><input type="text" class="qe-time" inputmode="decimal" autocomplete="off"></label><button type="button" class="btn sm qe-now">' + ico('clock') + ' Usa il punto attuale del video</button></div>' +
+    '<div class="seg qe-type"><button type="button" data-t="mc">Risposta multipla</button><button type="button" data-t="tf">Vero o falso</button><button type="button" data-t="fill">Completamento</button></div>' +
+    '<div class="qe-sec" data-sec="mc"><label class="fld"><span>Domanda</span><textarea class="qe-mc-text" rows="2" maxlength="600"></textarea></label>' +
+    '<div class="fld"><span>Risposte \u00b7 spunta \u00abgiusta\u00bb accanto a quella corretta (anche pi\u00f9 di una)</span><div class="qe-opts"></div><div><button type="button" class="btn sm qe-addopt">' + ico('add') + ' Aggiungi una risposta</button></div></div></div>' +
+    '<div class="qe-sec" data-sec="tf"><label class="fld"><span>Affermazione</span><textarea class="qe-tf-text" rows="2" maxlength="600"></textarea></label>' +
+    '<div class="fld"><span>L\'affermazione \u00e8\u2026</span><div class="seg qe-tf-val"><button type="button" data-v="1">Vera</button><button type="button" data-v="0">Falsa</button></div></div></div>' +
+    '<div class="qe-sec" data-sec="fill"><label class="fld"><span>Consegna (facoltativa)</span><input type="text" class="qe-fill-instr" maxlength="300" placeholder="Completa il testo inserendo le parole mancanti."></label>' +
+    '<label class="fld"><span>Testo da completare</span><textarea class="qe-fill-text" rows="4" maxlength="1500" placeholder="Esempio: La capitale d\'Italia \u00e8 [Roma]."></textarea></label>' +
+    '<p class="hint">Scrivi tra parentesi quadre le parole che l\'alunno dovr\u00e0 inserire, per esempio <code>Il Sole \u00e8 una [stella].</code> Se accetti pi\u00f9 risposte, separale con la barra: <code>[Roma/l\'Urbe]</code>.</p>' +
+    '<label class="check"><input type="checkbox" class="qe-fill-case"> Non distinguere tra maiuscole e minuscole</label>' +
+    '<div class="fld"><span>Anteprima</span><div class="fill-prev qe-fill-prev"></div></div></div>' +
+    '<div class="err qe-err"></div></div>');
+
+  const timeIn = $('.qe-time', body);
+  timeIn.value = fmtTime(q.time, true);
+  const nowBtn = $('.qe-now', body);
+  nowBtn.hidden = !(E && E.ready);
+  nowBtn.onclick = () => { try { timeIn.value = fmtTime(Math.round((E.player.getCurrentTime() || 0) * 10) / 10, true); } catch (e) { } };
+
+  let type = q.type;
+  const setType = t => {
+    type = t;
+    $$('.qe-type button', body).forEach(b => b.classList.toggle('active', b.dataset.t === t));
+    $$('.qe-sec', body).forEach(s => { s.hidden = s.dataset.sec !== t; });
+  };
+  $$('.qe-type button', body).forEach(b => { b.onclick = () => setType(b.dataset.t); });
+  $('.qe-mc-text', body).value = q.type === 'mc' ? q.text : '';
+  $('.qe-tf-text', body).value = q.type === 'tf' ? q.text : '';
+  $('.qe-fill-instr', body).value = q.type === 'fill' ? q.text : '';
+
+  // risposte multiple
+  let opts = q.options.slice();
+  let corr = new Set(q.type === 'mc' ? (q.correct || []) : []);
+  const optBox = $('.qe-opts', body);
+  const renderOpts = () => {
+    optBox.innerHTML = opts.map((o, i) => '<div class="opt-row"><span class="opt-letter">' + letter(i) + '</span><input type="text" data-i="' + i + '" maxlength="300" placeholder="Risposta ' + letter(i) + '" value="' + esc(o) + '"><label class="opt-ok' + (corr.has(i) ? ' on' : '') + '"><input type="checkbox" data-i="' + i + '"' + (corr.has(i) ? ' checked' : '') + '> giusta</label><button type="button" class="icon-btn danger" data-del="' + i + '" title="Elimina questa risposta"' + (opts.length <= 2 ? ' disabled' : '') + '>' + ico('close') + '</button></div>').join('');
+    $('.qe-addopt', body).disabled = opts.length >= 8;
+  };
+  optBox.addEventListener('input', e => { if (e.target.type === 'text' && e.target.dataset.i != null) opts[+e.target.dataset.i] = e.target.value; });
+  optBox.addEventListener('change', e => {
+    if (e.target.type !== 'checkbox') return;
+    const i = +e.target.dataset.i;
+    if (e.target.checked) corr.add(i); else corr.delete(i);
+    e.target.closest('.opt-ok').classList.toggle('on', e.target.checked);
+  });
+  optBox.addEventListener('click', e => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    const i = +b.dataset.del;
+    opts.splice(i, 1);
+    const nc = new Set(); corr.forEach(c => { if (c < i) nc.add(c); else if (c > i) nc.add(c - 1); }); corr = nc;
+    renderOpts();
+  });
+  $('.qe-addopt', body).onclick = () => {
+    if (opts.length >= 8) return;
+    opts.push(''); renderOpts();
+    const ins = $$('input[type=text]', optBox); ins[ins.length - 1].focus();
+  };
+  renderOpts();
+
+  // vero/falso
+  let tfVal = (q.type === 'tf' && typeof q.tf === 'boolean') ? q.tf : null;
+  const renderTf = () => $$('.qe-tf-val button', body).forEach(b => b.classList.toggle('active', tfVal !== null && (b.dataset.v === '1') === tfVal));
+  $$('.qe-tf-val button', body).forEach(b => { b.onclick = () => { tfVal = b.dataset.v === '1'; renderTf(); }; });
+  renderTf();
+
+  // completamento
+  const fillTa = $('.qe-fill-text', body);
+  fillTa.value = q.type === 'fill' ? (q.fillText || '') : '';
+  $('.qe-fill-case', body).checked = q.ignoreCase !== false;
+  const renderFillPrev = () => {
+    const parts = parseFill(fillTa.value);
+    $('.qe-fill-prev', body).innerHTML = parts.length ? parts.map(p => p.t === 'txt' ? esc(p.v) : '<span class="b">' + (esc(p.alts.join(' / ')) || '?') + '</span>').join('') : '<span class="muted">Qui vedrai come apparir\u00e0 il testo all\'alunno (le parole tra parentesi saranno spazi vuoti).</span>';
+  };
+  fillTa.addEventListener('input', renderFillPrev);
+  renderFillPrev();
+  setType(type);
+
+  const errEl = $('.qe-err', body);
+  const collect = () => {
+    errEl.textContent = '';
+    const t = parseTime(timeIn.value);
+    if (!isFinite(t) || t < 0) { errEl.textContent = 'Momento non valido: scrivi minuti e secondi, per esempio 1:23,5'; return false; }
+    const dur = E.test.duration || 0;
+    if (dur > 0 && t > dur + 0.05) { errEl.textContent = 'Il momento supera la durata del video (' + fmtTime(dur, true) + ').'; return false; }
+    const tt = Math.round(t * 10) / 10;
+    const clash = E.test.questions.find(o => o.id !== q.id && Math.abs(o.time - tt) < 0.5);
+    if (clash) { errEl.textContent = 'C\'\u00e8 gi\u00e0 un quesito in questo punto del video (' + fmtTime(clash.time, true) + '): spostalo di almeno mezzo secondo.'; return false; }
+    const base = { id: q.id, time: tt, type };
+    if (type === 'mc') {
+      const text = $('.qe-mc-text', body).value.trim();
+      const o = opts.map(s => s.trim());
+      if (!text) { errEl.textContent = 'Scrivi la domanda.'; return false; }
+      if (o.length < 2) { errEl.textContent = 'Servono almeno due risposte.'; return false; }
+      if (o.some(s => !s)) { errEl.textContent = 'Compila tutte le risposte oppure elimina quelle vuote.'; return false; }
+      if (!corr.size) { errEl.textContent = 'Spunta \u00abgiusta\u00bb accanto ad almeno una risposta.'; return false; }
+      return Object.assign(base, { text, options: o, correct: [...corr].sort((a, b) => a - b) });
+    }
+    if (type === 'tf') {
+      const text = $('.qe-tf-text', body).value.trim();
+      if (!text) { errEl.textContent = 'Scrivi l\'affermazione.'; return false; }
+      if (tfVal === null) { errEl.textContent = 'Indica se l\'affermazione \u00e8 vera o falsa.'; return false; }
+      return Object.assign(base, { text, tf: tfVal });
+    }
+    const ft = fillTa.value.trim();
+    const parts = parseFill(ft);
+    if (!parts.some(p => p.t === 'blank')) { errEl.textContent = 'Scrivi tra parentesi quadre almeno una parola da completare, per esempio [Roma].'; return false; }
+    if (parts.some(p => p.t === 'blank' && !p.alts.length)) { errEl.textContent = 'C\'\u00e8 una parentesi quadra vuota: scrivi al suo interno la parola corretta.'; return false; }
+    return Object.assign(base, { text: $('.qe-fill-instr', body).value.trim(), fillText: ft, ignoreCase: $('.qe-fill-case', body).checked });
+  };
+  const focusSel = type === 'tf' ? '.qe-tf-text' : type === 'fill' ? '.qe-fill-text' : '.qe-mc-text';
+  return modal({ title: orig ? 'Modifica il quesito' : 'Nuovo quesito', body, wide: true, dismissible: false, focus: focusSel, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, { label: 'Salva il quesito', cls: 'primary', onClick: () => collect() }] });
+}
+
+/* criteri di valutazione */
+function renderGrading() {
+  const E = S.ed; if (!E) return;
+  const g = E.test.grading = normGrading(E.test.grading);
+  const box = $('#edGrading');
+  box.innerHTML = '<div class="grading">' +
+    '<div class="g-row"><label for="gMin">Voto minimo</label><div class="g-in"><select id="gMin">' + [1, 2, 3, 4, 5, 6].map(v => '<option value="' + v + '"' + (v === g.minGrade ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div></div>' +
+    '<div class="g-row"><label>Quesito giusto al 1\u00b0 tentativo</label><div class="g-in">100 %</div></div>' +
+    '<div class="g-row"><label for="gP2">Giusto al 2\u00b0 tentativo (1\u00b0 recupero)</label><div class="g-in"><input id="gP2" type="number" min="0" max="100" step="5" value="' + g.p2 + '"> %</div></div>' +
+    '<div class="g-row"><label for="gP3">Giusto al 3\u00b0 tentativo (2\u00b0 recupero)</label><div class="g-in"><input id="gP3" type="number" min="0" max="100" step="5" value="' + g.p3 + '"> %</div></div>' +
+    '<div class="g-row"><label for="gP4">Giusto dal 4\u00b0 tentativo in poi</label><div class="g-in"><input id="gP4" type="number" min="0" max="100" step="5" value="' + g.p4 + '"> %</div></div>' +
+    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10.</p>' +
+    '<div class="g-example" id="gExample"></div>' +
+    '<label class="check"><input type="checkbox" id="gShow"' + (g.showGrade ? ' checked' : '') + '> Mostra il voto all\'alunno dopo l\'invio</label></div>';
+  const read = final => {
+    g.minGrade = +$('#gMin').value;
+    ['p2', 'p3', 'p4'].forEach(k => { const inp = $('#g' + k.toUpperCase()); g[k] = clampPct(inp.value); if (final) inp.value = g[k]; });
+    g.showGrade = $('#gShow').checked;
+    markDirty(); gradingExample();
+  };
+  $$('select,input', box).forEach(i => i.addEventListener('change', () => read(true)));
+  $$('input[type=number]', box).forEach(i => i.addEventListener('input', () => read(false)));
+  gradingExample();
+}
+function gradingExample() {
+  const E = S.ed; const ex = $('#gExample'); if (!E || !ex) return;
+  const g = normGrading(E.test.grading);
+  const n = Math.max(E.test.questions.length, 5);
+  const k = Math.max(1, Math.round(n / 5));
+  const v1 = computeVoto(Array(n - k).fill(1).concat(Array(k).fill(valueForTries(2, g))), g);
+  const v2 = computeVoto(Array(n).fill(valueForTries(2, g)), g);
+  ex.innerHTML = 'Esempi con ' + n + ' quesiti: ' + (n - k) + ' giusti subito e ' + k + ' al 2\u00b0 tentativo \u2192 voto <b>' + fmtNum(v1, 1) + '</b>; tutti giusti solo al 2\u00b0 tentativo \u2192 voto <b>' + fmtNum(v2, 1) + '</b>.';
+}
+
+/* salvataggio */
+function pubSnapshot(t) { return clean({ title: t.title || '', videoId: t.videoId || '', duration: t.duration || 0, questions: (t.questions || []).slice().sort((a, b) => a.time - b.time), grading: normGrading(t.grading) }); }
+async function edSave() {
+  const E = S.ed; if (!E) return false;
+  const T = E.test;
+  T.title = $('#edTitle').value.trim() || 'Test senza titolo';
+  $('#edTitle').value = T.title;
+  T.questions.sort((a, b) => a.time - b.time);
+  T.updatedAt = Date.now();
+  const btn = $('#edSaveBtn'); btn.disabled = true; btn.classList.add('loading');
+  try {
+    const data = clean({ title: T.title, videoId: T.videoId || '', videoUrl: T.videoUrl || '', videoTitle: T.videoTitle || '', duration: T.duration || 0, questions: T.questions, grading: normGrading(T.grading), updatedAt: T.updatedAt });
+    await updateDoc(doc(db, 'tests', E.id), data);
+    const idx = S.tests.findIndex(x => x.id === E.id);
+    if (idx >= 0) S.tests[idx] = Object.assign({}, S.tests[idx], data);
+    let n = 0;
+    for (const a of S.assigns.filter(x => x.testId === E.id)) {
+      try { await updateDoc(doc(db, 'pubs', a.pubKey), { test: pubSnapshot(T) }); n++; } catch (e) { console.warn('pub', e); }
+    }
+    E.dirty = false; setSaveState('saved');
+    setCrumbs([{ label: 'I miei test', go: () => nav(loadArchive) }, { label: T.title }]);
+    toast(n ? 'Test salvato. Aggiornate anche ' + n + (n === 1 ? ' assegnazione.' : ' assegnazioni.') : 'Test salvato.', 'ok');
+    return true;
+  } catch (ex) { dbError(ex, 'salvataggio'); return false; }
+  finally { btn.disabled = false; btn.classList.remove('loading'); }
+}
+async function leaveEditor() {
+  const E = S.ed; if (!E) return true;
+  if (E.dirty) {
+    const r = await modal({ title: 'Modifiche non salvate', body: '<p>Vuoi salvare le modifiche al test prima di uscire?</p>', buttons: [{ label: 'Annulla', cls: 'ghost', value: 'cancel' }, { label: 'Esci senza salvare', cls: 'danger-ghost', value: 'discard' }, { label: 'Salva ed esci', cls: 'primary', value: 'save' }] });
+    if (!r || r === 'cancel') return false;
+    if (r === 'save' && !(await edSave())) return false;
+  }
+  destroyEditorPlayer(); S.ed = null;
+  return true;
+}
+function edPreview() {
+  const E = S.ed; if (!E) return;
+  if (!E.test.videoId) { toast('Carica prima un video.', 'bad'); return; }
+  if (!E.test.questions.length) { toast('Aggiungi almeno un quesito.', 'bad'); return; }
+  try { E.player && E.player.pauseVideo(); } catch (e) { }
+  stuStartPreview(clean(E.test));
+}
+
+/* =====================================================================
+   ASSEGNAZIONI
+   ===================================================================== */
+async function openAssignments(testId) {
+  S.curTest = S.tests.find(t => t.id === testId);
+  if (!S.curTest) return loadArchive();
+  showView('v-assign');
+  setCrumbs([{ label: 'I miei test', go: () => nav(loadArchive) }, { label: S.curTest.title || 'Test' }]);
+  $('#asTitle').textContent = S.curTest.title || 'Test';
+  $('#asSub').textContent = '';
+  $('#asList').innerHTML = '<div class="loading-row">Caricamento\u2026</div>';
+  try {
+    const uid = S.user.uid;
+    const [as, rs] = await Promise.all([
+      getDocs(query(collection(db, 'assignments'), where('ownerUid', '==', uid), where('testId', '==', testId))),
+      getDocs(query(collection(db, 'reports'), where('ownerUid', '==', uid), where('testId', '==', testId)))
+    ]);
+    S.assigns = S.assigns.filter(a => a.testId !== testId).concat(as.docs.map(d => Object.assign({ id: d.id }, d.data())));
+    S.repCounts = {};
+    rs.docs.forEach(d => { const a = d.data().assignmentId; S.repCounts[a] = (S.repCounts[a] || 0) + 1; });
+    renderAssignList();
+  } catch (ex) { dbError(ex, 'assegnazioni'); $('#asList').innerHTML = '<div class="empty">Impossibile caricare le assegnazioni.</div>'; }
+}
+function renderAssignList() {
+  if (S.view !== 'v-assign') return;
+  const t = S.curTest;
+  const list = S.assigns.filter(a => a.testId === t.id).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  const nQ = (t.questions || []).length;
+  $('#asSub').textContent = nQ + (nQ === 1 ? ' quesito' : ' quesiti') + ' \u00b7 ' + list.length + (list.length === 1 ? ' assegnazione' : ' assegnazioni');
+  if (!list.length) {
+    $('#asList').innerHTML = '<div class="empty"><h3>Nessuna assegnazione</h3><p>Crea un\'assegnazione ogni volta che vuoi somministrare questo test, per esempio \u00abTest 1A del 25 settembre 2026\u00bb. Per ciascuna otterrai un link e una password da dare agli alunni, e qui troverai i loro report.</p></div>';
+    return;
+  }
+  $('#asList').innerHTML = list.map(a => {
+    const open = a.open !== false; const n = S.repCounts[a.id] || 0;
+    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span></div></div>' +
+      '<div class="as-acts"><button type="button" class="btn primary sm" data-act="open">' + ico('table') + ' Report</button><button type="button" class="btn sm" data-act="link">' + ico('link') + ' Link e password</button><button type="button" class="icon-btn" data-act="menu" title="Altre azioni">' + ico('more') + '</button></div></div>';
+  }).join('');
+}
+function onAssignClick(e) {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const id = b.closest('.as-item').dataset.id;
+  const a = S.assigns.find(x => x.id === id); if (!a) return;
+  if (b.dataset.act === 'open') nav(() => openReports(id));
+  else if (b.dataset.act === 'link') showLinkModal(a);
+  else if (b.dataset.act === 'menu') {
+    e.stopPropagation();
+    const open = a.open !== false;
+    popMenu(b, [
+      { label: 'Rinomina', icon: 'edit', onClick: () => renameAssign(a) },
+      { label: open ? 'Chiudi (gli alunni non possono pi\u00f9 svolgerla)' : 'Riapri', icon: open ? 'lock' : 'lockopen', onClick: () => toggleAssign(a) },
+      { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteAssign(a) }
+    ]);
+  }
+}
+function studentLink(aid) { return location.href.split('#')[0].split('?')[0] + '?a=' + encodeURIComponent(aid); }
+function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, testId: t.id, assignmentName: a.name, open: open, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
+function passwordBody(value) {
+  const body = el('<div><div class="fld"><span>Password per gli alunni</span><div class="copy-row"><input type="text" class="ap" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="btn sm ag">' + ico('refresh') + ' Genera</button></div></div><p class="hint">Scegli una password semplice da comunicare, di almeno 4 caratteri. Maiuscole e minuscole non contano.</p><div class="err"></div></div>');
+  $('.ap', body).value = value || genPassword();
+  $('.ag', body).onclick = () => { $('.ap', body).value = genPassword(); };
+  return body;
+}
+function checkPwd(p) { p = String(p || '').trim(); if (p.length < 4) return 'La password deve avere almeno 4 caratteri.'; return ''; }
+async function newAssignment() {
+  const t = S.curTest;
+  if (!t.videoId || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
+  const body = el('<div><label class="fld"><span>Nome dell\'assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
+  body.appendChild(passwordBody());
+  $('.an', body).value = (t.title || 'Test') + ' del ' + fmtDateLong(Date.now());
+  const res = await modal({
+    title: 'Nuova assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: 'Crea l\'assegnazione', cls: 'primary', onClick: async (b, btn) => {
+        const name = $('.an', body).value.trim(), pwd = $('.ap', body).value.trim(), errEl = $('.err', body);
+        errEl.textContent = '';
+        if (!name) { errEl.textContent = 'Scrivi il nome dell\'assegnazione.'; return false; }
+        const pe = checkPwd(pwd); if (pe) { errEl.textContent = pe; return false; }
+        btn.disabled = true; btn.classList.add('loading');
+        try {
+          const aRef = doc(collection(db, 'assignments'));
+          const pubKey = await pubKeyFor(aRef.id, pwd);
+          const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, createdAt: Date.now() };
+          const bt = writeBatch(db);
+          const data = Object.assign({}, a); delete data.id;
+          bt.set(aRef, data);
+          bt.set(doc(db, 'pubs', pubKey), pubDoc(a, t, true));
+          await bt.commit();
+          return a;
+        } catch (ex) { dbError(ex, 'nuova assegnazione'); btn.disabled = false; btn.classList.remove('loading'); return false; }
+      }
+    }]
+  });
+  if (res) { S.assigns.push(res); renderAssignList(); showLinkModal(res); }
+}
+function showLinkModal(a) {
+  if (!a) return;
+  const t = S.tests.find(x => x.id === a.testId) || S.curTest || {};
+  const link = studentLink(a.id);
+  const body = el('<div>' +
+    '<p>Dai agli alunni <b>il link</b> e <b>la password</b>. Puoi anche collegare il link a un\'immagine cliccabile sul tuo sito: la password non \u00e8 contenuta nel link.</p>' +
+    '<div class="fld"><span>Link del test</span><div class="copy-row"><input type="text" readonly class="lk"><button type="button" class="btn sm" data-copy="lk">' + ico('copy') + ' Copia</button></div></div>' +
+    '<div class="fld"><span>Password</span><div class="copy-row"><input type="text" readonly class="pw"><button type="button" class="btn sm" data-copy="pw">' + ico('copy') + ' Copia</button></div></div>' +
+    '<div class="btn-row"><button type="button" class="btn sm" data-msg>' + ico('copy') + ' Copia il messaggio per gli alunni</button><a class="btn sm" target="_blank" rel="noopener">' + ico('open') + ' Apri il test</a><button type="button" class="btn sm" data-chpw>' + ico('lock') + ' Cambia password</button></div>' +
+    (location.protocol === 'file:' ? '<div class="msg bad">Stai usando l\'app come file dal computer, quindi questo link non funzioner\u00e0: apri l\'app pubblicata su GitHub Pages e copia il link da l\u00ec.</div>' : '') +
+    (a.open === false ? '<div class="msg bad">Questa assegnazione \u00e8 chiusa: gli alunni non potranno svolgere il test finch\u00e9 non la riapri.</div>' : '') +
+    '</div>');
+  $('.lk', body).value = link; $('.pw', body).value = a.password; $('a.btn', body).href = link;
+  body.addEventListener('click', async e => {
+    const c = e.target.closest('[data-copy]');
+    if (c) copyText($('.' + c.dataset.copy, body).value);
+    if (e.target.closest('[data-msg]')) copyText((t.title ? t.title + ' \u2013 ' : '') + a.name + '\nApri questo link: ' + link + '\nPassword: ' + a.password);
+    if (e.target.closest('[data-chpw]')) { const np = await changePassword(a); if (np) $('.pw', body).value = np; }
+  });
+  modal({ title: a.name, body, wide: true, buttons: [{ label: 'Chiudi', cls: 'primary', value: true }] });
+}
+async function changePassword(a) {
+  const body = passwordBody('');
+  const np = await modal({
+    title: 'Cambia password', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: 'Cambia', cls: 'primary', onClick: async (b, btn) => {
+        const pwd = $('.ap', body).value.trim(); const errEl = $('.err', body);
+        const pe = checkPwd(pwd); if (pe) { errEl.textContent = pe; return false; }
+        btn.disabled = true; btn.classList.add('loading');
+        try {
+          const t = S.tests.find(x => x.id === a.testId) || S.curTest;
+          const key = await pubKeyFor(a.id, pwd);
+          if (key === a.pubKey) await updateDoc(doc(db, 'assignments', a.id), { password: pwd });
+          else {
+            const bt = writeBatch(db);
+            bt.set(doc(db, 'pubs', key), pubDoc(a, t, a.open !== false));
+            bt.delete(doc(db, 'pubs', a.pubKey));
+            bt.update(doc(db, 'assignments', a.id), { password: pwd, pubKey: key });
+            await bt.commit();
+            a.pubKey = key;
+          }
+          a.password = pwd;
+          return pwd;
+        } catch (ex) { dbError(ex, 'cambio password'); btn.disabled = false; btn.classList.remove('loading'); return false; }
+      }
+    }]
+  });
+  if (np) { toast('Password cambiata: comunicala agli alunni.', 'ok'); renderAssignList(); }
+  return np;
+}
+async function renameAssign(a) {
+  const name = await promptBox('Rinomina l\'assegnazione', 'Nuovo nome', a.name, 'Rinomina');
+  if (!name || name === a.name) return;
+  try {
+    const bt = writeBatch(db);
+    bt.update(doc(db, 'assignments', a.id), { name });
+    bt.update(doc(db, 'pubs', a.pubKey), { assignmentName: name });
+    await bt.commit();
+    a.name = name; renderAssignList();
+    if (S.view === 'v-reports' && S.curAssign === a) { $('#rpTitle').textContent = name; }
+    toast('Assegnazione rinominata.', 'ok');
+  } catch (ex) { dbError(ex, 'rinomina assegnazione'); }
+}
+async function toggleAssign(a) {
+  const open = a.open === false;
+  try {
+    const bt = writeBatch(db);
+    bt.update(doc(db, 'assignments', a.id), { open });
+    bt.update(doc(db, 'pubs', a.pubKey), { open });
+    await bt.commit();
+    a.open = open; renderAssignList();
+    toast(open ? 'Assegnazione riaperta.' : 'Assegnazione chiusa: gli alunni non possono pi\u00f9 svolgerla.', 'ok');
+  } catch (ex) { dbError(ex, 'apri/chiudi'); }
+}
+async function deleteAssign(a) {
+  const n = S.repCounts[a.id] || 0;
+  if (!await confirmBox('Eliminare l\'assegnazione?', '\u00ab' + esc(a.name) + '\u00bb verr\u00e0 eliminata definitivamente' + (n ? ', insieme ai <b>' + n + ' report</b> degli alunni' : '') + '. Il link non funzioner\u00e0 pi\u00f9.', 'Elimina', true)) return;
+  try {
+    const rs = await getDocs(query(collection(db, 'reports'), where('ownerUid', '==', S.user.uid), where('assignmentId', '==', a.id)));
+    const refs = rs.docs.map(d => d.ref);
+    if (a.pubKey) refs.push(doc(db, 'pubs', a.pubKey));
+    refs.push(doc(db, 'assignments', a.id));
+    await batchDelete(refs);
+    S.assigns = S.assigns.filter(x => x.id !== a.id);
+    renderAssignList(); toast('Assegnazione eliminata.', 'ok');
+  } catch (ex) { dbError(ex, 'elimina assegnazione'); }
+}
+
+/* =====================================================================
+   REPORT
+   ===================================================================== */
+function openReports(aid) {
+  const a = S.assigns.find(x => x.id === aid); if (!a) return;
+  S.curAssign = a;
+  S.curTest = S.tests.find(t => t.id === a.testId) || S.curTest;
+  const tt = (S.curTest && S.curTest.title) || 'Test';
+  showView('v-reports');
+  setCrumbs([{ label: 'I miei test', go: () => nav(loadArchive) }, { label: tt, go: () => nav(() => openAssignments(a.testId)) }, { label: a.name }]);
+  $('#rpKicker').textContent = 'Report \u00b7 ' + tt;
+  $('#rpTitle').textContent = a.name;
+  $('#rpSummary').textContent = 'Caricamento\u2026';
+  $('#rpTable').innerHTML = '<div class="loading-row">Caricamento dei report\u2026</div>';
+  S.reports = [];
+  if (S.unsubReports) S.unsubReports();
+  S.unsubReports = onSnapshot(
+    query(collection(db, 'reports'), where('ownerUid', '==', S.user.uid), where('assignmentId', '==', aid)),
+    snap => { S.reports = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); renderReports(); },
+    ex => dbError(ex, 'report')
+  );
+}
+function repTime(r) { return tsToMs(r.submittedAt) || r.clientSubmittedAt || 0; }
+function sortReports(list) {
+  const { key, dir } = S.sort;
+  const cs = (a, b) => String(a || '').localeCompare(String(b || ''), 'it', { sensitivity: 'base', numeric: true });
+  return list.sort((x, y) => {
+    let c;
+    if (key === 'voto') c = (x.voto || 0) - (y.voto || 0);
+    else if (key === 'data') c = repTime(x) - repTime(y);
+    else if (key === 'classe') c = cs(x.classe, y.classe) || cs(x.cognome, y.cognome) || cs(x.nome, y.nome);
+    else if (key === 'nome') c = cs(x.nome, y.nome) || cs(x.cognome, y.cognome);
+    else c = cs(x.cognome, y.cognome) || cs(x.nome, y.nome);
+    return c * dir;
+  });
+}
+function reportColumns(R) {
+  const nQ = R.reduce((m, r) => Math.max(m, (r.questions || []).length), 0);
+  const info = [];
+  for (let i = 0; i < nQ; i++) { const src = R.find(r => r.questions && r.questions[i]); info.push(src ? src.questions[i] : null); }
+  return info;
+}
+function renderReports() {
+  if (S.view !== 'v-reports') return;
+  const R = sortReports(S.reports.slice());
+  const n = R.length;
+  const avg = n ? R.reduce((s, r) => s + (Number(r.voto) || 0), 0) / n : 0;
+  $('#rpSummary').textContent = n ? n + (n === 1 ? ' test consegnato' : ' test consegnati') + ' \u00b7 media dei voti ' + fmtNum(avg, 1) : 'Ancora nessun test consegnato';
+  if (!n) {
+    $('#rpTable').innerHTML = '<div class="empty" style="margin:1rem"><h3>Nessun report</h3><p>I report compariranno qui automaticamente, man mano che gli alunni inviano il test. Per iniziare, dai agli alunni il link e la password (pulsante \u00abLink e password\u00bb).</p></div>';
+    return;
+  }
+  const qi = reportColumns(R);
+  const arrow = k => S.sort.key === k ? '<span class="arrow">' + (S.sort.dir > 0 ? '\u25b2' : '\u25bc') + '</span>' : '';
+  let h = '<table class="rep"><thead><tr>' +
+    '<th rowspan="2" class="sortable sticky" data-k="cognome">Cognome' + arrow('cognome') + '</th>' +
+    '<th rowspan="2" class="sortable" data-k="nome">Nome' + arrow('nome') + '</th>' +
+    '<th rowspan="2" class="sortable" data-k="classe">Classe' + arrow('classe') + '</th>' +
+    '<th rowspan="2" class="sortable" data-k="voto">Voto' + arrow('voto') + '</th>';
+  qi.forEach((q, i) => { h += '<th colspan="2" class="qh" title="' + esc(q ? q.text : '') + '">Q' + (i + 1) + '<small>' + (q ? fmtTime(q.time) : '') + '</small></th>'; });
+  h += '<th rowspan="2" class="sortable" data-k="data">Data' + arrow('data') + '</th><th rowspan="2" class="no-print"></th></tr><tr>';
+  qi.forEach(() => { h += '<th class="sub l">Punti</th><th class="sub">Tent.</th>'; });
+  h += '</tr></thead><tbody>';
+  R.forEach(r => {
+    const v = Number(r.voto) || 0;
+    const vc = v >= 8 ? 'v-hi' : v >= 6 ? 'v-mid' : 'v-lo';
+    h += '<tr data-id="' + esc(r.id) + '"><td class="sticky"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="voto ' + vc + '">' + fmtNum(v, 1) + '</td>';
+    for (let i = 0; i < qi.length; i++) {
+      const q = (r.questions || [])[i];
+      if (!q) { h += '<td class="pt">\u2013</td><td class="tr">\u2013</td>'; continue; }
+      h += '<td class="pt">' + fmtNum(q.value, 2) + '</td><td class="tr t' + Math.min(4, q.tries || 1) + '">' + (q.tries || '\u2013') + '</td>';
+    }
+    h += '<td>' + esc(r.date || '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-del="' + esc(r.id) + '" title="Elimina questo report">' + ico('delete') + '</button></td></tr>';
+  });
+  h += '</tbody></table>';
+  $('#rpTable').innerHTML = h;
+  const r1 = $('#rpTable thead tr');
+  if (r1) { const hh = r1.getBoundingClientRect().height; $$('#rpTable thead tr:nth-child(2) th').forEach(th => { th.style.top = hh + 'px'; }); }
+}
+async function onReportTableClick(e) {
+  const th = e.target.closest('th.sortable');
+  if (th) { const k = th.dataset.k; S.sort = { key: k, dir: S.sort.key === k ? -S.sort.dir : (k === 'voto' || k === 'data' ? -1 : 1) }; renderReports(); return; }
+  const del = e.target.closest('[data-del]');
+  if (del) {
+    e.stopPropagation();
+    const r = S.reports.find(x => x.id === del.dataset.del); if (!r) return;
+    if (await confirmBox('Eliminare il report?', 'Il report di <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente.', 'Elimina', true)) {
+      try { await deleteDoc(doc(db, 'reports', r.id)); toast('Report eliminato.', 'ok'); } catch (ex) { dbError(ex, 'elimina report'); }
+    }
+    return;
+  }
+  const tr = e.target.closest('tbody tr');
+  if (tr) { const r = S.reports.find(x => x.id === tr.dataset.id); if (r) showReportDetail(r); }
+}
+function reportDetailHTML(r) {
+  const lab = k => k === 0 ? 'Primo svolgimento' : k + '\u00b0 recupero';
+  const when = repTime(r);
+  let h = '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + ' \u00b7 ' + esc(r.date || '') + (when ? ' \u00b7 inviato alle ' + fmtHour(when) : '') + '</div></div><div class="rd-voto">Voto ' + fmtNum(r.voto, 1) + '</div></div>';
+  h += '<p>Risposte corrette al primo svolgimento: <b>' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '</b> \u00b7 Turni di recupero: <b>' + (r.recoveryRounds || 0) + '</b></p>';
+  (r.questions || []).forEach(q => {
+    h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + '</span></div>' +
+      '<div class="rd-qt">' + esc(q.text) + '</div><div class="rd-correct">Risposta corretta: ' + esc(q.correct) + '</div><ol class="rd-att">' +
+      (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b></li>').join('') + '</ol></div>';
+  });
+  return h;
+}
+function showReportDetail(r) {
+  modal({ title: 'Report dell\'alunno', body: reportDetailHTML(r), wide: true, buttons: [{ label: 'Chiudi', cls: 'primary', value: true }] });
+}
+function exportCSV() {
+  const R = sortReports(S.reports.slice());
+  if (!R.length) { toast('Non ci sono report da esportare.', 'bad'); return; }
+  const qi = reportColumns(R);
+  const cell = v => { const s = String(v == null ? '' : v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const num = v => String(Math.round(Number(v || 0) * 100) / 100).replace('.', ',');
+  const head = ['Cognome', 'Nome', 'Classe', 'Voto'];
+  qi.forEach((q, i) => { head.push('Q' + (i + 1) + ' punti', 'Q' + (i + 1) + ' tentativi'); });
+  head.push('Data', 'Ora invio');
+  const rows = [head.map(cell).join(';')];
+  R.forEach(r => {
+    const row = [r.cognome, r.nome, r.classe, num(r.voto)];
+    qi.forEach((x, i) => { const q = (r.questions || [])[i]; row.push(q ? num(q.value) : '', q ? q.tries : ''); });
+    const w = repTime(r);
+    row.push(r.date || '', w ? fmtHour(w) : '');
+    rows.push(row.map(cell).join(';'));
+  });
+  const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = ((S.curAssign && S.curAssign.name) || 'report').replace(/[\\/:*?"<>|]+/g, '-') + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* =====================================================================
+   AREA ALUNNO (e anteprima dell'insegnante)
+   ===================================================================== */
+const Stu = { preview: false, aid: null, pubKey: null, pub: null, test: null, qs: [], run: null, P: null, ready: false, timer: null, mode: null, seg: null, maxReached: 0, overlayQ: null, everPlayed: false, nativeTap: false, duration: 0, seekGuard: null, drag: false, lastSt: null, onReadyCb: null, creating: false, playCheck: null };
+
+function runKey() { return 'vq_run_' + Stu.aid; }
+function loadRun(aid) { try { const s = localStorage.getItem('vq_run_' + aid); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function saveRun() { if (Stu.preview || !Stu.run) return; try { localStorage.setItem(runKey(), JSON.stringify(Stu.run)); } catch (e) { } }
+function clearRun() { try { localStorage.removeItem(runKey()); } catch (e) { } }
+function atts(qid) { const r = Stu.run && Stu.run.ans[qid]; return (r && r.att) || []; }
+
+function stuShow(id) {
+  $$('.s-screen').forEach(s => { s.hidden = s.id !== id; });
+  if (id !== 'sWatch') { try { Stu.P && Stu.ready && Stu.P.pauseVideo(); } catch (e) { } }
+  window.scrollTo(0, 0);
+}
+function stuFatal(title, msg, retry) {
+  $('#eTitle').textContent = title; $('#eMsg').textContent = msg; $('#eRetry').hidden = !retry;
+  exitFs(); stuShow('sError');
+}
+function wireStudent() {
+  $$('.logo').forEach(l => { l.innerHTML = LOGO_SVG; });
+  $('#sLoginForm').addEventListener('submit', stuLogin);
+  $('#resGo').addEventListener('click', stuResume);
+  $('#resNew').addEventListener('click', async () => {
+    if (!await confirmBox('Ricominciare da capo?', 'Il test in corso su questo dispositivo verr\u00e0 cancellato.', 'Ricomincia', true)) return;
+    clearRun(); stuShow('sLogin');
+  });
+  $('#iStart').innerHTML = ico('play') + ' Inizia a guardare il video';
+  $('#iStart').addEventListener('click', stuStartWatching);
+  $('#bigPlay').innerHTML = ico('play');
+  $('#bigPlay').addEventListener('click', tryPlay);
+  $('#shield').addEventListener('click', stuTogglePlay);
+  $('#cPlay').innerHTML = ico('play');
+  $('#cPlay').addEventListener('click', stuTogglePlay);
+  $('#cBack').innerHTML = ico('rewind');
+  $('#cBack').addEventListener('click', () => {
+    const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
+    const lo = Stu.mode === 'segment' && Stu.seg ? Stu.seg.start : 0;
+    const t = Math.max(lo, (P.getCurrentTime() || 0) - 10);
+    P.seekTo(t, true); updateProg(t);
+  });
+  $('#cMute').innerHTML = ico('volume');
+  $('#cMute').addEventListener('click', () => {
+    const P = Stu.P; if (!P || !Stu.ready) return;
+    if (P.isMuted()) { P.unMute(); $('#cMute').innerHTML = ico('volume'); } else { P.mute(); $('#cMute').innerHTML = ico('mute'); }
+  });
+  $('#cFs').innerHTML = ico('fullscreen');
+  $('#cFs').hidden = !(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+  $('#cFs').addEventListener('click', toggleFs);
+  const prog = $('#prog');
+  prog.addEventListener('pointerdown', e => { if (!Stu.ready || Stu.overlayQ) return; Stu.drag = true; try { prog.setPointerCapture(e.pointerId); } catch (_) { } progPreview(e.clientX); });
+  prog.addEventListener('pointermove', e => { if (Stu.drag) progPreview(e.clientX); });
+  prog.addEventListener('pointerup', e => { if (!Stu.drag) return; Stu.drag = false; progSeek(e.clientX); });
+  prog.addEventListener('pointercancel', () => { Stu.drag = false; });
+  $('#qcConfirm').addEventListener('click', stuConfirm);
+  $('#wBack').addEventListener('click', () => { Stu.mode = null; Stu.seg = null; stuShowResults(false); });
+  $('#rList').addEventListener('click', e => { const b = e.target.closest('[data-redo]'); if (b) startSegment(b.dataset.redo); });
+  $('#rSend').addEventListener('click', stuSend);
+  $('#eRetry').addEventListener('click', () => location.reload());
+  $('#exitPreview').addEventListener('click', exitPreview);
+  $('#sentExitPreview').addEventListener('click', exitPreview);
+  $('#sentShowReport').addEventListener('click', () => { if (Stu.previewReport) modal({ title: 'Report (anteprima)', body: reportDetailHTML(Stu.previewReport), wide: true, buttons: [{ label: 'Chiudi', cls: 'primary', value: true }] }); });
+}
+
+/* ---------- avvio alunno ---------- */
+function initStudent(aid) {
+  Stu.aid = aid; Stu.preview = false;
+  showView('v-student');
+  $('#previewBar').hidden = true;
+  $('#sDate').textContent = fmtDate(Date.now());
+  const saved = loadRun(aid);
+  if (saved && saved.phase !== 'sent' && saved.profile) {
+    $('#resWho').textContent = saved.profile.cognome + ' ' + saved.profile.nome + ' (' + saved.profile.classe + ')';
+    stuShow('sResume');
+  } else stuShow('sLogin');
+}
+function stuSetPub(key, pub) {
+  Stu.pubKey = key; Stu.pub = pub; Stu.test = pub.test || {};
+  Stu.qs = (Stu.test.questions || []).slice().sort((a, b) => a.time - b.time);
+  Stu.duration = 0;
+}
+function newRun(profile) {
+  return { v: 1, aid: Stu.aid, pubKey: Stu.pubKey, profile, startedAt: Date.now(), round: 0, phase: 'intro', ans: {}, pending: [], redone: [], pos: 0, qids: Stu.qs.map(q => q.id) };
+}
+async function stuLogin(e) {
+  e.preventDefault();
+  const err = $('#sLoginErr'); err.textContent = '';
+  const cognome = nameCase($('#sCognome').value), nome = nameCase($('#sNome').value);
+  const classe = $('#sClasse').value.trim().replace(/\s+/g, ' ').toUpperCase();
+  const pwd = $('#sPwd').value;
+  if (!cognome || !nome || !classe) { err.textContent = 'Compila cognome, nome e classe.'; return; }
+  if (!pwd.trim()) { err.textContent = 'Scrivi la password del test.'; return; }
+  const btn = $('#sLoginBtn'); btn.disabled = true; btn.classList.add('loading');
+  try {
+    const key = await pubKeyFor(Stu.aid, pwd);
+    const snap = await getDoc(doc(db, 'pubs', key));
+    if (!snap.exists()) { err.textContent = 'Password non corretta (oppure link sbagliato). Controlla e riprova.'; return; }
+    const pub = snap.data();
+    if (pub.assignmentId !== Stu.aid) { err.textContent = 'Password non corretta. Controlla e riprova.'; return; }
+    if (pub.open === false) { err.textContent = 'Questa assegnazione \u00e8 chiusa: non \u00e8 pi\u00f9 possibile svolgere il test.'; return; }
+    stuSetPub(key, pub);
+    if (!Stu.qs.length || !Stu.test.videoId) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
+    Stu.run = newRun({ cognome, nome, classe, date: fmtDate(Date.now()) });
+    saveRun();
+    stuIntro();
+  } catch (ex) {
+    console.error(ex);
+    err.textContent = ex && ex.code === 'permission-denied' ? 'Accesso negato dal database. Avvisa l\'insegnante.' : 'Errore di connessione. Controlla internet e riprova.';
+  } finally { btn.disabled = false; btn.classList.remove('loading'); }
+}
+async function stuResume() {
+  const saved = loadRun(Stu.aid);
+  if (!saved) { stuShow('sLogin'); return; }
+  const btn = $('#resGo'); btn.disabled = true; btn.classList.add('loading'); $('#resErr').textContent = '';
+  const back = msg => {
+    clearRun();
+    $('#sCognome').value = saved.profile.cognome || ''; $('#sNome').value = saved.profile.nome || ''; $('#sClasse').value = saved.profile.classe || '';
+    stuShow('sLogin'); $('#sLoginErr').textContent = msg;
+  };
+  try {
+    const snap = await getDoc(doc(db, 'pubs', saved.pubKey));
+    if (!snap.exists()) { back('Il test in corso non \u00e8 pi\u00f9 disponibile (forse l\'insegnante ha cambiato la password): accedi di nuovo.'); return; }
+    const pub = snap.data();
+    if (pub.open === false) { stuFatal('Assegnazione chiusa', 'L\'insegnante ha chiuso questa assegnazione: non \u00e8 pi\u00f9 possibile svolgere il test.'); return; }
+    stuSetPub(saved.pubKey, pub);
+    if (Stu.qs.map(q => q.id).join(',') !== (saved.qids || []).join(',')) { back('L\'insegnante ha modificato il test: devi ricominciare da capo.'); return; }
+    Stu.run = saved;
+    const ph = saved.phase;
+    if (ph === 'watch') stuStartWatching();
+    else if (ph === 'results') stuShowResults(false);
+    else stuIntro();
+  } catch (ex) {
+    console.error(ex);
+    $('#resErr').textContent = 'Errore di connessione. Controlla internet e riprova.';
+  } finally { btn.disabled = false; btn.classList.remove('loading'); }
+}
+function stuIntro() {
+  Stu.run.phase = 'intro'; saveRun();
+  const n = Stu.qs.length;
+  $('#iAssign').textContent = Stu.preview ? 'Anteprima' : ((Stu.pub && Stu.pub.assignmentName) || '');
+  $('#iTitle').textContent = Stu.test.title || 'Test';
+  const p = Stu.run.profile;
+  $('#iWho').textContent = p.cognome + ' ' + p.nome + ' \u00b7 classe ' + p.classe + ' \u00b7 ' + p.date;
+  $('#iN').textContent = n === 1 ? '1 volta' : n + ' volte';
+  stuShow('sIntro');
+}
+function stuStartPreview(test) {
+  if (Stu.P) stuTeardown();
+  Stu.preview = true; Stu.aid = 'preview'; Stu.pub = null; Stu.pubKey = '';
+  Stu.test = test;
+  Stu.qs = (test.questions || []).slice().sort((a, b) => a.time - b.time);
+  Stu.duration = 0; Stu.previewReport = null;
+  Stu.run = newRun({ cognome: 'Anteprima', nome: 'Insegnante', classe: '\u2013', date: fmtDate(Date.now()) });
+  showView('v-student');
+  $('#previewBar').hidden = false;
+  stuIntro();
+}
+function exitPreview() {
+  stuTeardown();
+  exitFs();
+  Stu.preview = false; Stu.run = null;
+  $('#previewBar').hidden = true;
+  showView('v-editor');
+}
+
+/* ---------- lettore dell'alunno ---------- */
+function stuDuration() {
+  if (!Stu.duration && Stu.P && Stu.ready) { try { Stu.duration = Stu.P.getDuration() || 0; } catch (e) { } }
+  return Stu.duration || Stu.test.duration || 0;
+}
+async function stuEnsurePlayer(cb) {
+  if (Stu.P && Stu.ready) { if (cb) cb(); return; }
+  Stu.onReadyCb = cb;
+  if (Stu.creating) return;
+  Stu.creating = true;
+  let YT;
+  try { YT = await loadYT(); }
+  catch (e) { Stu.creating = false; stuFatal('Video non disponibile', 'Il lettore di YouTube non risponde. Controlla la connessione a internet e ricarica la pagina: il test riprender\u00e0 da dove eri arrivato.', true); return; }
+  $('#stuVideoBox .vb-host').innerHTML = '<div id="stuPlayer"></div>';
+  Stu.ready = false; Stu.everPlayed = false; Stu.nativeTap = false; Stu.lastSt = null;
+  $('#shield').hidden = true; $('#bigPlay').hidden = false;
+  Stu.P = new YT.Player('stuPlayer', {
+    videoId: Stu.test.videoId, width: '100%', height: '100%', playerVars: playerVars(false),
+    events: {
+      onReady: () => {
+        Stu.ready = true; Stu.creating = false;
+        stuDuration(); renderProgMarks(); updateProg(0);
+        const f = Stu.onReadyCb; Stu.onReadyCb = null; if (f) f();
+      },
+      onStateChange: ev => stuState(ev.data),
+      onError: ev => { Stu.creating = false; stuFatal('Problema con il video', ytErrorText(ev.data) + ' Avvisa il tuo insegnante.', true); }
+    }
+  });
+  clearInterval(Stu.timer);
+  Stu.timer = setInterval(stuTick, 100);
+}
+function stuTeardown() {
+  clearInterval(Stu.timer); Stu.timer = null; clearTimeout(Stu.playCheck);
+  try { if (Stu.P && Stu.P.destroy) Stu.P.destroy(); } catch (e) { }
+  Stu.P = null; Stu.ready = false; Stu.creating = false; Stu.everPlayed = false; Stu.nativeTap = false;
+  Stu.overlayQ = null; Stu.mode = null; Stu.seg = null; Stu.lastSt = null; Stu.seekGuard = null; Stu.onReadyCb = null;
+  $('#qov').hidden = true; $('#shield').hidden = true; $('#bigPlay').hidden = false;
+  $('#stuVideoBox .vb-host').innerHTML = '';
+}
+function tryPlay() {
+  const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
+  try { P.playVideo(); } catch (e) { }
+  clearTimeout(Stu.playCheck);
+  if (!Stu.everPlayed) {
+    Stu.playCheck = setTimeout(() => {
+      let st = -1; try { st = P.getPlayerState(); } catch (e) { }
+      if (!Stu.everPlayed && st !== 1 && st !== 3 && Stu.P === P) {
+        Stu.nativeTap = true;
+        $('#bigPlay').hidden = true; $('#shield').hidden = true;
+        $('#wHint').textContent = 'Se il video non parte, tocca direttamente il video per avviarlo.';
+      }
+    }, 2000);
+  }
+}
+function stuTogglePlay() {
+  const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
+  let st = -1; try { st = P.getPlayerState(); } catch (e) { }
+  if (st === 1 || st === 3) P.pauseVideo(); else tryPlay();
+}
+function updatePlayUI(st) {
+  if (st === Stu.lastSt) return;
+  Stu.lastSt = st;
+  const playing = st === 1 || st === 3;
+  $('#cPlay').innerHTML = ico(playing ? 'pause' : 'play');
+  $('#bigPlay').hidden = playing || !!Stu.overlayQ || Stu.nativeTap;
+}
+function stuTarget() {
+  if (Stu.mode === 'segment') return Stu.seg ? Stu.seg.q : null;
+  if (Stu.mode === 'first') return Stu.qs.find(q => !atts(q.id).some(a => a.r === 0)) || null;
+  return null;
+}
+function stuTick() {
+  const P = Stu.P; if (!P || !Stu.ready || typeof P.getCurrentTime !== 'function') return;
+  let t = 0, st = -1;
+  try { t = P.getCurrentTime() || 0; st = P.getPlayerState(); } catch (e) { return; }
+  if (st === 1 && !Stu.everPlayed) {
+    Stu.everPlayed = true; Stu.nativeTap = false; clearTimeout(Stu.playCheck);
+    $('#shield').hidden = false; $('#wHint').textContent = ''; Stu.lastSt = null;
+  }
+  if (!Stu.drag) updateProg(t);
+  updatePlayUI(st);
+  const watching = !$('#sWatch').hidden && (Stu.mode === 'first' || Stu.mode === 'segment');
+  if (!watching) { if (st === 1) P.pauseVideo(); return; }
+  if (Stu.overlayQ) { if (st === 1) P.pauseVideo(); return; }
+  if (Stu.seekGuard) {
+    if (Math.abs(t - Stu.seekGuard.to) < 1.5 || Date.now() > Stu.seekGuard.until) Stu.seekGuard = null;
+    else return;
+  }
+  const tgt = stuTarget();
+  if (tgt && t >= tgt.time - 0.08) {
+    if (t > tgt.time + 0.6) { try { P.seekTo(tgt.time, true); } catch (e) { } }
+    openQuestion(tgt);
+    return;
+  }
+  const cap = tgt ? tgt.time : Infinity;
+  if (t > Stu.maxReached) Stu.maxReached = Math.min(t, cap);
+}
+function stuState(st) {
+  updatePlayUI(st);
+  if (st !== 0) return;
+  if (Stu.overlayQ || $('#sWatch').hidden || Stu.seekGuard) return;
+  if (Stu.mode === 'first') { const tgt = stuTarget(); if (tgt) openQuestion(tgt); else finishFirstRun(); }
+  else if (Stu.mode === 'segment' && Stu.seg) openQuestion(Stu.seg.q);
+}
+function pctOf(x) { const d = stuDuration(); return d ? Math.min(100, Math.max(0, x / d * 100)) + '%' : '0%'; }
+function updateProg(t) {
+  const d = stuDuration();
+  $('#progFill').style.width = pctOf(t);
+  $('#progReach').style.width = pctOf(Math.max(Stu.maxReached, t));
+  $('#progKnob').style.left = pctOf(t);
+  $('#cTime').textContent = fmtTime(t) + ' / ' + fmtTime(d);
+}
+function renderProgMarks() {
+  const d = stuDuration(); const box = $('#progMarks'); const seg = $('#progSeg');
+  if (!d) { box.innerHTML = ''; seg.hidden = true; return; }
+  if (Stu.mode === 'segment' && Stu.seg) {
+    seg.hidden = false; seg.style.left = pctOf(Stu.seg.start);
+    seg.style.width = Math.max(0.5, (Stu.seg.end - Stu.seg.start) / d * 100) + '%';
+    box.innerHTML = '<span class="pm" style="left:' + pctOf(Stu.seg.end) + '"></span>';
+  } else {
+    seg.hidden = true;
+    box.innerHTML = Stu.qs.map(q => '<span class="pm' + (atts(q.id).some(a => a.r === 0) ? ' done' : '') + '" style="left:' + pctOf(q.time) + '"></span>').join('');
+  }
+}
+function clampSeek(clientX) {
+  const r = $('#prog').getBoundingClientRect();
+  const d = stuDuration(); if (!d || !r.width) return null;
+  let t = Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * d;
+  const lo = Stu.mode === 'segment' && Stu.seg ? Stu.seg.start : 0;
+  const hi = Math.max(lo, Stu.maxReached);
+  let blocked = false;
+  if (t > hi + 0.2) { t = hi; blocked = true; }
+  if (t < lo) t = lo;
+  return { t, blocked };
+}
+function progPreview(clientX) { const c = clampSeek(clientX); if (c) updateProg(c.t); }
+function progSeek(clientX) {
+  const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
+  const c = clampSeek(clientX); if (!c) return;
+  if (c.blocked) { $('#wHint').textContent = 'Puoi tornare indietro, ma non andare oltre il punto che hai gi\u00e0 visto.'; setTimeout(() => { if ($('#wHint').textContent.startsWith('Puoi tornare')) $('#wHint').textContent = ''; }, 3500); }
+  Stu.seekGuard = { to: c.t, until: Date.now() + 1500 };
+  P.seekTo(c.t, true); updateProg(c.t);
+}
+function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
+function exitFs() { try { if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { } }
+function toggleFs() {
+  const w = $('#pwrap');
+  if (fsEl()) { exitFs(); return; }
+  const req = w.requestFullscreen || w.webkitRequestFullscreen;
+  if (req) { try { const p = req.call(w); if (p && p.catch) p.catch(() => { }); } catch (e) { } }
+}
+function updateCount() {
+  if (Stu.mode === 'segment') { $('#wCount').textContent = 'Recupero'; return; }
+  const done = Stu.qs.filter(q => atts(q.id).some(a => a.r === 0)).length;
+  $('#wCount').textContent = 'Quesiti svolti: ' + done + ' di ' + Stu.qs.length;
+}
+
+/* ---------- visione e quesiti ---------- */
+function stuStartWatching() {
+  Stu.mode = 'first'; Stu.seg = null;
+  Stu.run.phase = 'watch'; saveRun();
+  const pos = Stu.run.pos || 0;
+  Stu.maxReached = pos;
+  $('#whTitle').textContent = Stu.test.title || 'Video';
+  $('#whSub').textContent = 'Guarda il video: si fermer\u00e0 da solo quando ci sar\u00e0 un quesito.';
+  $('#wBack').hidden = true; $('#wHint').textContent = '';
+  stuShow('sWatch'); updateCount(); renderProgMarks();
+  stuEnsurePlayer(() => {
+    if (pos > 0) { Stu.seekGuard = { to: pos, until: Date.now() + 2500 }; try { Stu.P.seekTo(pos, true); } catch (e) { } updateProg(pos); }
+    tryPlay();
+  });
+}
+function openQuestion(q) {
+  try { Stu.P && Stu.P.pauseVideo(); } catch (e) { }
+  Stu.overlayQ = q;
+  const idx = Stu.qs.indexOf(q);
+  $('#qcN').textContent = (Stu.mode === 'segment' ? 'Recupero \u00b7 ' : '') + 'Quesito ' + (idx + 1) + ' di ' + Stu.qs.length;
+  $('#qcType').textContent = TYPE_LABEL[q.type] || '';
+  $('#qcType').className = 'type-chip ' + q.type;
+  $('#qcErr').textContent = '';
+  renderQuestionBody($('#qcBody'), q);
+  $('#qov').hidden = false; $('#bigPlay').hidden = true;
+  $('#qov').scrollTop = 0;
+  const f = $('#qcBody input.blank');
+  if (f) setTimeout(() => { try { f.focus({ preventScroll: true }); } catch (e) { } }, 60);
+}
+function renderQuestionBody(box, q) {
+  box.onchange = null;
+  if (q.type === 'mc') {
+    const multi = (q.correct || []).length > 1;
+    box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div>' + (multi ? '<div class="qc-note">Attenzione: le risposte corrette sono pi\u00f9 di una. Selezionale tutte.</div>' : '') +
+      (q.options || []).map((o, i) => '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="qopt" value="' + i + '"><span class="ol">' + letter(i) + '</span><span>' + esc(o) + '</span></label>').join('');
+    box.onchange = () => $$('.opt', box).forEach(l => l.classList.toggle('sel', $('input', l).checked));
+  } else if (q.type === 'tf') {
+    box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div><div class="tf-row"><button type="button" class="tf-btn" data-v="1">Vero</button><button type="button" class="tf-btn" data-v="0">Falso</button></div>';
+    $$('.tf-btn', box).forEach(b => { b.onclick = () => $$('.tf-btn', box).forEach(x => x.classList.toggle('sel', x === b)); });
+  } else {
+    let bi = 0;
+    box.innerHTML = '<div class="fill-instr">' + esc(q.text || 'Completa il testo inserendo le parole mancanti.') + '</div><div class="fill-text">' +
+      parseFill(q.fillText).map(p => p.t === 'txt' ? esc(p.v) : '<input type="text" class="blank" data-b="' + (bi++) + '" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Spazio da completare ' + bi + '">').join('') + '</div>';
+    const all = $$('input.blank', box);
+    all.forEach((inp, i) => {
+      inp.addEventListener('input', () => { inp.style.width = Math.max(8, inp.value.length + 2) + 'ch'; });
+      inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (i < all.length - 1) all[i + 1].focus(); else $('#qcConfirm').click(); } });
+    });
+  }
+}
+function readAnswer(q, box) {
+  if (q.type === 'mc') {
+    const sel = $$('input[name=qopt]:checked', box).map(i => +i.value);
+    if (!sel.length) return { err: (q.correct || []).length > 1 ? 'Seleziona le risposte che ritieni corrette.' : 'Scegli una risposta.' };
+    return { v: sel, t: sel.map(i => letter(i) + ') ' + q.options[i]).join(' | ') };
+  }
+  if (q.type === 'tf') {
+    const b = $('.tf-btn.sel', box);
+    if (!b) return { err: 'Scegli \u00abVero\u00bb oppure \u00abFalso\u00bb.' };
+    const v = b.dataset.v === '1';
+    return { v, t: v ? 'Vero' : 'Falso' };
+  }
+  const vals = $$('input.blank', box).map(i => i.value.trim());
+  if (vals.some(v => !v)) return { err: 'Completa tutti gli spazi vuoti.' };
+  return { v: vals, t: vals.join(' | ') };
+}
+function stuConfirm() {
+  const q = Stu.overlayQ; if (!q) return;
+  const r = readAnswer(q, $('#qcBody'));
+  if (r.err) { $('#qcErr').textContent = r.err; return; }
+  const ok = checkAnswer(q, r.v);
+  const rec = Stu.run.ans[q.id] || (Stu.run.ans[q.id] = { att: [] });
+  rec.att.push({ r: Stu.run.round, v: r.v, t: r.t, ok });
+  Stu.overlayQ = null;
+  $('#qov').hidden = true;
+  Stu.lastSt = null;
+  if (Stu.mode === 'first') {
+    Stu.run.pos = Math.max(Stu.run.pos || 0, q.time);
+    saveRun(); updateCount(); renderProgMarks();
+    let st = -1, t = 0;
+    try { st = Stu.P.getPlayerState(); t = Stu.P.getCurrentTime() || 0; } catch (e) { }
+    const d = stuDuration();
+    const atEnd = st === 0 || (d > 0 && t >= d - 0.6);
+    const next = stuTarget();
+    if (atEnd) { if (next) openQuestion(next); else finishFirstRun(); return; }
+    tryPlay();
+  } else {
+    if (!Stu.run.redone.includes(q.id)) Stu.run.redone.push(q.id);
+    Stu.mode = null; Stu.seg = null;
+    const allDone = Stu.run.pending.every(id => Stu.run.redone.includes(id));
+    if (allDone) closeRound();
+    saveRun();
+    stuShowResults(allDone);
+  }
+}
+function unsolvedBefore(round) { return Stu.qs.filter(q => !atts(q.id).some(a => a.ok && a.r < round)).map(q => q.id); }
+function finishFirstRun() {
+  if (Stu.mode !== 'first') return;
+  Stu.mode = null;
+  Stu.run.round = 1;
+  Stu.run.pending = unsolvedBefore(1);
+  Stu.run.redone = [];
+  Stu.run.pos = 0;
+  saveRun();
+  stuShowResults(false);
+}
+function closeRound() {
+  Stu.run.round += 1;
+  Stu.run.pending = unsolvedBefore(Stu.run.round);
+  Stu.run.redone = [];
+}
+function startSegment(qid) {
+  const i = Stu.qs.findIndex(q => q.id === qid); if (i < 0) return;
+  const q = Stu.qs[i];
+  const start = i > 0 ? Stu.qs[i - 1].time : 0;
+  Stu.mode = 'segment'; Stu.seg = { q, start, end: q.time }; Stu.maxReached = start;
+  $('#whTitle').textContent = 'Recupero del quesito ' + (i + 1);
+  $('#whSub').textContent = 'Guarda di nuovo il video da ' + fmtTime(start) + ' a ' + fmtTime(q.time) + ': alla fine il quesito ti verr\u00e0 riproposto.';
+  $('#wBack').hidden = false; $('#wHint').textContent = '';
+  stuShow('sWatch'); updateCount(); renderProgMarks();
+  stuEnsurePlayer(() => {
+    Stu.seekGuard = { to: start, until: Date.now() + 2500 };
+    try { Stu.P.seekTo(start, true); } catch (e) { }
+    updateProg(start);
+    tryPlay();
+  });
+}
+function stuShowResults(justClosed) {
+  Stu.run.phase = 'results'; saveRun();
+  exitFs();
+  const round = Math.max(1, Stu.run.round);
+  const n = Stu.qs.length;
+  const solved = q => atts(q.id).some(a => a.ok && a.r < round);
+  const score = Stu.qs.filter(solved).length;
+  const pending = Stu.run.pending || [], redone = Stu.run.redone || [];
+  $('#rKicker').textContent = round <= 1 ? 'Risultato del primo svolgimento' : 'Risultato dopo il ' + (round - 1) + '\u00b0 recupero';
+  $('#rScore').textContent = score + ' / ' + n;
+  const note = $('#rNote');
+  if (!pending.length) { note.className = 'note ok'; note.innerHTML = '<b>Complimenti!</b> Tutte le risposte sono corrette. Ora puoi inviare il test all\'insegnante.'; }
+  else if (redone.length) { note.className = 'note wait'; note.innerHTML = 'Recupero in corso: hai rifatto <b>' + redone.length + ' di ' + pending.length + '</b> quesiti. Il nuovo punteggio comparir\u00e0 quando li avrai rifatti tutti.'; }
+  else { note.className = 'note bad'; note.innerHTML = (pending.length === 1 ? 'Hai <b>1 risposta sbagliata</b>.' : 'Hai <b>' + pending.length + ' risposte sbagliate</b>.') + ' Per ciascuna premi \u00abRivedi e rispondi\u00bb: rivedrai la parte di video che va dal quesito precedente fino al quesito sbagliato, poi potrai rispondere di nuovo.'; }
+  $('#rList').innerHTML = Stu.qs.map((q, i) => {
+    let cls, icon, state, act = '';
+    if (solved(q)) { cls = 'ok'; icon = 'check'; state = 'Risposta corretta'; }
+    else if (redone.includes(q.id)) { cls = 'wait'; icon = 'hourglass'; state = 'Risposta data: vedrai l\'esito quando avrai rifatto tutti i quesiti sbagliati'; }
+    else {
+      cls = 'bad'; icon = 'close'; state = 'Risposta sbagliata';
+      const s = i > 0 ? Stu.qs[i - 1].time : 0;
+      act = '<div class="r-act"><button type="button" class="btn accent sm" data-redo="' + esc(q.id) + '">' + ico('replay') + ' Rivedi e rispondi</button><div class="hint" style="margin:.25em 0 0;font-size:.8rem;text-align:center">video da ' + fmtTime(s) + ' a ' + fmtTime(q.time) + '</div></div>';
+    }
+    return '<div class="r-item ' + cls + '"><div class="r-ico">' + ico(icon) + '</div><div class="r-main"><div class="r-top">Quesito ' + (i + 1) + ' <span class="time-chip">' + fmtTime(q.time) + '</span></div><div class="r-text">' + esc(trunc(qPlain(q), 150)) + '</div><div class="r-state">' + state + '</div></div>' + act + '</div>';
+  }).join('');
+  $('#rSendBox').hidden = pending.length > 0;
+  $('#rSend').innerHTML = ico('send') + (Stu.preview ? ' Invia (anteprima)' : ' Invia il test all\'insegnante');
+  $('#rSendErr').textContent = '';
+  stuShow('sResults');
+  if (justClosed) toast('Nuovo punteggio: ' + score + ' su ' + n, pending.length ? '' : 'ok');
+}
+
+/* ---------- invio ---------- */
+function buildReport() {
+  const g = normGrading(Stu.test.grading);
+  const questions = Stu.qs.map((q, i) => {
+    const list = atts(q.id);
+    const okIdx = list.findIndex(a => a.ok);
+    const tries = okIdx >= 0 ? okIdx + 1 : list.length;
+    const value = okIdx >= 0 ? valueForTries(tries, g) : 0;
+    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, value: Math.round(value * 1000) / 1000, att: list.map(a => ({ r: a.r, a: a.t, ok: a.ok })) };
+  });
+  const p = Stu.run.profile;
+  return clean({
+    ownerUid: (Stu.pub && Stu.pub.ownerUid) || '', assignmentId: Stu.aid, testId: (Stu.pub && Stu.pub.testId) || '', pubKey: Stu.pubKey || '',
+    assignmentName: (Stu.pub && Stu.pub.assignmentName) || '', testTitle: Stu.test.title || '',
+    cognome: p.cognome, nome: p.nome, classe: p.classe, date: p.date,
+    startedAt: Stu.run.startedAt || 0, clientSubmittedAt: Date.now(),
+    voto: computeVoto(questions.map(q => q.value), g),
+    firstCorrect: questions.filter(q => q.tries === 1 && q.value > 0).length,
+    total: questions.length, recoveryRounds: Math.max(0, (Stu.run.round || 1) - 1),
+    grading: g, questions
+  });
+}
+async function stuSend() {
+  const btn = $('#rSend'), err = $('#rSendErr'); err.textContent = '';
+  if ((Stu.run.pending || []).length) return;
+  const rep = buildReport();
+  if (Stu.preview) { Stu.previewReport = rep; showSent(rep); return; }
+  btn.disabled = true; btn.classList.add('loading');
+  try {
+    rep.submittedAt = serverTimestamp();
+    await addDoc(collection(db, 'reports'), rep);
+    Stu.run.phase = 'sent'; clearRun();
+    showSent(rep);
+  } catch (ex) {
+    console.error(ex);
+    err.textContent = ex && ex.code === 'permission-denied' ? 'Invio non riuscito: l\'insegnante potrebbe aver chiuso l\'assegnazione o cambiato la password. Avvisalo.' : 'Invio non riuscito: controlla la connessione a internet e premi di nuovo \u00abInvia\u00bb.';
+  } finally { btn.disabled = false; btn.classList.remove('loading'); }
+}
+function showSent(rep) {
+  exitFs();
+  try { Stu.P && Stu.ready && Stu.P.pauseVideo(); } catch (e) { }
+  const g = normGrading(Stu.test.grading);
+  $('.big-ok').innerHTML = ico('check');
+  $('#sentTitle').textContent = Stu.preview ? 'Anteprima completata' : 'Test inviato!';
+  $('#sentMsg').textContent = Stu.preview ? 'In una somministrazione vera, a questo punto il report arriverebbe nell\'assegnazione.' : 'Grazie, ' + rep.nome + '! Il tuo insegnante ha ricevuto il report con tutte le tue risposte.';
+  const showG = Stu.preview || g.showGrade;
+  $('#sentGrade').hidden = !showG;
+  $('#sentGrade').textContent = 'Voto: ' + fmtNum(rep.voto, 1);
+  $('#sentHint').hidden = Stu.preview;
+  $('#sentPreviewBtns').hidden = !Stu.preview;
+  stuShow('sSent');
+}
+
+/* =====================================================================
+   AVVIO
+   ===================================================================== */
+(function boot() {
+  if (location.protocol === 'file:') $('#fileWarn').hidden = false;
+  wireStudent();
+  const aid = new URLSearchParams(location.search).get('a');
+  if (aid) { document.title = 'Videoquiz \u2013 Test'; initStudent(aid); }
+  else { wireTeacher(); initTeacher(); }
+})();
+
+</script>
+</body>
+</html>
