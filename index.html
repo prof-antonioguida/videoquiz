@@ -344,6 +344,8 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
 .opt:hover{border-color:var(--line2)}
 .opt input{width:20px;height:20px;margin:.1em 0 0;flex:none;accent-color:var(--primary)}
 .opt.sel{border-color:var(--primary);background:var(--primary-l)}
+.opts-grid{display:flex;flex-direction:column;gap:.55em;margin-bottom:.55em}
+.opts-grid .opt{margin-bottom:0}
 .opt .ol{font-weight:900;color:var(--muted)}
 .tf-row{display:grid;grid-template-columns:1fr 1fr;gap:.7em;margin-bottom:.5em}
 .tf-btn{border:2px solid var(--line);border-radius:14px;background:#fff;padding:1em;font:inherit;font-size:1.15rem;font-weight:900;cursor:pointer;color:var(--text)}
@@ -437,6 +439,56 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
   .q-acts{width:100%;justify-content:flex-end;margin-top:-.2em}
   .r-act{width:100%;padding-left:46px}
   .r-act .btn{width:100%}
+}
+
+/* ---------- margini per schermi con notch (anche in orizzontale) ---------- */
+.stu-wrap{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+.qov{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}
+
+/* ---------- telefono in orizzontale: video intero nello schermo ---------- */
+@media (orientation:landscape) and (max-height:560px){
+  body.watching .foot{display:none}
+  body.watching .preview-bar{padding:.25em 12px;font-size:.8rem;gap:.6em}
+  body.watching .preview-bar .btn{min-height:28px;padding:.15em .6em;font-size:.8rem}
+  body.watching .stu-wrap{padding-top:6px;padding-bottom:6px}
+  #sWatch{--head:40px;--ctrl:44px;--foot:30px;--extra:22px}
+  body.watching:has(#previewBar:not([hidden])) #sWatch{--extra:56px}
+  #sWatch .watch-head{display:block;margin:0 auto 4px;min-height:var(--head);line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  #sWatch .watch-head h2{display:inline;font-size:.95rem;margin:0 .5em 0 0}
+  #sWatch .watch-head p{display:inline;font-size:.82rem}
+  #sWatch .pwrap,#sWatch .watch-head,#sWatch .watch-foot,#sWatch #wHint{width:min(100%,calc((100vh - var(--head) - var(--ctrl) - var(--foot) - var(--extra)) * 16 / 9));margin-left:auto;margin-right:auto}
+  @supports (height:100dvh){
+    #sWatch .pwrap,#sWatch .watch-head,#sWatch .watch-foot,#sWatch #wHint{width:min(100%,calc((100dvh - var(--head) - var(--ctrl) - var(--foot) - var(--extra)) * 16 / 9))}
+  }
+  #sWatch .pwrap{border-radius:10px}
+  #sWatch .ctrl{padding:2px 6px;min-height:var(--ctrl)}
+  #sWatch .cbtn{width:36px;height:36px}
+  #sWatch .watch-foot{margin-top:4px;min-height:var(--foot);font-size:.88rem}
+  #sWatch .watch-foot .btn{min-height:28px;padding:.15em .7em}
+  #sWatch #wHint{margin:2px auto 0;font-size:.8rem}
+  #sWatch #wHint:empty{display:none}
+  .bigplay{width:64px;height:64px;margin:-32px 0 0 -32px}
+  .bigplay .ico{width:36px;height:36px}
+
+  /* finestra del quesito compatta */
+  .qov{padding-top:8px;padding-bottom:8px;align-items:flex-start}
+  .qcard{max-width:760px;padding:.7rem .9rem .75rem;border-radius:14px}
+  .qc-head{margin-bottom:.35rem}
+  .qc-text{font-size:1rem;margin-bottom:.45em}
+  .qc-note{margin:-.2em 0 .45em}
+  .qc-body .opt{padding:.45em .7em;margin-bottom:0;border-width:1.5px}
+  .qc-body .opts-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4em;margin-bottom:.4em}
+  .tf-btn{padding:.55em;font-size:1rem}
+  .fill-text{line-height:2.2;padding:.35em .7em;font-size:1rem;margin-bottom:.4em}
+  .qcard .btn.big{min-height:42px;font-size:1rem;padding:.4em 1em}
+  .qcard .err{margin:.2em 0 .4em}
+
+  /* altre schermate dell'alunno piu' compatte */
+  .s-card{padding:1rem 1.2rem}
+  .howto{margin:.6rem 0 .8rem;padding:.7rem .9rem}
+  .howto li{margin:.15em 0}
+  .score{margin:.2rem 0 .6rem}
+  .score-num{font-size:2.4rem}
 }
 
 </style>
@@ -1020,7 +1072,8 @@ function loadYT() {
   return ytPromise;
 }
 function playerVars(teacher) {
-  const v = { rel: 0, playsinline: 1, iv_load_policy: 3, modestbranding: 1, cc_load_policy: 0 };
+  const v = { rel: 0, playsinline: 1, iv_load_policy: 3, modestbranding: 1 };
+  if (!teacher) { v.cc_load_policy = 0; v.cc_lang_pref = 'zz'; }
   if (teacher) { v.controls = 1; v.fs = 1; } else { v.controls = 0; v.disablekb = 1; v.fs = 0; }
   if (/^https?:$/.test(location.protocol)) v.origin = location.origin;
   return v;
@@ -1041,6 +1094,7 @@ const S = { user: null, entered: false, tests: [], assigns: [], repCounts: {}, v
 
 function showView(id) {
   $$('main > .view').forEach(v => { v.hidden = v.id !== id; });
+  if (id !== 'v-student') document.body.classList.remove('watching');
   S.view = id;
   $('#topbar').hidden = !['v-archive', 'v-editor', 'v-assign', 'v-reports'].includes(id);
   closePop();
@@ -1945,6 +1999,14 @@ function reportColumns(R) {
 }
 function renderReports() {
   if (S.view !== 'v-reports') return;
+  try { renderReportsInner(); }
+  catch (ex) {
+    console.error(ex);
+    $('#rpTable').innerHTML = '<div class="empty" style="margin:1rem"><h3>Errore nella visualizzazione dei report</h3><p>Comunica questo messaggio:</p><p><code></code></p></div>';
+    $('#rpTable code').textContent = (ex && (ex.stack || ex.message)) || String(ex);
+  }
+}
+function renderReportsInner() {
   const R = sortReports(S.reports.slice());
   const n = R.length;
   const avg = n ? R.reduce((s, r) => s + (Number(r.voto) || 0), 0) / n : 0;
@@ -2048,6 +2110,7 @@ function atts(qid) { const r = Stu.run && Stu.run.ans[qid]; return (r && r.att) 
 
 function stuShow(id) {
   $$('.s-screen').forEach(s => { s.hidden = s.id !== id; });
+  document.body.classList.toggle('watching', id === 'sWatch');
   if (id !== 'sWatch') { try { Stu.P && Stu.ready && Stu.P.pauseVideo(); } catch (e) { } }
   window.scrollTo(0, 0);
 }
@@ -2222,6 +2285,7 @@ async function stuEnsurePlayer(cb) {
     events: {
       onReady: () => {
         Stu.ready = true; Stu.creating = false;
+        noCaptions(Stu.P);
         stuDuration(); renderProgMarks(); updateProg(0);
         const f = Stu.onReadyCb; Stu.onReadyCb = null; if (f) f();
       },
@@ -2239,6 +2303,11 @@ function stuTeardown() {
   Stu.overlayQ = null; Stu.mode = null; Stu.seg = null; Stu.lastSt = null; Stu.seekGuard = null; Stu.onReadyCb = null;
   $('#qov').hidden = true; $('#shield').hidden = true; $('#bigPlay').hidden = false;
   $('#stuVideoBox .vb-host').innerHTML = '';
+}
+function noCaptions(P) {
+  if (!P) return;
+  try { if (P.unloadModule) { P.unloadModule('captions'); P.unloadModule('cc'); } } catch (e) { }
+  try { if (P.setOption) P.setOption('captions', 'track', {}); } catch (e) { }
 }
 function tryPlay() {
   const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
@@ -2300,6 +2369,7 @@ function stuTick() {
 }
 function stuState(st) {
   updatePlayUI(st);
+  if (st === 1 || st === 3) noCaptions(Stu.P);
   if (st !== 0) return;
   if (Stu.overlayQ || $('#sWatch').hidden || Stu.seekGuard) return;
   if (Stu.mode === 'first') { const tgt = stuTarget(); if (tgt) openQuestion(tgt); else finishFirstRun(); }
@@ -2392,7 +2462,7 @@ function renderQuestionBody(box, q) {
   if (q.type === 'mc') {
     const multi = (q.correct || []).length > 1;
     box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div>' + (multi ? '<div class="qc-note">Attenzione: le risposte corrette sono pi\u00f9 di una. Selezionale tutte.</div>' : '') +
-      (q.options || []).map((o, i) => '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="qopt" value="' + i + '"><span class="ol">' + letter(i) + '</span><span>' + esc(o) + '</span></label>').join('');
+      '<div class="opts-grid">' + (q.options || []).map((o, i) => '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="qopt" value="' + i + '"><span class="ol">' + letter(i) + '</span><span>' + esc(o) + '</span></label>').join('') + '</div>';
     box.onchange = () => $$('.opt', box).forEach(l => l.classList.toggle('sel', $('input', l).checked));
   } else if (q.type === 'tf') {
     box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div><div class="tf-row"><button type="button" class="tf-btn" data-v="1">Vero</button><button type="button" class="tf-btn" data-v="0">Falso</button></div>';
