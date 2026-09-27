@@ -2102,6 +2102,33 @@ function exportCSV() {
    ===================================================================== */
 const Stu = { preview: false, aid: null, pubKey: null, pub: null, test: null, qs: [], run: null, P: null, ready: false, timer: null, mode: null, seg: null, maxReached: 0, overlayQ: null, everPlayed: false, nativeTap: false, duration: 0, seekGuard: null, drag: false, lastSt: null, onReadyCb: null, creating: false, playCheck: null };
 
+/* ---------- schermo sempre acceso durante il test ---------- */
+const Wake = { lock: null, want: false, busy: false };
+async function wakeOn() {
+  Wake.want = true;
+  if (!('wakeLock' in navigator) || Wake.lock || Wake.busy || document.visibilityState !== 'visible') return;
+  Wake.busy = true;
+  try {
+    const l = await navigator.wakeLock.request('screen');
+    if (!Wake.want) { l.release().catch(() => { }); }
+    else { Wake.lock = l; l.addEventListener('release', () => { if (Wake.lock === l) Wake.lock = null; }); }
+  } catch (e) { console.warn('wakeLock', e); }
+  finally { Wake.busy = false; }
+}
+function wakeOff() {
+  Wake.want = false;
+  const l = Wake.lock; Wake.lock = null;
+  if (l) l.release().catch(() => { });
+}
+function pauseForHidden() {
+  try { if (Stu.P && Stu.ready) Stu.P.pauseVideo(); } catch (e) { }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') pauseForHidden();
+  else if (Wake.want) wakeOn();
+});
+window.addEventListener('pagehide', pauseForHidden);
+
 function runKey() { return 'vq_run_' + Stu.aid; }
 function loadRun(aid) { try { const s = localStorage.getItem('vq_run_' + aid); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
 function saveRun() { if (Stu.preview || !Stu.run) return; try { localStorage.setItem(runKey(), JSON.stringify(Stu.run)); } catch (e) { } }
@@ -2111,6 +2138,7 @@ function atts(qid) { const r = Stu.run && Stu.run.ans[qid]; return (r && r.att) 
 function stuShow(id) {
   $$('.s-screen').forEach(s => { s.hidden = s.id !== id; });
   document.body.classList.toggle('watching', id === 'sWatch');
+  if (id === 'sIntro' || id === 'sWatch' || id === 'sResults') wakeOn(); else wakeOff();
   if (id !== 'sWatch') { try { Stu.P && Stu.ready && Stu.P.pauseVideo(); } catch (e) { } }
   window.scrollTo(0, 0);
 }
@@ -2257,6 +2285,7 @@ function stuStartPreview(test) {
   stuIntro();
 }
 function exitPreview() {
+  wakeOff();
   stuTeardown();
   exitFs();
   Stu.preview = false; Stu.run = null;
@@ -2310,6 +2339,7 @@ function noCaptions(P) {
   try { if (P.setOption) P.setOption('captions', 'track', {}); } catch (e) { }
 }
 function tryPlay() {
+  if (Wake.want && !Wake.lock) wakeOn();
   const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
   try { P.playVideo(); } catch (e) { }
   clearTimeout(Stu.playCheck);
