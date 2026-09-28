@@ -616,6 +616,11 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
   #sWatch .wf-btns{flex-wrap:nowrap}
 }
 
+.save-opt{border-top:1px solid var(--line);padding-top:.7em;margin-top:.2em}
+.save-opt .hint{margin:.2em 0 0 1.9em}
+.badge.save{background:var(--primary-l);color:var(--primary)}
+.badge.save .ico{width:14px;height:14px}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -765,7 +770,6 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
               <div class="fld"><span>Data</span><div class="static" id="sDate"></div></div>
             </div>
             <label class="fld"><span>Password del test</span><input type="text" id="sPwd" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></label>
-            <label class="fld pin-fld"><span>Codice personale <small class="muted">· solo se riprendi un test che avevi salvato</small></span><input type="text" id="sPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="4 cifre"></label>
             <div class="err" id="sLoginErr"></div>
             <button class="btn primary big block" id="sLoginBtn" type="submit">Accedi al test</button>
           </form>
@@ -789,8 +793,8 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
             <p class="hint">Meno tentativi ti serviranno, più alto sarà il voto.</p>
           </div>
           <div class="pin-box" id="iPinBox">
-            <label class="fld"><span>Scegli il tuo codice personale (4 cifre)</span><input type="text" id="iPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="es. 2580"></label>
-            <p class="hint">Annotalo! Se dovrai interrompere il test, potrai riprenderlo più tardi, anche da un altro dispositivo, inserendo cognome, nome, classe, la password del test e questo codice.</p>
+            <label class="fld"><span>Codice personale (4 cifre)</span><input type="text" id="iPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="es. 2580"></label>
+            <p class="hint"><b>Se inizi ora:</b> inventa un codice e annotalo. Se dovrai interrompere il test, potrai salvarlo e riprenderlo più tardi, anche da un altro dispositivo.<br><b>Se avevi salvato il test:</b> scrivi il codice che avevi scelto e riprenderai da dove eri arrivato.</p>
             <div class="err" id="iPinErr"></div>
           </div>
           <button class="btn primary big block" id="iStart" type="button"></button>
@@ -840,7 +844,7 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
         <div class="s-card narrow center">
           <div class="big-save" id="savedIco"></div>
           <h1>Test salvato</h1>
-          <p>Potrai completarlo più tardi, anche da un altro dispositivo. Apri lo stesso link e inserisci cognome, nome, classe, la password del test e il tuo codice personale:</p>
+          <p>Potrai completarlo più tardi, anche da un altro dispositivo: apri lo stesso link, inserisci cognome, nome, classe e la password del test, poi il tuo codice personale:</p>
           <div class="pin-show" id="savedPin"></div>
           <p class="hint">Su questo dispositivo il test non è più visibile: nessun altro potrà aprirlo senza il tuo codice. Ora puoi chiudere questa pagina.</p>
         </div>
@@ -2260,7 +2264,7 @@ function renderAssignList() {
   }
   $('#asList').innerHTML = list.map(a => {
     const open = a.open !== false; const n = S.repCounts[a.id] || 0;
-    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span></div></div>' +
+    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + '</div></div>' +
       '<div class="as-acts"><button type="button" class="btn primary sm" data-act="open">' + ico('table') + ' Report</button><button type="button" class="btn sm" data-act="link">' + ico('link') + ' Link e password</button><button type="button" class="icon-btn" data-act="menu" title="Altre azioni">' + ico('more') + '</button></div></div>';
   }).join('');
 }
@@ -2276,12 +2280,13 @@ function onAssignClick(e) {
     popMenu(b, [
       { label: 'Rinomina', icon: 'edit', onClick: () => renameAssign(a) },
       { label: open ? 'Chiudi (gli alunni non possono pi\u00f9 svolgerla)' : 'Riapri', icon: open ? 'lock' : 'lockopen', onClick: () => toggleAssign(a) },
+      { label: a.allowSave === true ? 'Disattiva il salvataggio per riprendere pi\u00f9 tardi' : 'Attiva il salvataggio per riprendere pi\u00f9 tardi', icon: 'save', onClick: () => toggleSave(a) },
       { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteAssign(a) }
     ]);
   }
 }
 function studentLink(aid) { return location.href.split('#')[0].split('?')[0] + '?a=' + encodeURIComponent(aid); }
-function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, testId: t.id, assignmentName: a.name, open: open, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
+function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
 function passwordBody(value) {
   const body = el('<div><div class="fld"><span>Password per gli alunni</span><div class="copy-row"><input type="text" class="ap" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="btn sm ag">' + ico('refresh') + ' Genera</button></div></div><p class="hint">Scegli una password semplice da comunicare, di almeno 4 caratteri. Maiuscole e minuscole non contano.</p><div class="err"></div></div>');
   $('.ap', body).value = value || genPassword();
@@ -2294,6 +2299,7 @@ async function newAssignment() {
   if (!hasVideo(t) || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
   const body = el('<div><label class="fld"><span>Nome dell\'assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody());
+  body.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"> Permetti agli alunni di salvare il test e riprenderlo pi\u00f9 tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e pu\u00f2 interrompere il test e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
   $('.an', body).value = (t.title || 'Test') + ' del ' + fmtDateLong(Date.now());
   const res = await modal({
     title: 'Nuova assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
@@ -2306,7 +2312,7 @@ async function newAssignment() {
         try {
           const aRef = doc(collection(db, 'assignments'));
           const pubKey = await pubKeyFor(aRef.id, pwd);
-          const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, createdAt: Date.now() };
+          const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, allowSave: $('.as-save', body).checked, createdAt: Date.now() };
           const bt = writeBatch(db);
           const data = Object.assign({}, a); delete data.id;
           bt.set(aRef, data);
@@ -2330,6 +2336,7 @@ function showLinkModal(a) {
     '<div class="btn-row"><button type="button" class="btn sm" data-msg>' + ico('copy') + ' Copia il messaggio per gli alunni</button><a class="btn sm" target="_blank" rel="noopener">' + ico('open') + ' Apri il test</a><button type="button" class="btn sm" data-chpw>' + ico('lock') + ' Cambia password</button></div>' +
     (location.protocol === 'file:' ? '<div class="msg bad">Stai usando l\'app come file dal computer, quindi questo link non funzioner\u00e0: apri l\'app pubblicata su GitHub Pages e copia il link da l\u00ec.</div>' : '') +
     (a.open === false ? '<div class="msg bad">Questa assegnazione \u00e8 chiusa: gli alunni non potranno svolgere il test finch\u00e9 non la riapri.</div>' : '') +
+    '<p class="hint">' + (a.allowSave === true ? 'Salvataggio attivo: gli alunni possono interrompere il test e riprenderlo pi\u00f9 tardi con il loro codice personale di 4 cifre.' : 'Salvataggio non attivo: il test va svolto in un\'unica volta.') + ' Puoi cambiarlo dal menu \u22ee dell\'assegnazione.</p>' +
     '</div>');
   $('.lk', body).value = link; $('.pw', body).value = a.password; $('a.btn', body).href = link;
   body.addEventListener('click', async e => {
@@ -2392,6 +2399,18 @@ async function toggleAssign(a) {
     a.open = open; renderAssignList();
     toast(open ? 'Assegnazione riaperta.' : 'Assegnazione chiusa: gli alunni non possono pi\u00f9 svolgerla.', 'ok');
   } catch (ex) { dbError(ex, 'apri/chiudi'); }
+}
+async function toggleSave(a) {
+  const on = a.allowSave !== true;
+  if (!on && !await confirmBox('Disattivare il salvataggio?', 'Gli alunni non potranno pi\u00f9 salvare il test per completarlo pi\u00f9 tardi, e chi aveva gi\u00e0 salvato non potr\u00e0 riprenderlo: dovr\u00e0 ricominciare da capo.', 'Disattiva', true)) return;
+  try {
+    const bt = writeBatch(db);
+    bt.update(doc(db, 'assignments', a.id), { allowSave: on });
+    bt.update(doc(db, 'pubs', a.pubKey), { allowSave: on });
+    await bt.commit();
+    a.allowSave = on; renderAssignList();
+    toast(on ? 'Salvataggio attivato: gli alunni potranno riprendere il test pi\u00f9 tardi.' : 'Salvataggio disattivato: il test va svolto in un\'unica volta.', 'ok');
+  } catch (ex) { dbError(ex, 'salvataggio on/off'); }
 }
 async function deleteAssign(a) {
   const n = S.repCounts[a.id] || 0;
@@ -2688,7 +2707,7 @@ function wireStudent() {
   $$('.save-later').forEach(b => { b.innerHTML = ico('save') + '<span class="l-long"> Salva e continua pi\u00f9 tardi</span><span class="l-short"> Salva</span>'; b.addEventListener('click', () => stuSaveLater(b)); });
   $('#wBack').innerHTML = '<span class="l-long">Torna all\'elenco dei quesiti</span><span class="l-short">Elenco quesiti</span>';
   $('#savedIco').innerHTML = ico('save');
-  ['#sPin', '#iPin'].forEach(sel => $(sel).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); }));
+  ['#iPin'].forEach(sel => $(sel).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); }));
   $('#iPin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#iStart').click(); } });
   $('#iStart').innerHTML = ico('play') + ' Inizia a guardare il video';
   $('#iStart').addEventListener('click', stuIntroStart);
@@ -2752,10 +2771,9 @@ async function stuLogin(e) {
   const cognome = nameCase($('#sCognome').value), nome = nameCase($('#sNome').value);
   const classe = $('#sClasse').value.trim().replace(/\s+/g, ' ').toUpperCase();
   const pwd = $('#sPwd').value;
-  const pin = $('#sPin').value.trim();
   if (!cognome || !nome || !classe) { err.textContent = 'Compila cognome, nome e classe.'; return; }
   if (!pwd.trim()) { err.textContent = 'Scrivi la password del test.'; return; }
-  if (pin && !/^\d{4}$/.test(pin)) { err.textContent = 'Il codice personale \u00e8 formato da 4 cifre. Se inizi il test per la prima volta, lascialo vuoto.'; return; }
+
   const btn = $('#sLoginBtn'); btn.disabled = true; btn.classList.add('loading');
   try {
     const key = await pubKeyFor(Stu.aid, pwd);
@@ -2767,7 +2785,6 @@ async function stuLogin(e) {
     stuSetPub(key, pub);
     if (!Stu.qs.length || !hasVideo(Stu.test)) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
     const profile = { cognome, nome, classe, date: fmtDate(Date.now()) };
-    if (pin) { await resumeFrom(await progIdFor(Stu.aid, profile, pin), pin, err); return; }
     Stu.progId = null; Stu.pin = null;
     Stu.run = newRun(profile);
     stuIntro();
@@ -2796,12 +2813,13 @@ function stuIntro() {
   const p = Stu.run.profile;
   $('#iWho').textContent = p.cognome + ' ' + p.nome + ' \u00b7 classe ' + p.classe + ' \u00b7 ' + p.date;
   $('#iN').textContent = n === 1 ? '1 volta' : n + ' volte';
-  $('#iPinBox').hidden = Stu.preview || !!Stu.progId;
+  $('#iPinBox').hidden = Stu.preview || !!Stu.progId || !saveAllowed();
   $('#iPin').value = ''; $('#iPinErr').textContent = '';
   stuShow('sIntro');
 }
+function saveAllowed() { return !!(Stu.pub && Stu.pub.allowSave === true); }
 async function stuIntroStart() {
-  if (Stu.preview || Stu.progId) { stuStartWatching(); return; }
+  if (Stu.preview || Stu.progId || !saveAllowed()) { stuStartWatching(); return; }
   const pin = $('#iPin').value.trim(), err = $('#iPinErr'), btn = $('#iStart');
   err.textContent = '';
   if (!/^\d{4}$/.test(pin)) { err.textContent = 'Scegli un codice di 4 cifre (solo numeri).'; $('#iPin').focus(); return; }
@@ -2810,9 +2828,9 @@ async function stuIntroStart() {
     const id = await progIdFor(Stu.aid, Stu.run.profile, pin);
     const old = await loadSaved(id);
     if (old) {
-      const choice = await modal({ title: 'Test gi\u00e0 salvato', body: '<p>Con questi dati e questo codice c\'\u00e8 gi\u00e0 un test salvato. Vuoi riprenderlo da dove eri arrivato oppure ricominciare da capo?</p>', buttons: [{ label: 'Ricomincia da capo', cls: 'danger-ghost', value: 'new' }, { label: 'Riprendi il test salvato', cls: 'primary', value: 'resume' }] });
-      if (!choice) return;
-      if (choice === 'resume') { if (!await resumeFrom(id, pin, err)) return; return; }
+      const same = Stu.qs.map(q => q.id).join(',') === (old.qids || []).join(',');
+      if (same) { await resumeFrom(id, pin, err); return; }
+      if (!await confirmBox('Test modificato', 'Con questo codice avevi salvato il test, ma nel frattempo l\'insegnante lo ha modificato: devi ricominciare da capo.', 'Ricomincia da capo')) return;
     }
     Stu.progId = id; Stu.pin = pin;
     stuStartWatching();
