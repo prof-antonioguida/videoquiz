@@ -151,7 +151,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 .test-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
 .test-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column}
 .thumb{position:relative;aspect-ratio:16/9;background:#dfe3ee center/cover no-repeat;cursor:pointer}
-.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .nothumb{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:700;background:repeating-linear-gradient(45deg,#eef1f7,#eef1f7 10px,#e6eaf3 10px,#e6eaf3 20px)}
 .badge-q{position:absolute;right:8px;bottom:8px;background:rgba(15,22,40,.8);color:#fff;border-radius:8px;padding:.15em .55em;font-size:.8rem;font-weight:800}
 .tc-body{padding:.85rem .95rem .95rem;display:flex;flex-direction:column;gap:.35em;flex:1}
@@ -173,7 +173,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 .url-row{display:flex;gap:.5em}
 .url-row input{flex:1;min-width:0}
 .video-box{position:relative;width:100%;aspect-ratio:16/9;background:#0d1220;border-radius:12px;overflow:hidden}
-.video-box .vb-host,.video-box iframe{position:absolute;inset:0;width:100%!important;height:100%!important;border:0}
+.video-box .vb-host,.video-box iframe,.video-box video{position:absolute;inset:0;width:100%!important;height:100%!important;border:0}
 .vb-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:1.5rem;color:#c3cbe0;font-weight:700}
 .tl{position:relative;height:34px;margin:.7rem 4px .3rem;cursor:pointer}
 .tl-track{position:absolute;left:0;right:0;top:14px;height:6px;border-radius:6px;background:#dde2ee}
@@ -491,6 +491,14 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
   .score-num{font-size:2.4rem}
 }
 
+.video-box video{object-fit:contain;background:#000}
+
+/* video offuscato mentre e' aperta la finestra del quesito */
+#stuVideoBox .vb-host,#stuVideoBox iframe,#stuVideoBox video{transition:filter .15s ease}
+#stuVideoBox.veiled .vb-host,#stuVideoBox.veiled iframe,#stuVideoBox.veiled video{filter:blur(32px) brightness(.55) saturate(.6);-webkit-filter:blur(32px) brightness(.55) saturate(.6)}
+#stuVideoBox.veiled::after{content:"";position:absolute;inset:0;z-index:4;background:rgba(13,18,32,.35);-webkit-backdrop-filter:blur(24px);backdrop-filter:blur(24px)}
+.qov{-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+
 </style>
 <script>
 (function(){
@@ -526,7 +534,7 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
   <section id="v-auth" class="view" hidden>
     <div class="auth-wrap">
       <div class="auth-card card">
-        <div class="auth-brand"><span class="logo big"></span><div><h1>Videoquiz</h1><p class="muted">Video di YouTube con quesiti interattivi<br>Area riservata agli insegnanti</p></div></div>
+        <div class="auth-brand"><span class="logo big"></span><div><h1>Videoquiz</h1><p class="muted">Video con quesiti interattivi<br>Area riservata agli insegnanti</p></div></div>
         <div class="tabs" id="authTabs"><button type="button" data-mode="login" class="active">Accedi</button><button type="button" data-mode="register">Registrati</button></div>
         <form id="authForm" novalidate>
           <label class="fld"><span>Email</span><input type="email" id="authEmail" autocomplete="email" autocapitalize="off" spellcheck="false"></label>
@@ -544,7 +552,7 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
   <!-- ARCHIVIO DEI TEST -->
   <section id="v-archive" class="view page" hidden>
     <div class="page-head">
-      <div><h1>I miei test</h1><p class="muted">Crea un test partendo da un video di YouTube, poi assegnalo alle tue classi.</p></div>
+      <div><h1>I miei test</h1><p class="muted">Crea un test partendo da un video (YouTube, Vimeo o file video), poi assegnalo alle tue classi.</p></div>
       <button class="btn primary" id="newTestBtn" type="button"></button>
     </div>
     <div class="toolbar"><div class="search"><span class="search-ico"></span><input type="text" id="testSearch" placeholder="Cerca un test…" autocomplete="off"></div></div>
@@ -565,11 +573,11 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
     <div class="ed-grid">
       <div class="ed-left">
         <div class="card">
-          <div class="fld"><span>Link del video YouTube</span>
-            <div class="url-row"><input type="text" id="edUrl" placeholder="https://www.youtube.com/watch?v=…" autocapitalize="off" spellcheck="false" autocomplete="off"><button class="btn primary" id="edLoadBtn" type="button">Carica video</button></div>
+          <div class="fld"><span>Link del video (YouTube, Vimeo o file .mp4/.webm)</span>
+            <div class="url-row"><input type="text" id="edUrl" placeholder="https://www.youtube.com/watch?v=…  oppure  https://vimeo.com/…" autocapitalize="off" spellcheck="false" autocomplete="off"><button class="btn primary" id="edLoadBtn" type="button">Carica video</button></div>
           </div>
           <div id="edVideoMsg" class="msg" hidden></div>
-          <div class="video-box" id="edVideoBox"><div class="vb-host"></div><div class="vb-empty" id="edEmpty">Incolla il link di un video di YouTube e premi «Carica video».</div></div>
+          <div class="video-box" id="edVideoBox"><div class="vb-host"></div><div class="vb-empty" id="edEmpty">Incolla il link di un video di YouTube o di Vimeo, oppure il link diretto a un file video, e premi «Carica video».</div></div>
           <div class="tl" id="edTl" title="Clicca per spostarti nel video"><div class="tl-track"></div><div class="tl-marks" id="edTlMarks"></div><div class="tl-cur" id="edTlCur" hidden></div></div>
           <div class="ed-add-row">
             <div class="ed-time"><span class="muted">Tempo attuale</span><b id="edTime">0:00,0</b></div>
@@ -733,7 +741,7 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
 <script type="module">
 /* =====================================================================
    Videoquiz - app del prof. Antonio Guida
-   Video di YouTube con quesiti, recupero degli errori, assegnazioni e report
+   Video (YouTube, Vimeo, file video) con quesiti, recupero degli errori, assegnazioni e report
    ===================================================================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
@@ -1087,6 +1095,197 @@ function ytErrorText(code) {
   return 'Errore del lettore YouTube (codice ' + code + ').';
 }
 
+/* ---------- fonti video supportate: YouTube, Vimeo, file video ---------- */
+const PROVIDER_LABEL = { youtube: 'YouTube', vimeo: 'Vimeo', file: 'File video' };
+function detectSource(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return { error: 'empty' };
+  const yt = parseYouTubeId(s);
+  if (yt) return { provider: 'youtube', id: yt, src: '' };
+  let u;
+  try { u = new URL(/^https?:\/\//i.test(s) ? s : 'https://' + s); } catch (e) { return { error: 'invalid' }; }
+  const host = u.hostname.toLowerCase().replace(/^www\./, '');
+  if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+    const segs = u.pathname.split('/').filter(Boolean);
+    let i = segs.indexOf('video'); let id = '';
+    if (i >= 0 && /^\d+$/.test(segs[i + 1] || '')) id = segs[++i];
+    else { for (let k = segs.length - 1; k >= 0; k--) if (/^\d{5,}$/.test(segs[k])) { id = segs[k]; i = k; break; } }
+    if (!id) return { error: 'vimeo' };
+    const h = (segs[i + 1] && /^[0-9a-f]{6,}$/i.test(segs[i + 1])) ? segs[i + 1] : (u.searchParams.get('h') || '');
+    return { provider: 'vimeo', id, src: 'https://vimeo.com/' + id + (h ? '/' + h : '') };
+  }
+  if (/\.(mp4|m4v|webm|ogv|ogg|mov)$/i.test(u.pathname)) {
+    if (u.protocol !== 'https:' && location.protocol === 'https:') return { error: 'http' };
+    return { provider: 'file', id: '', src: u.href };
+  }
+  if (/(^|\.)(odysee\.com|lbry\.tv)$/.test(host)) return { error: 'odysee' };
+  if (/(^|\.)dailymotion\.com$|^dai\.ly$/.test(host)) return { error: 'dailymotion' };
+  return { error: 'unsupported', host };
+}
+function sourceErrorText(r) {
+  const base = ' Puoi usare un link di YouTube, di Vimeo oppure il link diretto a un file video (che finisce con .mp4 o .webm).';
+  if (r.error === 'odysee') return 'Odysee non permette ad altre pagine di fermare il video o di spostarlo a un minuto preciso, quindi non si pu\u00f2 usare per i test.' + base;
+  if (r.error === 'dailymotion') return 'Dailymotion permette di comandare il video solo con un account aziendale e un codice del lettore, quindi non si pu\u00f2 usare per i test.' + base;
+  if (r.error === 'vimeo') return 'Non trovo il numero del video in questo link di Vimeo. Apri il video su Vimeo e copia l\'indirizzo dalla barra del browser.';
+  if (r.error === 'http') return 'Il link al file video deve iniziare con https:// (quelli con http:// vengono bloccati dal browser).';
+  if (r.error === 'unsupported') return 'Il sito \u00ab' + r.host + '\u00bb non permette di comandare il video da un\'altra pagina (fermarlo ai minuti dei quesiti), oppure il link non porta direttamente a un file video.' + base;
+  return 'Link non valido.' + base;
+}
+function testProvider(t) { return (t && t.provider) || ((t && t.videoId) ? 'youtube' : ''); }
+function hasVideo(t) { const p = testProvider(t); return p === 'youtube' ? !!t.videoId : p === 'vimeo' ? !!(t.videoId && t.videoSrc) : p === 'file' ? !!t.videoSrc : false; }
+function sourceKey(t) { const p = testProvider(t); return p + ':' + (p === 'youtube' ? t.videoId : t.videoSrc); }
+function testThumb(t) {
+  const p = testProvider(t);
+  if (p === 'youtube' && t.videoId) return 'https://i.ytimg.com/vi/' + t.videoId + '/mqdefault.jpg';
+  return t.videoThumb || '';
+}
+
+let vimeoPromise = null;
+function loadVimeo() {
+  if (window.Vimeo && window.Vimeo.Player) return Promise.resolve(window.Vimeo);
+  if (vimeoPromise) return vimeoPromise;
+  vimeoPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://player.vimeo.com/api/player.js'; s.async = true;
+    s.onload = () => (window.Vimeo && window.Vimeo.Player) ? resolve(window.Vimeo) : reject(new Error('vimeo-load'));
+    s.onerror = () => { vimeoPromise = null; reject(new Error('vimeo-load')); };
+    document.head.appendChild(s);
+  });
+  return vimeoPromise;
+}
+
+/* Lettore Vimeo con gli stessi comandi del lettore YouTube */
+class VimeoAdapter {
+  constructor(host, src, teacher, cb) {
+    this.t = 0; this.tAt = 0; this.st = -1; this.dur = 0; this.muted = false; this.title = ''; this.dead = false; this.cb = cb;
+    this.p = new window.Vimeo.Player(host, {
+      url: src, controls: !!teacher, keyboard: !!teacher, playsinline: true, dnt: true,
+      title: false, byline: false, portrait: false, pip: false, autopause: false, texttrack: false
+    });
+    const setSt = st => { if (this.st !== st) { this.st = st; if (!this.dead && cb.onState) cb.onState(st); } };
+    const upd = d => { if (d && typeof d.seconds === 'number') { this.t = d.seconds; this.tAt = performance.now(); } if (d && d.duration > 0) this.dur = d.duration; };
+    this.p.on('timeupdate', upd);
+    this.p.on('seeked', upd);
+    this.p.on('play', () => setSt(1));
+    this.p.on('playing', () => setSt(1));
+    this.p.on('pause', d => { upd(d); setSt(2); });
+    this.p.on('ended', d => { upd(d); if (this.dur) this.t = this.dur; setSt(0); });
+    this.p.on('bufferstart', () => { if (this.st === 1) setSt(3); });
+    this.p.on('bufferend', () => { if (this.st === 3) setSt(1); });
+    this.p.on('error', e => { if (!this.dead && cb.onError) cb.onError(vimeoErrorText(e)); });
+    this.p.ready().then(() => Promise.all([
+      this.p.getDuration().catch(() => 0),
+      this.p.getVideoTitle().catch(() => '')
+    ])).then(([d, title]) => {
+      if (this.dead) return;
+      this.dur = d || 0; this.title = title || ''; this.st = 5;
+      if (cb.onReady) cb.onReady(this);
+    }).catch(e => { if (!this.dead && cb.onError) cb.onError(vimeoErrorText(e)); });
+  }
+  getCurrentTime() {
+    let t = this.t;
+    if (this.st === 1 && this.tAt) t += (performance.now() - this.tAt) / 1000;
+    return this.dur ? Math.min(t, this.dur) : t;
+  }
+  getDuration() { return this.dur; }
+  getPlayerState() { return this.st; }
+  playVideo() {
+    if (this.st === 0) { this.t = 0; this.tAt = performance.now(); }
+    this.p.play().catch(e => console.warn('vimeo play', e && e.name));
+  }
+  pauseVideo() {
+    if (this.st === 1 || this.st === 3) { this.t = this.getCurrentTime(); this.tAt = performance.now(); this.st = 2; if (this.cb.onState) this.cb.onState(2); }
+    this.p.pause().catch(() => { });
+  }
+  seekTo(t) {
+    this.t = t; this.tAt = performance.now();
+    if (this.st === 0) this.st = 2;
+    this.p.setCurrentTime(t).catch(e => console.warn('vimeo seek', e && e.name));
+  }
+  mute() { this.muted = true; this.p.setMuted(true).catch(() => { }); }
+  unMute() { this.muted = false; this.p.setMuted(false).catch(() => { }); }
+  isMuted() { return this.muted; }
+  disableCaptions() { this.p.disableTextTrack().catch(() => { }); }
+  getTitle() { return this.title; }
+  destroy() { this.dead = true; try { this.p.destroy(); } catch (e) { } }
+}
+function vimeoErrorText(e) {
+  const n = (e && (e.name || e.method)) || '';
+  if (n === 'PrivacyError') return 'Questo video di Vimeo \u00e8 privato oppure il proprietario non permette di incorporarlo in altri siti: scegli un altro video.';
+  if (n === 'NotFoundError' || /not found/i.test((e && e.message) || '')) return 'Il video di Vimeo non esiste pi\u00f9 oppure il link non \u00e8 corretto.';
+  return 'Il video di Vimeo non si pu\u00f2 riprodurre qui' + (e && e.message ? ' (' + e.message + ')' : '') + '. Forse il proprietario non permette di incorporarlo in altri siti.';
+}
+
+/* Lettore per file video (.mp4, .webm\u2026) */
+class FileAdapter {
+  constructor(host, src, teacher, cb) {
+    this.dead = false; this.st = -1; this.readyDone = false;
+    const v = this.v = document.createElement('video');
+    v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
+    v.preload = 'metadata'; v.controls = !!teacher;
+    if (!teacher) { v.setAttribute('controlslist', 'nodownload noplaybackrate'); v.disablePictureInPicture = true; }
+    v.className = 'file-video';
+    v.addEventListener('contextmenu', e => { if (!teacher) e.preventDefault(); });
+    const setSt = st => { if (this.st !== st) { this.st = st; if (!this.dead && cb.onState) cb.onState(st); } };
+    v.addEventListener('playing', () => setSt(1));
+    v.addEventListener('play', () => setSt(1));
+    v.addEventListener('pause', () => { if (!v.ended) setSt(2); });
+    v.addEventListener('waiting', () => { if (!v.paused) setSt(3); });
+    v.addEventListener('ended', () => setSt(0));
+    v.addEventListener('loadedmetadata', () => {
+      if (this.readyDone || this.dead) return; this.readyDone = true; this.st = 5;
+      if (cb.onReady) cb.onReady(this);
+    });
+    v.addEventListener('error', () => {
+      if (this.dead || !cb.onError) return;
+      const c = v.error && v.error.code;
+      cb.onError(c === 4 ? 'Il file video non si apre: il link non porta a un file video, oppure il formato non \u00e8 supportato da questo browser (usa preferibilmente un file .mp4).' : 'Impossibile caricare il file video: controlla il link e la connessione a internet.');
+    });
+    v.src = src;
+    host.replaceWith(v);
+    let name = ''; try { name = decodeURIComponent(new URL(src).pathname.split('/').pop() || ''); } catch (e) { }
+    this.title = name;
+  }
+  getCurrentTime() { return this.v.currentTime || 0; }
+  getDuration() { const d = this.v.duration; return isFinite(d) ? d : 0; }
+  getPlayerState() { return this.st; }
+  playVideo() { if (this.v.ended) this.v.currentTime = 0; const p = this.v.play(); if (p && p.catch) p.catch(e => console.warn('file play', e && e.name)); }
+  pauseVideo() { this.v.pause(); }
+  seekTo(t) { try { this.v.currentTime = t; } catch (e) { } if (this.st === 0) this.st = 2; }
+  mute() { this.v.muted = true; }
+  unMute() { this.v.muted = false; }
+  isMuted() { return this.v.muted; }
+  disableCaptions() { try { Array.from(this.v.textTracks || []).forEach(tr => { tr.mode = 'disabled'; }); } catch (e) { } }
+  getTitle() { return this.title; }
+  destroy() { this.dead = true; try { this.v.pause(); this.v.removeAttribute('src'); this.v.load(); this.v.remove(); } catch (e) { } }
+}
+
+/* crea il lettore giusto; cb = { onReady(P), onState(st), onError(testo) } */
+async function createPlayer(hostId, test, teacher, cb) {
+  const p = testProvider(test);
+  const host = document.getElementById(hostId);
+  if (p === 'vimeo') { await loadVimeo(); return new VimeoAdapter(host, test.videoSrc, teacher, cb); }
+  if (p === 'file') return new FileAdapter(host, test.videoSrc, teacher, cb);
+  const YT = await loadYT();
+  const P = new YT.Player(hostId, {
+    videoId: test.videoId, width: '100%', height: '100%', playerVars: playerVars(teacher),
+    events: {
+      onReady: () => cb.onReady && cb.onReady(P),
+      onStateChange: ev => cb.onState && cb.onState(ev.data),
+      onError: ev => cb.onError && cb.onError(ytErrorText(ev.data))
+    }
+  });
+  P.getTitle = () => { try { const d = P.getVideoData && P.getVideoData(); return (d && d.title) || ''; } catch (e) { return ''; } };
+  return P;
+}
+async function fetchVimeoInfo(src) {
+  try {
+    const r = await fetch('https://vimeo.com/api/oembed.json?url=' + encodeURIComponent(src));
+    if (!r.ok) return null;
+    return await r.json();
+  } catch (e) { return null; }
+}
+
 /* =====================================================================
    STATO GENERALE E NAVIGAZIONE (INSEGNANTE)
    ===================================================================== */
@@ -1336,14 +1535,15 @@ function renderArchive() {
   const list = S.tests.filter(t => !q || (t.title || '').toLowerCase().includes(q)).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
   const box = $('#testList');
   if (!S.tests.length) {
-    box.innerHTML = '<div class="empty" style="grid-column:1/-1"><h3>Non hai ancora creato nessun test</h3><p>Premi \u00abNuovo test\u00bb, incolla il link di un video di YouTube e scegli i punti in cui il video si fermer\u00e0 per fare una domanda.</p></div>';
+    box.innerHTML = '<div class="empty" style="grid-column:1/-1"><h3>Non hai ancora creato nessun test</h3><p>Premi \u00abNuovo test\u00bb, incolla il link di un video (YouTube, Vimeo o file video) e scegli i punti in cui il video si fermer\u00e0 per fare una domanda.</p></div>';
     return;
   }
   if (!list.length) { box.innerHTML = '<div class="empty" style="grid-column:1/-1">Nessun test corrisponde alla ricerca.</div>'; return; }
   box.innerHTML = list.map(t => {
     const nA = S.assigns.filter(a => a.testId === t.id).length;
     const nQ = (t.questions || []).length;
-    const thumb = t.videoId ? '<img src="https://i.ytimg.com/vi/' + esc(t.videoId) + '/mqdefault.jpg" alt="" loading="lazy" onerror="this.remove()">' : '<div class="nothumb">Nessun video</div>';
+    const th = testThumb(t);
+    const thumb = '<div class="nothumb">' + (hasVideo(t) ? PROVIDER_LABEL[testProvider(t)] : 'Nessun video') + '</div>' + (th ? '<img src="' + esc(th) + '" alt="" loading="lazy" onerror="this.remove()">' : '');
     return '<article class="test-card" data-id="' + esc(t.id) + '">' +
       '<div class="thumb" data-act="edit">' + thumb + '<span class="badge-q">' + nQ + (nQ === 1 ? ' quesito' : ' quesiti') + '</span></div>' +
       '<div class="tc-body"><h3>' + esc(t.title || 'Senza titolo') + '</h3>' +
@@ -1370,7 +1570,7 @@ async function newTest() {
   const title = await promptBox('Nuovo test', 'Titolo del test', '', 'Crea il test');
   if (!title) return;
   const now = Date.now();
-  const data = { ownerUid: S.user.uid, title, videoId: '', videoUrl: '', videoTitle: '', duration: 0, questions: [], grading: Object.assign({}, DEFAULT_GRADING), createdAt: now, updatedAt: now };
+  const data = { ownerUid: S.user.uid, title, provider: 'youtube', videoId: '', videoSrc: '', videoThumb: '', videoUrl: '', videoTitle: '', duration: 0, questions: [], grading: Object.assign({}, DEFAULT_GRADING), createdAt: now, updatedAt: now };
   try {
     const ref = await addDoc(collection(db, 'tests'), data);
     S.tests.push(Object.assign({ id: ref.id }, data));
@@ -1394,7 +1594,7 @@ async function duplicateTest(id) {
   const title = await promptBox('Duplica il test', 'Titolo della copia', (t.title || '') + ' (copia)', 'Duplica');
   if (!title) return;
   const now = Date.now();
-  const data = clean({ ownerUid: S.user.uid, title, videoId: t.videoId || '', videoUrl: t.videoUrl || '', videoTitle: t.videoTitle || '', duration: t.duration || 0, questions: t.questions || [], grading: normGrading(t.grading), createdAt: now, updatedAt: now });
+  const data = clean({ ownerUid: S.user.uid, title, provider: testProvider(t) || 'youtube', videoId: t.videoId || '', videoSrc: t.videoSrc || '', videoThumb: t.videoThumb || '', videoUrl: t.videoUrl || '', videoTitle: t.videoTitle || '', duration: t.duration || 0, questions: t.questions || [], grading: normGrading(t.grading), createdAt: now, updatedAt: now });
   try {
     const ref = await addDoc(collection(db, 'tests'), data);
     S.tests.push(Object.assign({ id: ref.id }, data));
@@ -1434,7 +1634,7 @@ function openEditor(testId) {
   showView('v-editor');
   setCrumbs([{ label: 'I miei test', go: () => nav(loadArchive) }, { label: t.title || 'Test' }]);
   $('#edTitle').value = data.title || '';
-  $('#edUrl').value = data.videoUrl || (data.videoId ? 'https://www.youtube.com/watch?v=' + data.videoId : '');
+  $('#edUrl').value = data.videoUrl || (testProvider(data) === 'youtube' && data.videoId ? 'https://www.youtube.com/watch?v=' + data.videoId : (data.videoSrc || ''));
   $('#edVideoMsg').hidden = true;
   setSaveState('');
   $('#edAddQ').disabled = true;
@@ -1444,7 +1644,7 @@ function openEditor(testId) {
   $('#edVideoBox .vb-host').innerHTML = '';
   $('#edEmpty').hidden = false;
   renderQList(); renderGrading();
-  if (data.videoId) mountEditorPlayer(data.videoId);
+  if (hasVideo(data)) mountEditorPlayer();
 }
 function setSaveState(s) {
   const e = $('#edState');
@@ -1457,15 +1657,21 @@ function edMsg(text, type) { const m = $('#edVideoMsg'); if (!text) { m.hidden =
 async function edLoadVideo() {
   const E = S.ed; if (!E) return;
   const raw = $('#edUrl').value.trim();
-  const id = parseYouTubeId(raw);
-  if (!id) { edMsg('Link non valido. Copia l\'indirizzo del video da YouTube, per esempio https://www.youtube.com/watch?v=\u2026 oppure https://youtu.be/\u2026', 'bad'); return; }
-  if (E.test.videoId && E.test.videoId !== id && E.test.questions.length) {
+  const r = detectSource(raw);
+  if (r.error) { edMsg(sourceErrorText(r), 'bad'); return; }
+  const next = { provider: r.provider, videoId: r.id, videoSrc: r.src };
+  const changed = sourceKey(next) !== sourceKey(E.test) || !hasVideo(E.test);
+  if (hasVideo(E.test) && changed && E.test.questions.length) {
     if (!await confirmBox('Cambiare video?', 'I quesiti gi\u00e0 creati resteranno agli stessi minuti anche nel nuovo video. Vuoi continuare?', 'Cambia video')) return;
   }
-  if (E.test.videoId !== id) { E.test.duration = 0; E.test.videoTitle = ''; }
-  E.test.videoId = id; E.test.videoUrl = raw;
+  if (changed) { E.test.duration = 0; E.test.videoTitle = ''; E.test.videoThumb = ''; }
+  Object.assign(E.test, next, { videoUrl: raw });
   markDirty();
-  mountEditorPlayer(id);
+  mountEditorPlayer();
+  if (r.provider === 'vimeo' && changed) {
+    const info = await fetchVimeoInfo(r.src);
+    if (info && S.ed === E) { if (info.thumbnail_url) E.test.videoThumb = info.thumbnail_url; if (info.title && !E.test.videoTitle) E.test.videoTitle = info.title; }
+  }
 }
 function destroyEditorPlayer() {
   const E = S.ed; if (!E) return;
@@ -1473,37 +1679,36 @@ function destroyEditorPlayer() {
   try { if (E.player && E.player.destroy) E.player.destroy(); } catch (e) { }
   E.player = null; E.ready = false;
 }
-async function mountEditorPlayer(id) {
+async function mountEditorPlayer() {
   const E = S.ed; if (!E) return;
   destroyEditorPlayer();
   E.videoError = false;
   $('#edAddQ').disabled = true;
   edMsg('Caricamento del video\u2026', 'info');
-  let YT;
-  try { YT = await loadYT(); } catch (e) { edMsg('Impossibile caricare il lettore di YouTube. Controlla la connessione a internet e riprova.', 'bad'); return; }
-  if (S.ed !== E) return;
   $('#edEmpty').hidden = true;
   $('#edVideoBox .vb-host').innerHTML = '<div id="edPlayer"></div>';
-  E.player = new YT.Player('edPlayer', {
-    videoId: id, width: '100%', height: '100%', playerVars: playerVars(true),
-    events: {
-      onReady: () => { if (S.ed !== E) return; E.ready = true; edAfterReady(); },
-      onError: ev => { if (S.ed !== E) return; E.videoError = true; $('#edAddQ').disabled = true; edMsg(ytErrorText(ev.data), 'bad'); },
-      onStateChange: () => { if (S.ed === E) edTick(); }
-    }
-  });
+  let P;
+  try {
+    P = await createPlayer('edPlayer', E.test, true, {
+      onReady: ready => { if (S.ed !== E) return; E.player = ready; E.ready = true; edAfterReady(); },
+      onError: msg => { if (S.ed !== E) return; E.videoError = true; $('#edAddQ').disabled = true; edMsg(msg, 'bad'); },
+      onState: () => { if (S.ed === E) edTick(); }
+    });
+  } catch (e) { if (S.ed === E) edMsg('Impossibile caricare il lettore video. Controlla la connessione a internet e riprova.', 'bad'); return; }
+  if (S.ed !== E) { try { P.destroy(); } catch (e) { } return; }
+  E.player = P;
   E.timer = setInterval(edTick, 200);
 }
 function edAfterReady() {
   const E = S.ed; if (!E || !E.player) return;
   let title = '';
-  try { const d = E.player.getVideoData && E.player.getVideoData(); title = (d && d.title) || ''; } catch (e) { }
+  try { title = (E.player.getTitle && E.player.getTitle()) || ''; } catch (e) { }
   if (title) E.test.videoTitle = title;
   const d = E.player.getDuration ? E.player.getDuration() : 0;
   if (d > 0) E.test.duration = Math.round(d * 10) / 10;
   if (!E.videoError) {
     $('#edAddQ').disabled = false;
-    edMsg('Video pronto' + (title ? ': \u00ab' + title + '\u00bb' : '') + (E.test.duration ? ' \u00b7 durata ' + fmtTime(E.test.duration) : '') + '.', 'ok');
+    edMsg('Video pronto (' + PROVIDER_LABEL[testProvider(E.test)] + ')' + (title ? ': \u00ab' + title + '\u00bb' : '') + (E.test.duration ? ' \u00b7 durata ' + fmtTime(E.test.duration) : '') + '.', 'ok');
   }
   $('#edTlCur').hidden = false;
   renderTimeline();
@@ -1706,7 +1911,7 @@ function renderGrading() {
     '<div class="g-row"><label for="gP2">Giusto al 2\u00b0 tentativo (1\u00b0 recupero)</label><div class="g-in"><input id="gP2" type="number" min="0" max="100" step="5" value="' + g.p2 + '"> %</div></div>' +
     '<div class="g-row"><label for="gP3">Giusto al 3\u00b0 tentativo (2\u00b0 recupero)</label><div class="g-in"><input id="gP3" type="number" min="0" max="100" step="5" value="' + g.p3 + '"> %</div></div>' +
     '<div class="g-row"><label for="gP4">Giusto dal 4\u00b0 tentativo in poi</label><div class="g-in"><input id="gP4" type="number" min="0" max="100" step="5" value="' + g.p4 + '"> %</div></div>' +
-    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10.</p>' +
+    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10. Se cambi questi criteri, anche i voti delle consegne gi\u00e0 ricevute vengono ricalcolati.</p>' +
     '<div class="g-example" id="gExample"></div>' +
     '<label class="check"><input type="checkbox" id="gShow"' + (g.showGrade ? ' checked' : '') + '> Mostra il voto all\'alunno dopo l\'invio</label></div>';
   const read = final => {
@@ -1730,7 +1935,7 @@ function gradingExample() {
 }
 
 /* salvataggio */
-function pubSnapshot(t) { return clean({ title: t.title || '', videoId: t.videoId || '', duration: t.duration || 0, questions: (t.questions || []).slice().sort((a, b) => a.time - b.time), grading: normGrading(t.grading) }); }
+function pubSnapshot(t) { return clean({ title: t.title || '', provider: testProvider(t) || 'youtube', videoId: t.videoId || '', videoSrc: t.videoSrc || '', duration: t.duration || 0, questions: (t.questions || []).slice().sort((a, b) => a.time - b.time), grading: normGrading(t.grading) }); }
 async function edSave() {
   const E = S.ed; if (!E) return false;
   const T = E.test;
@@ -1740,7 +1945,7 @@ async function edSave() {
   T.updatedAt = Date.now();
   const btn = $('#edSaveBtn'); btn.disabled = true; btn.classList.add('loading');
   try {
-    const data = clean({ title: T.title, videoId: T.videoId || '', videoUrl: T.videoUrl || '', videoTitle: T.videoTitle || '', duration: T.duration || 0, questions: T.questions, grading: normGrading(T.grading), updatedAt: T.updatedAt });
+    const data = clean({ title: T.title, provider: testProvider(T) || 'youtube', videoId: T.videoId || '', videoSrc: T.videoSrc || '', videoThumb: T.videoThumb || '', videoUrl: T.videoUrl || '', videoTitle: T.videoTitle || '', duration: T.duration || 0, questions: T.questions, grading: normGrading(T.grading), updatedAt: T.updatedAt });
     await updateDoc(doc(db, 'tests', E.id), data);
     const idx = S.tests.findIndex(x => x.id === E.id);
     if (idx >= 0) S.tests[idx] = Object.assign({}, S.tests[idx], data);
@@ -1767,7 +1972,7 @@ async function leaveEditor() {
 }
 function edPreview() {
   const E = S.ed; if (!E) return;
-  if (!E.test.videoId) { toast('Carica prima un video.', 'bad'); return; }
+  if (!hasVideo(E.test)) { toast('Carica prima un video.', 'bad'); return; }
   if (!E.test.questions.length) { toast('Aggiungi almeno un quesito.', 'bad'); return; }
   try { E.player && E.player.pauseVideo(); } catch (e) { }
   stuStartPreview(clean(E.test));
@@ -1839,7 +2044,7 @@ function passwordBody(value) {
 function checkPwd(p) { p = String(p || '').trim(); if (p.length < 4) return 'La password deve avere almeno 4 caratteri.'; return ''; }
 async function newAssignment() {
   const t = S.curTest;
-  if (!t.videoId || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
+  if (!hasVideo(t) || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
   const body = el('<div><label class="fld"><span>Nome dell\'assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody());
   $('.an', body).value = (t.title || 'Test') + ' del ' + fmtDateLong(Date.now());
@@ -1973,9 +2178,20 @@ function openReports(aid) {
   if (S.unsubReports) S.unsubReports();
   S.unsubReports = onSnapshot(
     query(collection(db, 'reports'), where('ownerUid', '==', S.user.uid), where('assignmentId', '==', aid)),
-    snap => { S.reports = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); renderReports(); },
+    snap => { S.reports = snap.docs.map(d => regradeReport(Object.assign({ id: d.id }, d.data()))); renderReports(); },
     ex => dbError(ex, 'report')
   );
+}
+/* ricalcola punti e voto con i criteri di valutazione attuali del test */
+function currentGrading() { return normGrading((S.curTest && S.curTest.grading) || null); }
+function regradeReport(r) {
+  const g = currentGrading();
+  const qs = (r.questions || []).map(q => {
+    const tries = Math.max(1, Number(q.tries) || 1);
+    return Object.assign({}, q, { value: Math.round(valueForTries(tries, g) * 1000) / 1000 });
+  });
+  const voto = qs.length ? computeVoto(qs.map(q => q.value), g) : (Number(r.voto) || 0);
+  return Object.assign({}, r, { questions: qs, voto, votoOriginale: Number(r.voto) || 0, gradingNow: g });
 }
 function repTime(r) { return tsToMs(r.submittedAt) || r.clientSubmittedAt || 0; }
 function sortReports(list) {
@@ -2010,7 +2226,8 @@ function renderReportsInner() {
   const R = sortReports(S.reports.slice());
   const n = R.length;
   const avg = n ? R.reduce((s, r) => s + (Number(r.voto) || 0), 0) / n : 0;
-  $('#rpSummary').textContent = n ? n + (n === 1 ? ' test consegnato' : ' test consegnati') + ' \u00b7 media dei voti ' + fmtNum(avg, 1) : 'Ancora nessun test consegnato';
+  const g = currentGrading();
+  $('#rpSummary').textContent = n ? n + (n === 1 ? ' test consegnato' : ' test consegnati') + ' \u00b7 media dei voti ' + fmtNum(avg, 1) + ' \u00b7 criteri attuali: voto minimo ' + g.minGrade + ', 2\u00b0 tentativo ' + g.p2 + '%, 3\u00b0 ' + g.p3 + '%, dal 4\u00b0 ' + g.p4 + '%' : 'Ancora nessun test consegnato';
   if (!n) {
     $('#rpTable').innerHTML = '<div class="empty" style="margin:1rem"><h3>Nessun report</h3><p>I report compariranno qui automaticamente, man mano che gli alunni inviano il test. Per iniziare, dai agli alunni il link e la password (pulsante \u00abLink e password\u00bb).</p></div>';
     return;
@@ -2061,6 +2278,7 @@ function reportDetailHTML(r) {
   const lab = k => k === 0 ? 'Primo svolgimento' : k + '\u00b0 recupero';
   const when = repTime(r);
   let h = '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + ' \u00b7 ' + esc(r.date || '') + (when ? ' \u00b7 inviato alle ' + fmtHour(when) : '') + '</div></div><div class="rd-voto">Voto ' + fmtNum(r.voto, 1) + '</div></div>';
+  if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) h += '<div class="msg info">Voto ricalcolato con i criteri di valutazione attuali del test. Al momento della consegna il voto era ' + fmtNum(r.votoOriginale, 1) + '.</div>';
   h += '<p>Risposte corrette al primo svolgimento: <b>' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '</b> \u00b7 Turni di recupero: <b>' + (r.recoveryRounds || 0) + '</b></p>';
   (r.questions || []).forEach(q => {
     h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + '</span></div>' +
@@ -2228,7 +2446,7 @@ async function stuLogin(e) {
     if (pub.assignmentId !== Stu.aid) { err.textContent = 'Password non corretta. Controlla e riprova.'; return; }
     if (pub.open === false) { err.textContent = 'Questa assegnazione \u00e8 chiusa: non \u00e8 pi\u00f9 possibile svolgere il test.'; return; }
     stuSetPub(key, pub);
-    if (!Stu.qs.length || !Stu.test.videoId) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
+    if (!Stu.qs.length || !hasVideo(Stu.test)) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
     Stu.run = newRun({ cognome, nome, classe, date: fmtDate(Date.now()) });
     saveRun();
     stuIntro();
@@ -2303,25 +2521,24 @@ async function stuEnsurePlayer(cb) {
   Stu.onReadyCb = cb;
   if (Stu.creating) return;
   Stu.creating = true;
-  let YT;
-  try { YT = await loadYT(); }
-  catch (e) { Stu.creating = false; stuFatal('Video non disponibile', 'Il lettore di YouTube non risponde. Controlla la connessione a internet e ricarica la pagina: il test riprender\u00e0 da dove eri arrivato.', true); return; }
   $('#stuVideoBox .vb-host').innerHTML = '<div id="stuPlayer"></div>';
   Stu.ready = false; Stu.everPlayed = false; Stu.nativeTap = false; Stu.lastSt = null;
   $('#shield').hidden = true; $('#bigPlay').hidden = false;
-  Stu.P = new YT.Player('stuPlayer', {
-    videoId: Stu.test.videoId, width: '100%', height: '100%', playerVars: playerVars(false),
-    events: {
-      onReady: () => {
-        Stu.ready = true; Stu.creating = false;
+  let P;
+  try {
+    P = await createPlayer('stuPlayer', Stu.test, false, {
+      onReady: ready => {
+        if (Stu.P && Stu.P !== ready) return;
+        Stu.P = ready; Stu.ready = true; Stu.creating = false;
         noCaptions(Stu.P);
         stuDuration(); renderProgMarks(); updateProg(0);
         const f = Stu.onReadyCb; Stu.onReadyCb = null; if (f) f();
       },
-      onStateChange: ev => stuState(ev.data),
-      onError: ev => { Stu.creating = false; stuFatal('Problema con il video', ytErrorText(ev.data) + ' Avvisa il tuo insegnante.', true); }
-    }
-  });
+      onState: st => { if (Stu.P === P) stuState(st); },
+      onError: msg => { Stu.creating = false; stuFatal('Problema con il video', msg + ' Avvisa il tuo insegnante.', true); }
+    });
+  } catch (e) { Stu.creating = false; stuFatal('Video non disponibile', 'Il lettore video non risponde. Controlla la connessione a internet e ricarica la pagina: il test riprender\u00e0 da dove eri arrivato.', true); return; }
+  Stu.P = P;
   clearInterval(Stu.timer);
   Stu.timer = setInterval(stuTick, 100);
 }
@@ -2330,11 +2547,12 @@ function stuTeardown() {
   try { if (Stu.P && Stu.P.destroy) Stu.P.destroy(); } catch (e) { }
   Stu.P = null; Stu.ready = false; Stu.creating = false; Stu.everPlayed = false; Stu.nativeTap = false;
   Stu.overlayQ = null; Stu.mode = null; Stu.seg = null; Stu.lastSt = null; Stu.seekGuard = null; Stu.onReadyCb = null;
-  $('#qov').hidden = true; $('#shield').hidden = true; $('#bigPlay').hidden = false;
+  $('#qov').hidden = true; $('#shield').hidden = true; $('#bigPlay').hidden = false; veilVideo(false);
   $('#stuVideoBox .vb-host').innerHTML = '';
 }
 function noCaptions(P) {
   if (!P) return;
+  if (P.disableCaptions) { P.disableCaptions(); return; }
   try { if (P.unloadModule) { P.unloadModule('captions'); P.unloadModule('cc'); } } catch (e) { }
   try { if (P.setOption) P.setOption('captions', 'track', {}); } catch (e) { }
 }
@@ -2387,6 +2605,15 @@ function stuTick() {
   if (Stu.seekGuard) {
     if (Math.abs(t - Stu.seekGuard.to) < 1.5 || Date.now() > Stu.seekGuard.until) Stu.seekGuard = null;
     else return;
+  }
+  const nowMs = performance.now();
+  const elapsed = Stu.lastTickAt ? Math.min(2, (nowMs - Stu.lastTickAt) / 1000) : 0.1;
+  Stu.lastTickAt = nowMs;
+  if (t > Stu.maxReached + 2.5 + elapsed * 1.25) {
+    /* salto in avanti non consentito (per esempio con i comandi del sito del video) */
+    Stu.seekGuard = { to: Stu.maxReached, until: Date.now() + 1500 };
+    try { P.seekTo(Stu.maxReached, true); } catch (e) { }
+    return;
   }
   const tgt = stuTarget();
   if (tgt && t >= tgt.time - 0.08) {
@@ -2473,7 +2700,9 @@ function stuStartWatching() {
     tryPlay();
   });
 }
+function veilVideo(on) { const b = $('#stuVideoBox'); if (b) b.classList.toggle('veiled', !!on); }
 function openQuestion(q) {
+  veilVideo(true);
   try { Stu.P && Stu.P.pauseVideo(); } catch (e) { }
   Stu.overlayQ = q;
   const idx = Stu.qs.indexOf(q);
@@ -2533,6 +2762,7 @@ function stuConfirm() {
   rec.att.push({ r: Stu.run.round, v: r.v, t: r.t, ok });
   Stu.overlayQ = null;
   $('#qov').hidden = true;
+  veilVideo(false);
   Stu.lastSt = null;
   if (Stu.mode === 'first') {
     Stu.run.pos = Math.max(Stu.run.pos || 0, q.time);
