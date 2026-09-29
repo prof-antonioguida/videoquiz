@@ -135,7 +135,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 .spinner{width:42px;height:42px;border:4px solid var(--primary-l);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
 
 /* ---------- accesso ---------- */
-.auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:2rem 16px}
+.auth-wrap{min-height:calc(100vh - 110px);display:flex;align-items:center;justify-content:center;padding:2rem 16px}
 .auth-card{width:100%;max-width:420px;padding:1.6rem}
 .auth-brand{display:flex;align-items:center;gap:.9rem;margin-bottom:1.3rem}
 .auth-brand h1{margin:0;font-size:1.7rem}
@@ -240,7 +240,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 
 /* ---------- report ---------- */
 .table-card{padding:0;overflow:hidden}
-.table-wrap{overflow:auto;max-height:calc(100vh - 230px)}
+.table-wrap{overflow-x:auto;overflow-y:hidden}
 table.rep{border-collapse:separate;border-spacing:0;width:100%;font-size:.92rem}
 table.rep th,table.rep td{padding:.5em .65em;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
 table.rep thead th{position:sticky;top:0;background:var(--thead);z-index:2;font-weight:800;font-size:.85rem;color:var(--text2)}
@@ -623,6 +623,9 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
 
 .foot .ver{font-size:.75rem;opacity:.8}
 
+/* un solo ascensore: quando è aperta una finestra, la pagina sotto non scorre */
+html.scroll-lock,html.scroll-lock body{overflow:hidden}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -772,6 +775,7 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
               <div class="fld"><span>Data</span><div class="static" id="sDate"></div></div>
             </div>
             <label class="fld"><span>Password del test</span><input type="text" id="sPwd" autocapitalize="off" autocorrect="off" spellcheck="false" autocomplete="off"></label>
+            <label class="fld pin-fld"><span>Codice personale <small class="muted">· solo se riprendi un test che avevi salvato</small></span><input type="text" id="sPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="4 cifre"></label>
             <div class="err" id="sLoginErr"></div>
             <button class="btn primary big block" id="sLoginBtn" type="submit">Accedi al test</button>
           </form>
@@ -795,8 +799,8 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
             <p class="hint">Meno tentativi ti serviranno, più alto sarà il voto.</p>
           </div>
           <div class="pin-box" id="iPinBox">
-            <label class="fld"><span>Codice personale (4 cifre)</span><input type="text" id="iPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="es. 2580"></label>
-            <p class="hint"><b>Se inizi ora:</b> inventa un codice e annotalo. Se dovrai interrompere il test, potrai salvarlo e riprenderlo più tardi, anche da un altro dispositivo.<br><b>Se avevi salvato il test:</b> scrivi il codice che avevi scelto e riprenderai da dove eri arrivato.</p>
+            <label class="fld"><span>Scegli il tuo codice personale (4 cifre)</span><input type="text" id="iPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="es. 2580"></label>
+            <p class="hint">Inventa un codice e <b>annotalo</b>. Se dovrai interrompere il test, potrai salvarlo e riprenderlo più tardi, anche da un altro dispositivo: nella schermata iniziale scriverai cognome, nome, classe, la password del test e questo codice.</p>
             <div class="err" id="iPinErr"></div>
           </div>
           <button class="btn primary big block" id="iStart" type="button"></button>
@@ -846,7 +850,7 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
         <div class="s-card narrow center">
           <div class="big-save" id="savedIco"></div>
           <h1>Test salvato</h1>
-          <p>Potrai completarlo più tardi, anche da un altro dispositivo: apri lo stesso link, inserisci cognome, nome, classe e la password del test, poi il tuo codice personale:</p>
+          <p>Potrai completarlo più tardi, anche da un altro dispositivo: apri lo stesso link e nella schermata iniziale scrivi cognome, nome, classe, la password del test e il tuo codice personale:</p>
           <div class="pin-show" id="savedPin"></div>
           <p class="hint">Su questo dispositivo il test non è più visibile: nessun altro potrà aprirlo senza il tuo codice. Ora puoi chiudere questa pagina.</p>
         </div>
@@ -876,7 +880,7 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 28/09/2026 19:50</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 29/09/2026 17:37</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1115,6 +1119,10 @@ function showDiag(msg) {
   const p = document.createElement('div'); p.textContent = msg; d.appendChild(p);
 }
 
+function syncScrollLock() {
+  const lock = !!document.querySelector('.modal-ov') || !$('#qov').hidden;
+  document.documentElement.classList.toggle('scroll-lock', lock);
+}
 function modal(opts) {
   const { title, body, buttons = [], wide = false, dismissible = true, focus } = opts;
   return new Promise(resolve => {
@@ -1126,7 +1134,7 @@ function modal(opts) {
     let closed = false;
     const close = val => {
       if (closed) return; closed = true;
-      ov.remove(); document.removeEventListener('keydown', onKey); resolve(val);
+      ov.remove(); document.removeEventListener('keydown', onKey); syncScrollLock(); resolve(val);
     };
     buttons.forEach(b => {
       const btn = el('<button type="button" class="btn ' + (b.cls || '') + '"></button>');
@@ -1150,6 +1158,7 @@ function modal(opts) {
     };
     document.addEventListener('keydown', onKey);
     document.body.appendChild(ov);
+    syncScrollLock();
     const f = focus ? $(focus, bodyEl) : $('input:not([readonly]),textarea,select', bodyEl);
     if (f) setTimeout(() => { try { f.focus(); } catch (e) { } }, 40);
   });
@@ -2709,7 +2718,7 @@ function wireStudent() {
   $$('.save-later').forEach(b => { b.innerHTML = ico('save') + '<span class="l-long"> Salva e continua pi\u00f9 tardi</span><span class="l-short"> Salva</span>'; b.addEventListener('click', () => stuSaveLater(b)); });
   $('#wBack').innerHTML = '<span class="l-long">Torna all\'elenco dei quesiti</span><span class="l-short">Elenco quesiti</span>';
   $('#savedIco').innerHTML = ico('save');
-  ['#iPin'].forEach(sel => $(sel).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); }));
+  ['#sPin', '#iPin'].forEach(sel => $(sel).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); }));
   $('#iPin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#iStart').click(); } });
   $('#iStart').innerHTML = ico('play') + ' Inizia a guardare il video';
   $('#iStart').addEventListener('click', stuIntroStart);
@@ -2773,8 +2782,10 @@ async function stuLogin(e) {
   const cognome = nameCase($('#sCognome').value), nome = nameCase($('#sNome').value);
   const classe = $('#sClasse').value.trim().replace(/\s+/g, ' ').toUpperCase();
   const pwd = $('#sPwd').value;
-  if (!cognome || !nome || !classe) { err.textContent = 'Compila cognome, nome e classe.'; return; }
+  const pin = $('#sPin').value.trim();
+  if (!cognome || !nome || !classe) { err.textContent = 'Compila cognome, nome e classe (gli stessi che avevi scritto la prima volta, se riprendi un test salvato).'; return; }
   if (!pwd.trim()) { err.textContent = 'Scrivi la password del test.'; return; }
+  if (pin && !/^\d{4}$/.test(pin)) { err.textContent = 'Il codice personale \u00e8 formato da 4 cifre. Se inizi il test per la prima volta, lascialo vuoto.'; return; }
 
   const btn = $('#sLoginBtn'); btn.disabled = true; btn.classList.add('loading');
   try {
@@ -2787,6 +2798,11 @@ async function stuLogin(e) {
     stuSetPub(key, pub);
     if (!Stu.qs.length || !hasVideo(Stu.test)) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
     const profile = { cognome, nome, classe, date: fmtDate(Date.now()) };
+    if (pin) {
+      if (!saveAllowed()) { err.textContent = 'Per questo test il salvataggio non \u00e8 attivo, quindi non ci sono test da riprendere: lascia vuoto il codice personale.'; return; }
+      await resumeFrom(await progIdFor(Stu.aid, profile, pin), pin, err);
+      return;
+    }
     Stu.progId = null; Stu.pin = null;
     Stu.run = newRun(profile);
     stuIntro();
@@ -2797,7 +2813,7 @@ async function stuLogin(e) {
 }
 async function resumeFrom(id, pin, errEl) {
   const run = await loadSaved(id);
-  if (!run) { errEl.textContent = 'Non trovo un test salvato con questi dati e questo codice. Controlla cognome, nome, classe e codice personale. Se vuoi iniziare il test da capo, lascia vuoto il codice.'; return false; }
+  if (!run) { errEl.textContent = 'Non trovo un test salvato con questi dati e questo codice. Controlla che cognome, nome e classe siano gli stessi scritti la prima volta e che il codice sia giusto. Se vuoi iniziare il test da capo, lascia vuoto il codice.'; return false; }
   if (Stu.qs.map(q => q.id).join(',') !== (run.qids || []).join(',')) { errEl.textContent = 'L\'insegnante ha modificato il test dopo il tuo salvataggio: devi ricominciare da capo (lascia vuoto il codice personale).'; return false; }
   Stu.progId = id; Stu.pin = pin;
   run.pubKey = Stu.pubKey; run.aid = Stu.aid;
@@ -3083,7 +3099,7 @@ function stuStartWatching() {
     tryPlay();
   });
 }
-function veilVideo(on) { const b = $('#stuVideoBox'); if (b) b.classList.toggle('veiled', !!on); }
+function veilVideo(on) { const b = $('#stuVideoBox'); if (b) b.classList.toggle('veiled', !!on); setTimeout(syncScrollLock, 0); }
 function openQuestion(q) {
   veilVideo(true);
   try { Stu.P && Stu.P.pauseVideo(); } catch (e) { }
