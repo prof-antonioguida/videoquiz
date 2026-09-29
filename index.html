@@ -626,6 +626,9 @@ table.rep.prog td.st{white-space:normal;min-width:220px}
 /* un solo ascensore: quando è aperta una finestra, la pagina sotto non scorre */
 html.scroll-lock,html.scroll-lock body{overflow:hidden}
 
+/* pulsanti delle finestre sempre visibili in basso, anche con contenuti lunghi */
+.modal-foot{position:sticky;bottom:-5vh;z-index:2;background:var(--surface);border-radius:0 0 18px 18px;box-shadow:0 -6px 12px -10px rgba(0,0,0,.25)}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -880,7 +883,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 29/09/2026 17:37</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 29/09/2026 18:39</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2601,7 +2604,119 @@ function reportDetailHTML(r) {
   return h;
 }
 function showReportDetail(r) {
-  modal({ title: 'Report dell\'alunno', body: reportDetailHTML(r), wide: true, buttons: [{ label: 'Chiudi', cls: 'primary', value: true }] });
+  modal({
+    title: 'Report dell\'alunno', body: reportDetailHTML(r), wide: true, buttons: [
+      {
+        html: ico('download') + ' Scarica PDF', cls: '', onClick: async (b, btn) => {
+          btn.disabled = true; btn.classList.add('loading');
+          try { await downloadReportPdf(r); }
+          catch (e) { console.error(e); toast('Impossibile creare il PDF: controlla la connessione a internet e riprova.', 'bad', 6000); }
+          btn.disabled = false; btn.classList.remove('loading');
+          return false;
+        }
+      },
+      { label: 'Chiudi', cls: 'primary', value: true }
+    ]
+  });
+}
+
+/* ---------- report dell'alunno in PDF ---------- */
+let jspdfPromise = null;
+function loadJsPDF() {
+  if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+  if (jspdfPromise) return jspdfPromise;
+  jspdfPromise = new Promise((resolve, reject) => {
+    const sc = document.createElement('script');
+    sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    sc.onload = () => (window.jspdf && window.jspdf.jsPDF) ? resolve(window.jspdf.jsPDF) : reject(new Error('jspdf'));
+    sc.onerror = () => { jspdfPromise = null; reject(new Error('jspdf')); };
+    document.head.appendChild(sc);
+  });
+  return jspdfPromise;
+}
+function pdfSafe(t) {
+  return String(t == null ? '' : t).normalize('NFC')
+    .replace(/[\u2018\u2019\u02bc]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u2013\u2014\u2212]/g, '-')
+    .replace(/\u2026/g, '...').replace(/\u2192/g, '->').replace(/\u00a0/g, ' ').replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g, '?');
+}
+function reportFileName(r) {
+  const n = [r.cognome, r.nome, r.classe].map(x => String(x || '').trim()).filter(Boolean).join(' ')
+    .replace(/[\\/:*?"<>|\u0000-\u001F]+/g, '-').replace(/\s+/g, ' ').trim();
+  return (n || 'Report') + '.pdf';
+}
+async function downloadReportPdf(r) {
+  const JsPDF = await loadJsPDF();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const W = 210, H = 297, M = 18, CW = W - 2 * M, BOTTOM = H - 18;
+  const C = { text: [28, 35, 51], muted: [95, 107, 128], primary: [51, 85, 214], ok: [33, 138, 66], bad: [200, 40, 40], line: [215, 221, 232], soft: [242, 245, 251] };
+  let y = M;
+  const color = c => doc.setTextColor(c[0], c[1], c[2]);
+  const font = (size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); };
+  const lh = size => size * 0.46;
+  const ensure = h => { if (y + h > BOTTOM) { doc.addPage(); y = M + 2; } };
+  const para = (txt, size, style, c, indent) => {
+    indent = indent || 0; font(size, style); color(c || C.text);
+    doc.splitTextToSize(pdfSafe(txt), CW - indent).forEach(line => { ensure(lh(size)); y += lh(size); doc.text(line, M + indent, y - lh(size) * 0.25); });
+  };
+  const rule = (gap) => { y += gap || 2; doc.setDrawColor(C.line[0], C.line[1], C.line[2]); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += gap || 2; };
+  const when = repTime(r);
+  const tt = (S.curTest && S.curTest.title) || r.testTitle || '';
+  const an = (S.curAssign && S.curAssign.name) || r.assignmentName || '';
+
+  // intestazione
+  font(9, 'bold'); color(C.primary); y += 4; doc.text('REPORT DELL\'ALUNNO', M, y);
+  y += 2; para(tt || 'Test', 15, 'bold', C.text);
+  if (an) para('Assegnazione: ' + an, 10, 'normal', C.muted);
+  y += 3;
+  // riquadro alunno e voto
+  const boxTop = y, boxH = 24;
+  doc.setFillColor(C.soft[0], C.soft[1], C.soft[2]); doc.setDrawColor(C.line[0], C.line[1], C.line[2]);
+  doc.roundedRect(M, boxTop, CW, boxH, 2.5, 2.5, 'FD');
+  font(14, 'bold'); color(C.text); doc.text(pdfSafe(r.cognome + ' ' + r.nome), M + 5, boxTop + 9);
+  font(10, 'normal'); color(C.muted);
+  doc.text(pdfSafe('Classe ' + (r.classe || '') + '   \u00b7   ' + (r.date || '') + (when ? '   \u00b7   inviato alle ' + fmtHour(when) : '')), M + 5, boxTop + 17);
+  font(9, 'bold'); color(C.muted); doc.text('VOTO', W - M - 5, boxTop + 8, { align: 'right' });
+  font(20, 'bold'); color(C.primary); doc.text(fmtNum(r.voto, 1), W - M - 5, boxTop + 18, { align: 'right' });
+  y = boxTop + boxH + 6;
+  para('Risposte corrette al primo svolgimento: ' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '     Turni di recupero: ' + (r.recoveryRounds || 0), 10, 'normal', C.text);
+  if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) para('Voto ricalcolato con i criteri di valutazione attuali del test (al momento della consegna era ' + fmtNum(r.votoOriginale, 1) + ').', 9, 'italic', C.muted);
+  rule(3);
+
+  // quesiti
+  const lab = k => k === 0 ? 'Primo svolgimento' : k + '\u00b0 recupero';
+  (r.questions || []).forEach(q => {
+    ensure(22);
+    y += 2;
+    font(11.5, 'bold'); color(C.text);
+    const head = 'Quesito ' + q.n + '   ' + fmtTime(q.time) + '   ' + (TYPE_LABEL[q.type] || '');
+    y += lh(11.5); doc.text(pdfSafe(head), M, y - 1);
+    font(9.5, 'normal'); color(C.muted);
+    doc.text(pdfSafe('punti ' + fmtNum(q.value, 2) + '  \u00b7  ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi')), W - M, y - 1, { align: 'right' });
+    y += 1;
+    para(q.text, 10.5, 'normal', C.text);
+    para('Risposta corretta: ' + (q.correct || ''), 10, 'bold', C.ok);
+    (q.att || []).forEach((a, i) => {
+      const res = a.ok ? 'corretta' : 'errata';
+      font(10, 'normal');
+      const lines = doc.splitTextToSize(pdfSafe((i + 1) + '. ' + lab(a.r) + ': \u00ab' + a.a + '\u00bb  ->'), CW - 6 - 18);
+      lines.forEach((line, k) => {
+        ensure(lh(10)); y += lh(10);
+        font(10, 'normal'); color(C.text); doc.text(line, M + 4, y - 1);
+        if (k === lines.length - 1) { const w = doc.getTextWidth(line); font(10, 'bold'); color(a.ok ? C.ok : C.bad); doc.text(res, M + 4 + w + 1.5, y - 1); }
+      });
+    });
+    rule(2.5);
+  });
+
+  // pi\u00e8 di pagina
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); font(8, 'normal'); color(C.muted);
+    doc.text(pdfSafe('Videoquiz \u00b7 prof. Antonio Guida' + (tt ? '  \u00b7  ' + tt : '')), M, H - 9);
+    doc.text('Pagina ' + i + ' di ' + n, W - M, H - 9, { align: 'right' });
+  }
+  doc.setProperties({ title: reportFileName(r).replace(/\.pdf$/, ''), author: 'Videoquiz', subject: tt });
+  doc.save(reportFileName(r));
 }
 function exportCSV() {
   const R = sortReports(S.reports.slice());
