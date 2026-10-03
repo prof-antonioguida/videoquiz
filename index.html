@@ -757,7 +757,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
     <div class="card prog-card" id="rpProgCard" hidden>
       <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato. Se elimini una riga, l'alunno non potrà più riprendere il test e dovrà ricominciarlo da capo.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Con «Sblocca» permetti a un alunno di ricominciare (per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale); l'eventuale test che aveva salvato verrà eliminato.</p>
     </div>
   </section>
 
@@ -806,6 +806,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
             <p class="hint">Inventa un codice e <b>annotalo</b>. Se dovrai interrompere il test, potrai salvarlo e riprenderlo più tardi, anche da un altro dispositivo: nella schermata iniziale scriverai cognome, nome, classe, la password del test e questo codice.</p>
             <div class="err" id="iPinErr"></div>
           </div>
+          <div class="err" id="iErr"></div>
           <button class="btn primary big block" id="iStart" type="button"></button>
         </div>
       </div>
@@ -883,7 +884,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 29/09/2026 18:39</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 03/10/2026 10:05</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1091,6 +1092,14 @@ function valueForTries(tries, g) {
   if (tries === 2) return g.p2 / 100;
   if (tries === 3) return g.p3 / 100;
   return g.p4 / 100;
+}
+/* risposta multipla con pi\u00f9 risposte esatte: ogni esatta selezionata vale una parte, ogni sbagliata ne annulla una */
+function partialScore(q, sel) {
+  const C = new Set(q.correct || []);
+  if (q.type !== 'mc' || C.size < 2 || !Array.isArray(sel)) return 0;
+  let good = 0, bad = 0;
+  sel.forEach(i => { if (C.has(i)) good++; else bad++; });
+  return Math.round(Math.max(0, good - bad) / C.size * 1000) / 1000;
 }
 function computeVoto(values, g) {
   if (!values.length) return 10;
@@ -1680,10 +1689,11 @@ async function deleteAccountFlow() {
     }]
   });
 }
-async function progressRefs(conds) {
-  try { const snap = await getDocs(query(collection(db, 'progress'), ...conds)); return snap.docs.map(d => d.ref); }
-  catch (e) { console.warn('progress', e && e.code); return []; }
+async function colRefs(col, conds) {
+  try { const snap = await getDocs(query(collection(db, col), ...conds)); return snap.docs.map(d => d.ref); }
+  catch (e) { console.warn(col, e && e.code); return []; }
 }
+async function progressRefs(conds) { return (await colRefs('progress', conds)).concat(await colRefs('starts', conds)); }
 async function batchDelete(refs) {
   for (let i = 0; i < refs.length; i += 400) {
     const b = writeBatch(db);
@@ -1954,7 +1964,7 @@ function renderQList() {
   $('#edQCount').textContent = Q.length;
   const box = $('#edQList');
   if (!Q.length) box.innerHTML = '<div class="q-empty">Nessun quesito. Avvia il video e, nel punto in cui vuoi fermarlo, premi \u00abAggiungi quesito qui\u00bb.</div>';
-  else box.innerHTML = Q.map((q, i) => '<div class="q-item" data-id="' + esc(q.id) + '"><div class="q-num">' + (i + 1) + '</div><div class="q-main"><div class="q-meta"><span class="time-chip">' + fmtTime(q.time, true) + '</span><span class="type-chip ' + q.type + '">' + TYPE_LABEL[q.type] + '</span></div><div class="q-text">' + esc(qPlain(q)) + '</div></div><div class="q-acts"><button type="button" class="icon-btn" data-act="go" title="Vai a questo punto del video">' + ico('play') + '</button><button type="button" class="icon-btn" data-act="edit" title="Modifica">' + ico('edit') + '</button><button type="button" class="icon-btn" data-act="copy" title="Copia il quesito in un altro punto del video">' + ico('copy') + '</button><button type="button" class="icon-btn danger" data-act="del" title="Elimina">' + ico('delete') + '</button></div></div>').join('');
+  else box.innerHTML = Q.map((q, i) => '<div class="q-item" data-id="' + esc(q.id) + '"><div class="q-num">' + (i + 1) + '</div><div class="q-main"><div class="q-meta"><span class="time-chip">' + fmtTime(q.time, true) + '</span><span class="type-chip ' + q.type + '">' + TYPE_LABEL[q.type] + '</span>' + (q.type === 'mc' && q.noShuffle ? '<span class="time-chip" title="Le risposte non vengono mescolate">ordine fisso</span>' : '') + '</div><div class="q-text">' + esc(qPlain(q)) + '</div></div><div class="q-acts"><button type="button" class="icon-btn" data-act="go" title="Vai a questo punto del video">' + ico('play') + '</button><button type="button" class="icon-btn" data-act="edit" title="Modifica">' + ico('edit') + '</button><button type="button" class="icon-btn" data-act="copy" title="Copia il quesito in un altro punto del video">' + ico('copy') + '</button><button type="button" class="icon-btn danger" data-act="del" title="Elimina">' + ico('delete') + '</button></div></div>').join('');
   renderTimeline();
   gradingExample();
 }
@@ -2000,7 +2010,9 @@ function editQuestion(orig, presetTime, qopts) {
     '<div class="qe-time-row"><label class="fld"><span>Momento della fermata</span><input type="text" class="qe-time" inputmode="decimal" autocomplete="off"></label><button type="button" class="btn sm qe-now">' + ico('clock') + ' Usa il punto attuale del video</button></div>' +
     '<div class="seg qe-type"><button type="button" data-t="mc">Risposta multipla</button><button type="button" data-t="tf">Vero o falso</button><button type="button" data-t="fill">Completamento</button></div>' +
     '<div class="qe-sec" data-sec="mc"><label class="fld"><span>Domanda</span><textarea class="qe-mc-text" rows="2" maxlength="600"></textarea></label>' +
-    '<div class="fld"><span>Risposte \u00b7 spunta \u00abgiusta\u00bb accanto a quella corretta (anche pi\u00f9 di una) \u00b7 trascina \u22ee\u22ee per cambiare l\'ordine</span><div class="qe-opts"></div><div><button type="button" class="btn sm qe-addopt">' + ico('add') + ' Aggiungi una risposta</button></div></div></div>' +
+    '<div class="fld"><span>Risposte \u00b7 spunta \u00abgiusta\u00bb accanto a quella corretta (anche pi\u00f9 di una) \u00b7 trascina \u22ee\u22ee per cambiare l\'ordine</span><div class="qe-opts"></div><div><button type="button" class="btn sm qe-addopt">' + ico('add') + ' Aggiungi una risposta</button></div></div>' +
+    '<label class="check"><input type="checkbox" class="qe-noshuffle"> Non mescolare le risposte di questo quesito</label>' +
+    '<p class="hint" style="margin:.1em 0 0 1.9em">Di solito l\'app mostra le risposte in un ordine diverso per ogni alunno (e le rimescola nei recuperi). Spunta la casella se l\'ordine \u00e8 importante, per esempio con \u00abTutte le precedenti\u00bb o \u00abNessuna delle precedenti\u00bb.</p></div>' +
     '<div class="qe-sec" data-sec="tf"><label class="fld"><span>Affermazione</span><textarea class="qe-tf-text" rows="2" maxlength="600"></textarea></label>' +
     '<div class="fld"><span>L\'affermazione \u00e8\u2026</span><div class="seg qe-tf-val"><button type="button" data-v="1">Vera</button><button type="button" data-v="0">Falsa</button></div></div></div>' +
     '<div class="qe-sec" data-sec="fill"><label class="fld"><span>Consegna (facoltativa)</span><input type="text" class="qe-fill-instr" maxlength="300" placeholder="Completa il testo inserendo le parole mancanti."></label>' +
@@ -2025,6 +2037,7 @@ function editQuestion(orig, presetTime, qopts) {
   };
   $$('.qe-type button', body).forEach(b => { b.onclick = () => setType(b.dataset.t); });
   $('.qe-mc-text', body).value = q.type === 'mc' ? q.text : '';
+  $('.qe-noshuffle', body).checked = q.type === 'mc' && q.noShuffle === true;
   $('.qe-tf-text', body).value = q.type === 'tf' ? q.text : '';
   $('.qe-fill-instr', body).value = q.type === 'fill' ? q.text : '';
 
@@ -2147,7 +2160,7 @@ function editQuestion(orig, presetTime, qopts) {
       if (o.length < 2) { errEl.textContent = 'Servono almeno due risposte.'; return false; }
       if (o.some(s => !s)) { errEl.textContent = 'Compila tutte le risposte oppure elimina quelle vuote.'; return false; }
       if (!corr.size) { errEl.textContent = 'Spunta \u00abgiusta\u00bb accanto ad almeno una risposta.'; return false; }
-      return Object.assign(base, { text, options: o, correct: [...corr].sort((a, b) => a - b) });
+      return Object.assign(base, { text, options: o, correct: [...corr].sort((a, b) => a - b), noShuffle: $('.qe-noshuffle', body).checked });
     }
     if (type === 'tf') {
       const text = $('.qe-tf-text', body).value.trim();
@@ -2176,7 +2189,7 @@ function renderGrading() {
     '<div class="g-row"><label for="gP2">Giusto al 2\u00b0 tentativo (1\u00b0 recupero)</label><div class="g-in"><input id="gP2" type="number" min="0" max="100" step="5" value="' + g.p2 + '"> %</div></div>' +
     '<div class="g-row"><label for="gP3">Giusto al 3\u00b0 tentativo (2\u00b0 recupero)</label><div class="g-in"><input id="gP3" type="number" min="0" max="100" step="5" value="' + g.p3 + '"> %</div></div>' +
     '<div class="g-row"><label for="gP4">Giusto dal 4\u00b0 tentativo in poi</label><div class="g-in"><input id="gP4" type="number" min="0" max="100" step="5" value="' + g.p4 + '"> %</div></div>' +
-    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10. Se cambi questi criteri, anche i voti delle consegne gi\u00e0 ricevute vengono ricalcolati.</p>' +
+    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10. Nei quesiti a risposta multipla con pi\u00f9 risposte esatte vale anche il punteggio parziale del primo tentativo (ogni risposta esatta selezionata vale una parte, ogni risposta sbagliata selezionata ne annulla una): il quesito vale il maggiore tra il parziale e il punteggio del recupero. Se cambi questi criteri, anche i voti delle consegne gi\u00e0 ricevute vengono ricalcolati.</p>' +
     '<div class="g-example" id="gExample"></div>' +
     '<label class="check"><input type="checkbox" id="gShow"' + (g.showGrade ? ' checked' : '') + '> Mostra il voto all\'alunno dopo l\'invio</label></div>';
   const read = final => {
@@ -2468,7 +2481,13 @@ function openReports(aid) {
     snap => { S.progress = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); renderProgress(); },
     ex => { console.warn('progress', ex); S.progress = []; renderProgress(); }
   );
-  S.unsubReports = () => { u1(); u2(); };
+  S.starts = [];
+  const u3 = onSnapshot(
+    query(collection(db, 'starts'), where('ownerUid', '==', S.user.uid), where('assignmentId', '==', aid)),
+    snap => { S.starts = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); renderProgress(); },
+    ex => { console.warn('starts', ex); S.starts = []; renderProgress(); }
+  );
+  S.unsubReports = () => { u1(); u2(); u3(); };
 }
 /* ricalcola punti e voto con i criteri di valutazione attuali del test */
 function currentGrading() { return normGrading((S.curTest && S.curTest.grading) || null); }
@@ -2476,7 +2495,7 @@ function regradeReport(r) {
   const g = currentGrading();
   const qs = (r.questions || []).map(q => {
     const tries = Math.max(1, Number(q.tries) || 1);
-    return Object.assign({}, q, { value: Math.round(valueForTries(tries, g) * 1000) / 1000 });
+    return Object.assign({}, q, { value: Math.round(Math.max(valueForTries(tries, g), Number(q.partial) || 0) * 1000) / 1000 });
   });
   const voto = qs.length ? computeVoto(qs.map(q => q.value), g) : (Number(r.voto) || 0);
   return Object.assign({}, r, { questions: qs, voto, votoOriginale: Number(r.voto) || 0, gradingNow: g });
@@ -2490,24 +2509,39 @@ function progressText(st) {
   }
   return 'Prima visione: ' + (st.answered || 0) + ' di ' + (st.total || 0) + ' quesiti svolti' + (st.pos ? ' (video a ' + fmtTime(st.pos) + ')' : '');
 }
+function personKey(r) { return normKey(r.cognome) + '|' + normKey(r.nome) + '|' + normKey(r.classe); }
+function progressRows() {
+  const sent = new Map();
+  (S.reports || []).forEach(r => { const k = personKey(r), t = repTime(r); if (!sent.has(k) || sent.get(k) < t) sent.set(k, t); });
+  const rows = new Map();
+  const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0 }); return rows.get(k); };
+  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); });
+  (S.progress || []).forEach(pr => { const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0); });
+  return [...rows.values()].filter(r => { const t = sent.get(r.key); return !(t && t >= r.time); })
+    .sort((a, b) => String(a.cognome).localeCompare(String(b.cognome), 'it', { sensitivity: 'base' }) || String(a.nome).localeCompare(String(b.nome), 'it', { sensitivity: 'base' }));
+}
 function renderProgress() {
   if (S.view !== 'v-reports') return;
-  const key = r => normKey(r.cognome) + '|' + normKey(r.nome) + '|' + normKey(r.classe);
-  const sent = new Map();
-  S.reports.forEach(r => { const k = key(r), t = repTime(r); if (!sent.has(k) || sent.get(k) < t) sent.set(k, t); });
-  const list = (S.progress || []).filter(p => { const t = sent.get(key(p)); return !(t && t >= (p.clientUpdatedAt || 0)); })
-    .sort((a, b) => String(a.cognome).localeCompare(String(b.cognome), 'it', { sensitivity: 'base' }) || String(a.nome).localeCompare(String(b.nome), 'it', { sensitivity: 'base' }));
+  const list = progressRows();
+  S.progRows = list;
   $('#rpProgCard').hidden = !list.length;
   $('#rpProgCount').textContent = list.length;
   if (!list.length) { $('#rpProg').innerHTML = ''; return; }
-  $('#rpProg').innerHTML = '<table class="rep prog"><thead><tr><th>Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo salvataggio</th><th class="no-print"></th></tr></thead><tbody>' +
-    list.map(p => '<tr><td><b>' + esc(p.cognome) + '</b></td><td>' + esc(p.nome) + '</td><td>' + esc(p.classe) + '</td><td class="st">' + esc(progressText(p.status)) + '</td><td>' + (p.clientUpdatedAt ? fmtDate(p.clientUpdatedAt) + ' ' + fmtHour(p.clientUpdatedAt) : '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-pdel="' + esc(p.id) + '" title="Elimina il test salvato">' + ico('delete') + '</button></td></tr>').join('') + '</tbody></table>';
+  $('#rpProg').innerHTML = '<table class="rep prog"><thead><tr><th>Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo aggiornamento</th><th class="no-print"></th></tr></thead><tbody>' +
+    list.map((r, i) => {
+      const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
+      const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, va sbloccato)');
+      return '<tr><td><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="st">' + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><button type="button" class="btn sm" data-unlock="' + i + '" title="Permetti all\'alunno di ricominciare il test da capo">' + ico('lockopen') + ' Sblocca</button></td></tr>';
+    }).join('') + '</tbody></table>';
 }
 async function onProgClick(e) {
-  const b = e.target.closest('[data-pdel]'); if (!b) return;
-  const p = (S.progress || []).find(x => x.id === b.dataset.pdel); if (!p) return;
-  if (!await confirmBox('Eliminare il test salvato?', 'Il test iniziato da <b>' + esc(p.cognome + ' ' + p.nome) + '</b> verr\u00e0 eliminato: l\'alunno non potr\u00e0 pi\u00f9 riprenderlo e dovr\u00e0 ricominciarlo da capo.', 'Elimina', true)) return;
-  try { await deleteDoc(doc(db, 'progress', p.id)); toast('Test salvato eliminato.', 'ok'); } catch (ex) { dbError(ex, 'elimina salvataggio'); }
+  const b = e.target.closest('[data-unlock]'); if (!b) return;
+  const r = (S.progRows || [])[+b.dataset.unlock]; if (!r) return;
+  if (!await confirmBox('Sbloccare l\'alunno?', '<b>' + esc(r.cognome + ' ' + r.nome) + '</b> potr\u00e0 ricominciare il test da capo. L\'eventuale test che aveva salvato verr\u00e0 eliminato.', 'Sblocca', false)) return;
+  try {
+    await batchDelete(r.starts.map(st => doc(db, 'starts', st.id)).concat(r.progs.map(pr => doc(db, 'progress', pr.id))));
+    toast(r.cognome + ' ' + r.nome + ' pu\u00f2 ricominciare il test.', 'ok');
+  } catch (ex) { dbError(ex, 'sblocca'); }
 }
 function repTime(r) { return tsToMs(r.submittedAt) || r.clientSubmittedAt || 0; }
 function sortReports(list) {
@@ -2582,8 +2616,12 @@ async function onReportTableClick(e) {
   if (del) {
     e.stopPropagation();
     const r = S.reports.find(x => x.id === del.dataset.del); if (!r) return;
-    if (await confirmBox('Eliminare il report?', 'Il report di <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente.', 'Elimina', true)) {
-      try { await deleteDoc(doc(db, 'reports', r.id)); toast('Report eliminato.', 'ok'); } catch (ex) { dbError(ex, 'elimina report'); }
+    if (await confirmBox('Eliminare il report?', 'Il report di <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente e l\'alunno potr\u00e0 svolgere di nuovo il test.', 'Elimina', true)) {
+      try {
+        const k = personKey(r);
+        await batchDelete([doc(db, 'reports', r.id)].concat((S.starts || []).filter(st => personKey(st) === k).map(st => doc(db, 'starts', st.id))));
+        toast('Report eliminato.', 'ok');
+      } catch (ex) { dbError(ex, 'elimina report'); }
     }
     return;
   }
@@ -2595,9 +2633,10 @@ function reportDetailHTML(r) {
   const when = repTime(r);
   let h = '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + ' \u00b7 ' + esc(r.date || '') + (when ? ' \u00b7 inviato alle ' + fmtHour(when) : '') + '</div></div><div class="rd-voto">Voto ' + fmtNum(r.voto, 1) + '</div></div>';
   if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) h += '<div class="msg info">Voto ricalcolato con i criteri di valutazione attuali del test. Al momento della consegna il voto era ' + fmtNum(r.votoOriginale, 1) + '.</div>';
+  if ((r.questions || []).some(q => q.type === 'mc')) h += '<p class="hint" style="margin:-.3em 0 .6em">Le risposte multiple vengono mostrate a ogni alunno in ordine diverso: qui le lettere seguono l\'ordine originale del test.</p>';
   h += '<p>Risposte corrette al primo svolgimento: <b>' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '</b> \u00b7 Turni di recupero: <b>' + (r.recoveryRounds || 0) + '</b></p>';
   (r.questions || []).forEach(q => {
-    h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + '</span></div>' +
+    h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + (q.partial > 0 && q.partial < 1 ? ' \u00b7 parziale al 1\u00b0 tentativo ' + Math.round(q.partial * 100) + '%' : '') + '</span></div>' +
       '<div class="rd-qt">' + esc(q.text) + '</div><div class="rd-correct">Risposta corretta: ' + esc(q.correct) + '</div><ol class="rd-att">' +
       (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b></li>').join('') + '</ol></div>';
   });
@@ -2679,6 +2718,7 @@ async function downloadReportPdf(r) {
   font(20, 'bold'); color(C.primary); doc.text(fmtNum(r.voto, 1), W - M - 5, boxTop + 18, { align: 'right' });
   y = boxTop + boxH + 6;
   para('Risposte corrette al primo svolgimento: ' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '     Turni di recupero: ' + (r.recoveryRounds || 0), 10, 'normal', C.text);
+  if ((r.questions || []).some(q => q.type === 'mc')) para('Le risposte multiple vengono mostrate a ogni alunno in ordine diverso: qui le lettere seguono l\'ordine originale del test.', 9, 'italic', C.muted);
   if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) para('Voto ricalcolato con i criteri di valutazione attuali del test (al momento della consegna era ' + fmtNum(r.votoOriginale, 1) + ').', 9, 'italic', C.muted);
   rule(3);
 
@@ -2691,7 +2731,7 @@ async function downloadReportPdf(r) {
     const head = 'Quesito ' + q.n + '   ' + fmtTime(q.time) + '   ' + (TYPE_LABEL[q.type] || '');
     y += lh(11.5); doc.text(pdfSafe(head), M, y - 1);
     font(9.5, 'normal'); color(C.muted);
-    doc.text(pdfSafe('punti ' + fmtNum(q.value, 2) + '  \u00b7  ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi')), W - M, y - 1, { align: 'right' });
+    doc.text(pdfSafe('punti ' + fmtNum(q.value, 2) + '  \u00b7  ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + (q.partial > 0 && q.partial < 1 ? '  \u00b7  parziale ' + Math.round(q.partial * 100) + '%' : '')), W - M, y - 1, { align: 'right' });
     y += 1;
     para(q.text, 10.5, 'normal', C.text);
     para('Risposta corretta: ' + (q.correct || ''), 10, 'bold', C.ok);
@@ -2880,7 +2920,7 @@ function initStudent(aid) {
   $('#sDate').textContent = fmtDate(Date.now());
   /* il vecchio ripristino automatico senza codice non esiste pi\u00f9: pulizia dei dati lasciati dalle versioni precedenti */
   try { Object.keys(localStorage).filter(k => k.indexOf('vq_run_') === 0).forEach(k => localStorage.removeItem(k)); } catch (e) { }
-  Stu.progId = null; Stu.pin = null;
+  Stu.progId = null; Stu.pin = null; Stu.startId = null;
   stuShow('sLogin');
 }
 function stuSetPub(key, pub) {
@@ -2913,12 +2953,17 @@ async function stuLogin(e) {
     stuSetPub(key, pub);
     if (!Stu.qs.length || !hasVideo(Stu.test)) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
     const profile = { cognome, nome, classe, date: fmtDate(Date.now()) };
+    const sid = await startIdFor(Stu.aid, profile);
+    const st = await getStart(sid);
+    if (st && st.status === 'sent') { err.textContent = startBlockedMsg(st); return; }
     if (pin) {
       if (!saveAllowed()) { err.textContent = 'Per questo test il salvataggio non \u00e8 attivo, quindi non ci sono test da riprendere: lascia vuoto il codice personale.'; return; }
+      Stu.startId = sid;
       await resumeFrom(await progIdFor(Stu.aid, profile, pin), pin, err);
       return;
     }
-    Stu.progId = null; Stu.pin = null;
+    if (st) { err.textContent = startBlockedMsg(st); return; }
+    Stu.progId = null; Stu.pin = null; Stu.startId = sid;
     Stu.run = newRun(profile);
     stuIntro();
   } catch (ex) {
@@ -2933,6 +2978,10 @@ async function resumeFrom(id, pin, errEl) {
   Stu.progId = id; Stu.pin = pin;
   run.pubKey = Stu.pubKey; run.aid = Stu.aid;
   Stu.run = run;
+  if (!Stu.preview) {
+    Stu.startId = Stu.startId || await startIdFor(Stu.aid, run.profile);
+    setDoc(doc(db, 'starts', Stu.startId), startData('started')).catch(() => { });
+  }
   const ph = run.phase;
   if (ph === 'watch') stuStartWatching(); else if (ph === 'results') stuShowResults(false); else stuIntro();
   toast('Bentornato! Riprendi da dove eri arrivato.', 'ok');
@@ -2947,29 +2996,62 @@ function stuIntro() {
   $('#iWho').textContent = p.cognome + ' ' + p.nome + ' \u00b7 classe ' + p.classe + ' \u00b7 ' + p.date;
   $('#iN').textContent = n === 1 ? '1 volta' : n + ' volte';
   $('#iPinBox').hidden = Stu.preview || !!Stu.progId || !saveAllowed();
-  $('#iPin').value = ''; $('#iPinErr').textContent = '';
+  $('#iPin').value = ''; $('#iPinErr').textContent = ''; $('#iErr').textContent = '';
   stuShow('sIntro');
 }
 function saveAllowed() { return !!(Stu.pub && Stu.pub.allowSave === true); }
+/* registro di chi ha iniziato il test: impedisce di ricominciarlo da capo */
+function startIdFor(aid, p) { return sha256('vqs1|' + aid + '|' + normKey(p.cognome) + '|' + normKey(p.nome) + '|' + normKey(p.classe)); }
+async function getStart(id) { const sn = await getDoc(doc(db, 'starts', id)); return sn.exists() ? sn.data() : null; }
+function startBlockedMsg(st) {
+  if (st && st.status === 'sent') return 'Hai gi\u00e0 svolto e inviato questo test. Se devi rifarlo, chiedi all\'insegnante di sbloccarti.';
+  return saveAllowed()
+    ? 'Hai gi\u00e0 iniziato questo test e non puoi ricominciarlo da capo. Per continuare, scrivi il tuo codice personale nell\'apposito campo. Se non lo ricordi, chiedi all\'insegnante di sbloccarti.'
+    : 'Hai gi\u00e0 iniziato questo test e non puoi ricominciarlo da capo. Chiedi all\'insegnante di sbloccarti.';
+}
+function startData(status) {
+  const p = Stu.run.profile;
+  return { ownerUid: Stu.pub.ownerUid, assignmentId: Stu.aid, testId: Stu.pub.testId || '', pubKey: Stu.pubKey, cognome: p.cognome, nome: p.nome, classe: p.classe, status: status, startedAt: Date.now(), updatedAt: serverTimestamp() };
+}
+async function registerStart() {
+  if (Stu.preview || !Stu.pub) return;
+  Stu.startId = Stu.startId || await startIdFor(Stu.aid, Stu.run.profile);
+  try { await setDoc(doc(db, 'starts', Stu.startId), startData('started')); }
+  catch (ex) {
+    if (ex && ex.code === 'permission-denied') {
+      let st = null; try { st = await getStart(Stu.startId); } catch (e) { }
+      const e2 = new Error('blocked'); e2.blocked = st ? startBlockedMsg(st) : 'Non \u00e8 possibile iniziare il test: avvisa l\'insegnante.'; throw e2;
+    }
+    throw ex;
+  }
+}
 async function stuIntroStart() {
-  if (Stu.preview || Stu.progId || !saveAllowed()) { stuStartWatching(); return; }
-  const pin = $('#iPin').value.trim(), err = $('#iPinErr'), btn = $('#iStart');
-  err.textContent = '';
-  if (!/^\d{4}$/.test(pin)) { err.textContent = 'Scegli un codice di 4 cifre (solo numeri).'; $('#iPin').focus(); return; }
+  if (Stu.preview || Stu.progId) { stuStartWatching(); return; }
+  const btn = $('#iStart'), perr = $('#iPinErr'), gerr = $('#iErr');
+  perr.textContent = ''; gerr.textContent = '';
+  let pin = '';
+  if (saveAllowed()) {
+    pin = $('#iPin').value.trim();
+    if (!/^\d{4}$/.test(pin)) { perr.textContent = 'Scegli un codice di 4 cifre (solo numeri).'; $('#iPin').focus(); return; }
+  }
   btn.disabled = true; btn.classList.add('loading');
   try {
-    const id = await progIdFor(Stu.aid, Stu.run.profile, pin);
-    const old = await loadSaved(id);
-    if (old) {
-      const same = Stu.qs.map(q => q.id).join(',') === (old.qids || []).join(',');
-      if (same) { await resumeFrom(id, pin, err); return; }
-      if (!await confirmBox('Test modificato', 'Con questo codice avevi salvato il test, ma nel frattempo l\'insegnante lo ha modificato: devi ricominciare da capo.', 'Ricomincia da capo')) return;
+    let id = null;
+    if (pin) {
+      id = await progIdFor(Stu.aid, Stu.run.profile, pin);
+      const old = await loadSaved(id);
+      if (old) {
+        const same = Stu.qs.map(q => q.id).join(',') === (old.qids || []).join(',');
+        if (same) { await resumeFrom(id, pin, perr); return; }
+        if (!await confirmBox('Test modificato', 'Con questo codice avevi salvato il test, ma nel frattempo l\'insegnante lo ha modificato: devi ricominciare da capo.', 'Ricomincia da capo')) return;
+      }
     }
-    Stu.progId = id; Stu.pin = pin;
+    await registerStart();
+    if (pin) { Stu.progId = id; Stu.pin = pin; }
     stuStartWatching();
   } catch (ex) {
     console.error(ex);
-    err.textContent = ex && ex.code === 'permission-denied' ? 'Accesso negato dal database: avvisa l\'insegnante.' : 'Errore di connessione. Controlla internet e riprova.';
+    gerr.textContent = ex && ex.blocked ? ex.blocked : (ex && ex.code === 'permission-denied' ? 'Accesso negato dal database: avvisa l\'insegnante.' : 'Errore di connessione. Controlla internet e riprova.');
   } finally { btn.disabled = false; btn.classList.remove('loading'); }
 }
 async function stuSaveLater(btn) {
@@ -2998,7 +3080,7 @@ async function stuSaveLater(btn) {
 }
 function stuStartPreview(test) {
   if (Stu.P) stuTeardown();
-  Stu.preview = true; Stu.aid = 'preview'; Stu.pub = null; Stu.pubKey = ''; Stu.progId = null; Stu.pin = null;
+  Stu.preview = true; Stu.aid = 'preview'; Stu.pub = null; Stu.pubKey = ''; Stu.progId = null; Stu.pin = null; Stu.startId = null;
   Stu.test = test;
   Stu.qs = (test.questions || []).slice().sort((a, b) => a.time - b.time);
   Stu.duration = 0; Stu.previewReport = null;
@@ -3230,12 +3312,38 @@ function openQuestion(q) {
   const f = $('#qcBody input.blank');
   if (f) setTimeout(() => { try { f.focus({ preventScroll: true }); } catch (e) { } }, 60);
 }
+function shuffledIdx(n) {
+  const a = Array.from({ length: n }, (_, i) => i);
+  const r = new Uint32Array(n); crypto.getRandomValues(r);
+  for (let i = n - 1; i > 0; i--) { const j = r[i] % (i + 1); const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+function isPerm(o, n) { return Array.isArray(o) && o.length === n && o.slice().sort((a, b) => a - b).every((v, i) => v === i); }
+/* ordine delle risposte di un quesito per questo alunno e per questo tentativo (memorizzato nel test) */
+function optionOrder(q) {
+  const n = (q.options || []).length;
+  const ident = Array.from({ length: n }, (_, i) => i);
+  if (q.type !== 'mc' || q.noShuffle === true || n < 2 || !Stu.run) return ident;
+  const run = Stu.run;
+  run.orders = run.orders || {};
+  const byQ = run.orders[q.id] || (run.orders[q.id] = {});
+  const rk = String(run.round || 0);
+  if (isPerm(byQ[rk], n)) return byQ[rk];
+  const prevKey = Object.keys(byQ).map(Number).filter(k => k < +rk).sort((a, b) => b - a)[0];
+  const prev = prevKey != null ? byQ[String(prevKey)] : null;
+  let o = shuffledIdx(n);
+  for (let t = 0; t < 8 && isPerm(prev, n) && o.every((v, i) => v === prev[i]); t++) o = shuffledIdx(n);
+  byQ[rk] = o;
+  saveRun();
+  return o;
+}
 function renderQuestionBody(box, q) {
   box.onchange = null;
   if (q.type === 'mc') {
     const multi = (q.correct || []).length > 1;
+    const order = optionOrder(q);
     box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div>' + (multi ? '<div class="qc-note">Attenzione: le risposte corrette sono pi\u00f9 di una. Selezionale tutte.</div>' : '') +
-      '<div class="opts-grid">' + (q.options || []).map((o, i) => '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="qopt" value="' + i + '"><span class="ol">' + letter(i) + '</span><span>' + esc(o) + '</span></label>').join('') + '</div>';
+      '<div class="opts-grid">' + order.map((oi, k) => '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="qopt" value="' + oi + '"><span class="ol">' + letter(k) + '</span><span>' + esc((q.options || [])[oi]) + '</span></label>').join('') + '</div>';
     box.onchange = () => $$('.opt', box).forEach(l => l.classList.toggle('sel', $('input', l).checked));
   } else if (q.type === 'tf') {
     box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div><div class="tf-row"><button type="button" class="tf-btn" data-v="1">Vero</button><button type="button" class="tf-btn" data-v="0">Falso</button></div>';
@@ -3255,6 +3363,7 @@ function readAnswer(q, box) {
   if (q.type === 'mc') {
     const sel = $$('input[name=qopt]:checked', box).map(i => +i.value);
     if (!sel.length) return { err: (q.correct || []).length > 1 ? 'Seleziona le risposte che ritieni corrette.' : 'Scegli una risposta.' };
+    sel.sort((a, b) => a - b);
     return { v: sel, t: sel.map(i => letter(i) + ') ' + q.options[i]).join(' | ') };
   }
   if (q.type === 'tf') {
@@ -3368,8 +3477,10 @@ function buildReport() {
     const list = atts(q.id);
     const okIdx = list.findIndex(a => a.ok);
     const tries = okIdx >= 0 ? okIdx + 1 : list.length;
-    const value = okIdx >= 0 ? valueForTries(tries, g) : 0;
-    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, value: Math.round(value * 1000) / 1000, att: list.map(a => ({ r: a.r, a: a.t, ok: a.ok })) };
+    const first = list.find(a => a.r === 0);
+    const partial = first ? partialScore(q, first.v) : 0;
+    const value = Math.max(okIdx >= 0 ? valueForTries(tries, g) : 0, partial);
+    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, partial, value: Math.round(value * 1000) / 1000, att: list.map(a => ({ r: a.r, a: a.t, ok: a.ok })) };
   });
   const p = Stu.run.profile;
   return clean({
@@ -3395,6 +3506,7 @@ async function stuSend() {
     Stu.run.phase = 'sent'; clearRun();
     clearTimeout(remoteTimer);
     if (Stu.progId) { const pid = Stu.progId; deleteDoc(doc(db, 'progress', pid)).catch(e => console.warn('progress delete', e && e.code)); }
+    if (Stu.startId) { updateDoc(doc(db, 'starts', Stu.startId), { status: 'sent', pubKey: Stu.pubKey, sentAt: Date.now(), updatedAt: serverTimestamp() }).catch(e => console.warn('start sent', e && e.code)); }
     Stu.progId = null;
     showSent(rep);
   } catch (ex) {
