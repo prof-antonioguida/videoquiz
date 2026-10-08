@@ -629,6 +629,23 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
 /* pulsanti delle finestre sempre visibili in basso, anche con contenuti lunghi */
 .modal-foot{position:sticky;bottom:-5vh;z-index:2;background:var(--surface);border-radius:0 0 18px 18px;box-shadow:0 -6px 12px -10px rgba(0,0,0,.25)}
 
+/* indicatore del salvataggio automatico */
+.wf-left{display:flex;align-items:center;gap:.4em .9em;flex-wrap:wrap;min-width:0}
+.autosave{display:inline-flex;align-items:center;gap:.2em;font-size:.82rem;font-weight:600;color:var(--ok,#1f9d55);white-space:nowrap}
+.autosave[hidden]{display:none}
+.autosave .ico{width:15px;height:15px}
+@media (orientation:landscape) and (max-height:560px){
+  #sWatch .wf-left{flex-wrap:nowrap}
+  #sWatch .autosave{font-size:.76rem}
+}
+@media (orientation:landscape) and (max-height:560px){
+  /* in orizzontale la riga sotto il video usa tutta la larghezza dello schermo */
+  #sWatch .watch-foot{width:100%;font-size:.8rem;gap:2px .6em;flex-wrap:wrap;min-height:0}
+  #sWatch .wf-btns{margin-left:auto}
+  #sWatch .watch-foot .btn{font-size:.8rem;padding:.15em .6em;white-space:nowrap}
+  #sWatch #wCount{white-space:nowrap}
+}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -803,7 +820,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
           </div>
           <div class="pin-box" id="iPinBox">
             <label class="fld"><span>Scegli il tuo codice personale (4 cifre)</span><input type="text" id="iPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="es. 2580"></label>
-            <p class="hint">Inventa un codice e <b>annotalo</b>. Se dovrai interrompere il test, potrai salvarlo e riprenderlo più tardi, anche da un altro dispositivo: nella schermata iniziale scriverai cognome, nome, classe, la password del test e questo codice.</p>
+            <p class="hint">Inventa un codice e <b>annotalo</b>. Il test viene salvato automaticamente: se dovrai interromperlo, o se la pagina si chiude per sbaglio, potrai riprenderlo da dove eri arrivato, anche da un altro dispositivo: nella schermata iniziale scriverai cognome, nome, classe, la password del test e questo codice.</p>
             <div class="err" id="iPinErr"></div>
           </div>
           <div class="err" id="iErr"></div>
@@ -832,7 +849,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
             </div>
           </div>
         </div>
-        <div class="watch-foot"><span id="wCount" class="muted"></span><span class="wf-btns"><button type="button" class="btn sm" id="wBack" hidden>Torna all'elenco dei quesiti</button><button type="button" class="btn sm save-later" id="wSave"></button></span></div>
+        <div class="watch-foot"><span class="wf-left"><span id="wCount" class="muted"></span><span class="autosave" hidden></span></span><span class="wf-btns"><button type="button" class="btn sm" id="wBack" hidden>Torna all'elenco dei quesiti</button><button type="button" class="btn sm save-later" id="wSave"></button></span></div>
         <p class="hint center" id="wHint"></p>
       </div>
 
@@ -847,6 +864,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
             <div class="err" id="rSendErr"></div>
           </div>
           <button type="button" class="btn ghost block mt save-later" id="rSave"></button>
+          <p class="center"><span class="autosave" hidden></span></p>
         </div>
       </div>
 
@@ -884,7 +902,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 03/10/2026 10:05</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 11:09</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -924,6 +942,7 @@ const ICONS = {
   pause: 'M6 19h4V5H6v14zm8-14v14h4V5h-4z',
   rewind: 'M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z',
   fullscreen: 'M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z',
+  fullscreen_exit: 'M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z',
   volume: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z',
   mute: 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z',
   add: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
@@ -2326,7 +2345,7 @@ async function newAssignment() {
   if (!hasVideo(t) || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
   const body = el('<div><label class="fld"><span>Nome dell\'assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody());
-  body.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"> Permetti agli alunni di salvare il test e riprenderlo pi\u00f9 tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e pu\u00f2 interrompere il test e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
+  body.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"> Permetti agli alunni di salvare il test e riprenderlo pi\u00f9 tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e il suo lavoro viene salvato automaticamente: pu\u00f2 interrompere il test (o riprenderlo se chiude la pagina per sbaglio) e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
   $('.an', body).value = (t.title || 'Test') + ' del ' + fmtDateLong(Date.now());
   const res = await modal({
     title: 'Nuova assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
@@ -2786,7 +2805,7 @@ function exportCSV() {
 /* =====================================================================
    AREA ALUNNO (e anteprima dell'insegnante)
    ===================================================================== */
-const Stu = { preview: false, aid: null, pubKey: null, pub: null, test: null, qs: [], run: null, P: null, ready: false, timer: null, mode: null, seg: null, maxReached: 0, overlayQ: null, everPlayed: false, nativeTap: false, duration: 0, seekGuard: null, drag: false, lastSt: null, onReadyCb: null, creating: false, playCheck: null };
+const Stu = { preview: false, aid: null, pubKey: null, pub: null, test: null, qs: [], run: null, P: null, ready: false, timer: null, mode: null, seg: null, maxReached: 0, overlayQ: null, everPlayed: false, nativeTap: false, duration: 0, seekGuard: null, drag: false, lastSt: null, onReadyCb: null, creating: false, playCheck: null, adMode: false, lastT: null, lastMoveAt: 0, lastPlayingAt: 0, userPauseAt: 0, fsResumeUntil: 0, durCheckAt: 0 };
 
 /* ---------- schermo sempre acceso durante il test ---------- */
 const Wake = { lock: null, want: false, busy: false };
@@ -2810,10 +2829,10 @@ function pauseForHidden() {
   try { if (Stu.P && Stu.ready) Stu.P.pauseVideo(); } catch (e) { }
 }
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'hidden') pauseForHidden();
+  if (document.visibilityState === 'hidden') { pauseForHidden(); flushSave(); }
   else if (Wake.want) wakeOn();
 });
-window.addEventListener('pagehide', pauseForHidden);
+window.addEventListener('pagehide', () => { pauseForHidden(); flushSave(); });
 
 /* ---------- progressi dell'alunno: dispositivo + database, protetti dal codice personale ---------- */
 function normKey(x) { return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
@@ -2824,10 +2843,33 @@ function saveLocal() {
   Stu.run.updatedAt = Date.now();
   try { localStorage.setItem('vq_prog_' + Stu.progId, JSON.stringify(Stu.run)); } catch (e) { }
 }
-function saveRun() { if (Stu.preview || !Stu.run || !Stu.progId) return; saveLocal(); queueRemote(); }
+function saveRun() { if (Stu.preview || !Stu.run || !Stu.progId) return; saveLocal(); clearTimeout(remoteTimer); saveRemoteUI(); }
 function clearRun() { if (Stu.progId) { try { localStorage.removeItem('vq_prog_' + Stu.progId); } catch (e) { } } }
 let remoteTimer = null;
-function queueRemote() { clearTimeout(remoteTimer); remoteTimer = setTimeout(() => { saveRemote().catch(e => console.warn('progress', e && (e.code || e.message))); }, 1200); }
+function queueRemote() { clearTimeout(remoteTimer); remoteTimer = setTimeout(saveRemoteUI, 1200); }
+let netOk = navigator.onLine !== false, netTimer = null;
+function saveRemoteUI() {
+  /* senza rete Firestore non risponde: se il salvataggio online non arriva entro qualche secondo, la scritta sparisce */
+  clearTimeout(netTimer);
+  netTimer = setTimeout(() => autoSaveUI(false), 8000);
+  return saveRemote().then(() => { clearTimeout(netTimer); autoSaveUI(true); }, e => { clearTimeout(netTimer); console.warn('progress', e && (e.code || e.message)); autoSaveUI(false); });
+}
+window.addEventListener('offline', () => autoSaveUI(false));
+window.addEventListener('online', () => { if (!Stu.preview && Stu.run && Stu.progId && Stu.run.phase !== 'sent') saveRemoteUI(); else autoSaveUI(true); });
+/* salvataggio automatico immediato: quando la pagina viene nascosta, chiusa o il telefono si blocca */
+function flushSave() {
+  if (Stu.preview || !Stu.run || !Stu.progId || Stu.run.phase === 'sent') return;
+  if (Stu.mode === 'first' && Stu.P && Stu.ready) {
+    let t = 0; try { t = Stu.P.getCurrentTime() || 0; } catch (e) { }
+    Stu.run.pos = Math.max(Stu.run.pos || 0, Math.min(t, Stu.maxReached || 0));
+  }
+  saveLocal();
+  saveRemoteUI();
+}
+function autoSaveUI(ok) {
+  if (ok !== undefined) netOk = ok;
+  $$('.autosave').forEach(a => { a.hidden = Stu.preview || !Stu.progId || !netOk; });
+}
 function progressStatus() {
   const r = Stu.run;
   const answered = Stu.qs.filter(q => atts(q.id).some(a => a.r === 0)).length;
@@ -2860,6 +2902,7 @@ function stuShow(id) {
   document.body.classList.toggle('watching', id === 'sWatch');
   if (id === 'sIntro' || id === 'sWatch' || id === 'sResults') wakeOn(); else wakeOff();
   $$('.save-later').forEach(b => { b.hidden = Stu.preview || !Stu.progId; });
+  autoSaveUI();
   if (id !== 'sWatch') { try { Stu.P && Stu.ready && Stu.P.pauseVideo(); } catch (e) { } }
   window.scrollTo(0, 0);
 }
@@ -2870,9 +2913,10 @@ function stuFatal(title, msg, retry) {
 function wireStudent() {
   $$('.logo').forEach(l => { l.innerHTML = LOGO_SVG; });
   $('#sLoginForm').addEventListener('submit', stuLogin);
-  $$('.save-later').forEach(b => { b.innerHTML = ico('save') + '<span class="l-long"> Salva e continua pi\u00f9 tardi</span><span class="l-short"> Salva</span>'; b.addEventListener('click', () => stuSaveLater(b)); });
+  $$('.save-later').forEach(b => { b.innerHTML = ico('save') + ' Interrompi e continua pi\u00f9 tardi'; b.addEventListener('click', () => stuSaveLater(b)); });
   $('#wBack').innerHTML = '<span class="l-long">Torna all\'elenco dei quesiti</span><span class="l-short">Elenco quesiti</span>';
   $('#savedIco').innerHTML = ico('save');
+  $$('.autosave').forEach(a => { a.innerHTML = ico('check') + ' Salvataggio automatico attivo'; a.title = 'Il lavoro viene salvato automaticamente.'; });
   ['#sPin', '#iPin'].forEach(sel => $(sel).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); }));
   $('#iPin').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#iStart').click(); } });
   $('#iStart').innerHTML = ico('play') + ' Inizia a guardare il video';
@@ -2897,6 +2941,12 @@ function wireStudent() {
   $('#cFs').innerHTML = ico('fullscreen');
   $('#cFs').hidden = !(document.fullscreenEnabled || document.webkitFullscreenEnabled);
   $('#cFs').addEventListener('click', toggleFs);
+  /* in orizzontale, se la riga sotto il video va a capo, il video si rimpicciolisce quanto basta per restare tutto nello schermo */
+  if (window.ResizeObserver) new ResizeObserver(() => {
+    const f = $('#sWatch .watch-foot'); if (!f.offsetParent) return;
+    const h = Math.ceil(f.getBoundingClientRect().height);
+    $('#sWatch').style.setProperty('--foot', Math.max(30, h) + 'px');
+  }).observe($('#sWatch .watch-foot'));
   const prog = $('#prog');
   prog.addEventListener('pointerdown', e => { if (!Stu.ready || Stu.overlayQ) return; Stu.drag = true; try { prog.setPointerCapture(e.pointerId); } catch (_) { } progPreview(e.clientX); });
   prog.addEventListener('pointermove', e => { if (Stu.drag) progPreview(e.clientX); });
@@ -3109,7 +3159,7 @@ async function stuEnsurePlayer(cb) {
   if (Stu.creating) return;
   Stu.creating = true;
   $('#stuVideoBox .vb-host').innerHTML = '<div id="stuPlayer"></div>';
-  Stu.ready = false; Stu.everPlayed = false; Stu.nativeTap = false; Stu.lastSt = null;
+  Stu.ready = false; Stu.everPlayed = false; Stu.nativeTap = false; Stu.lastSt = null; Stu.adMode = false; Stu.lastT = null;
   $('#shield').hidden = true; $('#bigPlay').hidden = false;
   let P;
   try {
@@ -3134,6 +3184,7 @@ function stuTeardown() {
   try { if (Stu.P && Stu.P.destroy) Stu.P.destroy(); } catch (e) { }
   Stu.P = null; Stu.ready = false; Stu.creating = false; Stu.everPlayed = false; Stu.nativeTap = false;
   Stu.overlayQ = null; Stu.mode = null; Stu.seg = null; Stu.lastSt = null; Stu.seekGuard = null; Stu.onReadyCb = null;
+  Stu.adMode = false; Stu.lastT = null; Stu.fsResumeUntil = 0;
   $('#qov').hidden = true; $('#shield').hidden = true; $('#bigPlay').hidden = false; veilVideo(false);
   $('#stuVideoBox .vb-host').innerHTML = '';
 }
@@ -3153,7 +3204,7 @@ function tryPlay() {
       let st = -1; try { st = P.getPlayerState(); } catch (e) { }
       if (!Stu.everPlayed && st !== 1 && st !== 3 && Stu.P === P) {
         Stu.nativeTap = true;
-        $('#bigPlay').hidden = true; $('#shield').hidden = true;
+        $('#bigPlay').hidden = true; syncShield();
         $('#wHint').textContent = 'Se il video non parte, tocca direttamente il video per avviarlo.';
       }
     }, 2000);
@@ -3162,7 +3213,23 @@ function tryPlay() {
 function stuTogglePlay() {
   const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
   let st = -1; try { st = P.getPlayerState(); } catch (e) { }
-  if (st === 1 || st === 3) P.pauseVideo(); else tryPlay();
+  if (st === 1 || st === 3) { Stu.userPauseAt = Date.now(); P.pauseVideo(); } else tryPlay();
+}
+/* Il velo trasparente sopra il video impedisce di usare i comandi di YouTube (per esempio per andare avanti),
+   ma va tolto durante le pubblicit\u00e0, altrimenti il pulsante \u00abSalta\u00bb di YouTube non si pu\u00f2 toccare. */
+function syncShield() { $('#shield').hidden = !(Stu.everPlayed && !Stu.nativeTap && !Stu.adMode); }
+const AD_HINT = 'Se \u00e8 in corso una pubblicit\u00e0 di YouTube, quando compare il pulsante \u00abSalta\u00bb puoi toccarlo direttamente sul video.';
+function setAdMode(on) {
+  Stu.adMode = on; syncShield();
+  const h = $('#wHint');
+  if (on && testProvider(Stu.test) === 'youtube') h.textContent = AD_HINT;
+  else if (!on && h.textContent === AD_HINT) h.textContent = '';
+}
+function realEnd() {
+  /* alcune pubblicit\u00e0 segnalano \u00abfine\u00bb quando terminano: si considera finito solo il video arrivato davvero in fondo */
+  const P = Stu.P; let t = 0, d = 0;
+  try { t = P.getCurrentTime() || 0; d = Math.max(P.getDuration() || 0, Stu.test.duration || 0); } catch (e) { return true; }
+  return !d || t >= d - 3;
 }
 function updatePlayUI(st) {
   if (st === Stu.lastSt) return;
@@ -3180,15 +3247,35 @@ function stuTick() {
   const P = Stu.P; if (!P || !Stu.ready || typeof P.getCurrentTime !== 'function') return;
   let t = 0, st = -1;
   try { t = P.getCurrentTime() || 0; st = P.getPlayerState(); } catch (e) { return; }
+  const nowT = performance.now();
   if (st === 1 && !Stu.everPlayed) {
     Stu.everPlayed = true; Stu.nativeTap = false; clearTimeout(Stu.playCheck);
-    $('#shield').hidden = false; $('#wHint').textContent = ''; Stu.lastSt = null;
+    Stu.lastMoveAt = nowT; syncShield(); $('#wHint').textContent = ''; Stu.lastSt = null;
+  }
+  /* video \u00abin riproduzione\u00bb ma con il tempo fermo: quasi sempre \u00e8 una pubblicit\u00e0 di YouTube */
+  const playingSt = st === 1 || st === 3;
+  if (!playingSt || Stu.lastT == null || Math.abs(t - Stu.lastT) > 0.03) Stu.lastMoveAt = nowT;
+  Stu.lastT = t;
+  if (st === 1) Stu.lastPlayingAt = Date.now();
+  const stuck = nowT - Stu.lastMoveAt;
+  const ad = Stu.everPlayed && !Stu.overlayQ && ((st === 1 && stuck > 1200) || (st === 3 && stuck > 2500));
+  if (ad !== Stu.adMode) setAdMode(ad);
+  if (!ad && Date.now() > Stu.durCheckAt) {
+    Stu.durCheckAt = Date.now() + 1000;
+    let d = 0; try { d = P.getDuration() || 0; } catch (e) { }
+    if (d > Stu.duration + 0.5) { Stu.duration = d; renderProgMarks(); }
   }
   if (!Stu.drag) updateProg(t);
   updatePlayUI(st);
   const watching = !$('#sWatch').hidden && (Stu.mode === 'first' || Stu.mode === 'segment');
   if (!watching) { if (st === 1) P.pauseVideo(); return; }
   if (Stu.overlayQ) { if (st === 1) P.pauseVideo(); return; }
+  if (Stu.fsResumeUntil) {
+    /* passando a schermo intero (o uscendone) alcuni dispositivi mettono in pausa il video: lo si fa ripartire */
+    if (Date.now() > Stu.fsResumeUntil || Stu.userPauseAt > Stu.fsResumeUntil - 3000) Stu.fsResumeUntil = 0;
+    else if (st === 2) { Stu.fsResumeUntil = 0; tryPlay(); }
+  }
+  if (Stu.adMode) { Stu.lastTickAt = performance.now(); return; }
   if (Stu.seekGuard) {
     if (Math.abs(t - Stu.seekGuard.to) < 1.5 || Date.now() > Stu.seekGuard.until) Stu.seekGuard = null;
     else return;
@@ -3216,7 +3303,7 @@ function stuTick() {
       Stu.lastPosAt = nowP;
       Stu.run.pos = Math.max(Stu.run.pos || 0, Math.min(t, Stu.maxReached));
       saveLocal();
-      if (!Stu.lastRemoteAt || nowP - Stu.lastRemoteAt > 60000) queueRemote();
+      if (!Stu.lastRemoteAt || nowP - Stu.lastRemoteAt > 20000) queueRemote();
     }
   }
 }
@@ -3224,7 +3311,7 @@ function stuState(st) {
   updatePlayUI(st);
   if (st === 1 || st === 3) noCaptions(Stu.P);
   if (st !== 0) return;
-  if (Stu.overlayQ || $('#sWatch').hidden || Stu.seekGuard) return;
+  if (Stu.overlayQ || $('#sWatch').hidden || Stu.seekGuard || !realEnd()) return;
   if (Stu.mode === 'first') { const tgt = stuTarget(); if (tgt) openQuestion(tgt); else finishFirstRun(); }
   else if (Stu.mode === 'segment' && Stu.seg) openQuestion(Stu.seg.q);
 }
@@ -3269,6 +3356,21 @@ function progSeek(clientX) {
 }
 function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement || null; }
 function exitFs() { try { if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { } }
+function onFsChange() {
+  const on = !!fsEl();
+  $('#cFs').innerHTML = ico(on ? 'fullscreen_exit' : 'fullscreen');
+  $('#cFs').setAttribute('aria-label', on ? 'Esci dallo schermo intero' : 'Schermo intero');
+  $('#cFs').title = on ? 'Esci dallo schermo intero' : 'Schermo intero';
+  const wasPlaying = Date.now() - Stu.lastPlayingAt < 1500 && Stu.userPauseAt < Stu.lastPlayingAt;
+  if (Stu.P && Stu.ready && wasPlaying && !Stu.overlayQ) Stu.fsResumeUntil = Date.now() + 3000;
+  try {
+    const o = screen.orientation;
+    if (on && o && o.lock && matchMedia('(pointer: coarse)').matches) o.lock('landscape').catch(() => { });
+    else if (!on && o && o.unlock) o.unlock();
+  } catch (e) { }
+}
+document.addEventListener('fullscreenchange', onFsChange);
+document.addEventListener('webkitfullscreenchange', onFsChange);
 function toggleFs() {
   const w = $('#pwrap');
   if (fsEl()) { exitFs(); return; }
@@ -3278,7 +3380,7 @@ function toggleFs() {
 function updateCount() {
   if (Stu.mode === 'segment') { $('#wCount').textContent = 'Recupero'; return; }
   const done = Stu.qs.filter(q => atts(q.id).some(a => a.r === 0)).length;
-  $('#wCount').textContent = 'Quesiti svolti: ' + done + ' di ' + Stu.qs.length;
+  $('#wCount').innerHTML = '<span class="l-long">Quesiti svolti: ' + done + ' di ' + Stu.qs.length + '</span><span class="l-short">Quesiti: ' + done + '/' + Stu.qs.length + '</span>';
 }
 
 /* ---------- visione e quesiti ---------- */
