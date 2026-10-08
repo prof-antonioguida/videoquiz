@@ -604,7 +604,7 @@ html[data-theme="dark"] .tl-mark{border-color:var(--surface)}
 .pin-show{display:inline-block;font-size:2.4rem;font-weight:900;letter-spacing:.3em;padding:.2em .6em .2em .9em;border-radius:14px;background:var(--primary-l);color:var(--primary);margin:.2em 0 .8em;font-variant-numeric:tabular-nums}
 .prog-card{margin-top:1rem}
 .prog-card .card-head h2{font-size:1.05rem}
-table.rep.inprog tbody tr{cursor:default}
+table.rep.inprog tbody tr{cursor:pointer}
 table.rep.inprog td.st{white-space:normal;min-width:220px}
 @media (orientation:landscape) and (max-height:560px){ #sWatch .save-later{min-height:28px;padding:.15em .7em} }
 
@@ -645,6 +645,12 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
   #sWatch .watch-foot .btn{font-size:.8rem;padding:.15em .6em;white-space:nowrap}
   #sWatch #wCount{white-space:nowrap}
 }
+
+/* colonna dei numeri nei report */
+table.rep th.num,table.rep td.num{width:1%;text-align:right;padding-left:.6em;padding-right:.4em;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+table.rep .sticky2{left:var(--numw,0)}
+table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
+@media print{ table.rep .sticky2{left:auto} }
 
 </style>
 <script>
@@ -774,7 +780,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
     <div class="card prog-card" id="rpProgCard" hidden>
       <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Con «Sblocca» permetti a un alunno di ricominciare (per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale); l'eventuale test che aveva salvato verrà eliminato.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale.</p>
     </div>
   </section>
 
@@ -902,7 +908,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 17:43</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 17:58</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2546,21 +2552,42 @@ function renderProgress() {
   $('#rpProgCard').hidden = !list.length;
   $('#rpProgCount').textContent = list.length;
   if (!list.length) { $('#rpProg').innerHTML = ''; return; }
-  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th>Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo aggiornamento</th><th class="no-print"></th></tr></thead><tbody>' +
+  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th><th class="sticky sticky2">Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo aggiornamento</th><th class="no-print"></th></tr></thead><tbody>' +
     list.map((r, i) => {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
-      const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, va sbloccato)');
-      return '<tr><td><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="st">' + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><button type="button" class="btn sm" data-unlock="' + i + '" title="Permetti all\'alunno di ricominciare il test da capo">' + ico('lockopen') + ' Sblocca</button></td></tr>';
+      const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
+      r.txt = txt;
+      return '<tr data-i="' + i + '"><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="st">' + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></td></tr>';
     }).join('') + '</tbody></table>';
+  fixStickyNum($('#rpProg table'));
 }
-async function onProgClick(e) {
-  const b = e.target.closest('[data-unlock]'); if (!b) return;
-  const r = (S.progRows || [])[+b.dataset.unlock]; if (!r) return;
-  if (!await confirmBox('Sbloccare l\'alunno?', '<b>' + esc(r.cognome + ' ' + r.nome) + '</b> potr\u00e0 ricominciare il test da capo. L\'eventuale test che aveva salvato verr\u00e0 eliminato.', 'Sblocca', false)) return;
+/* la colonna del cognome resta ferma accanto a quella dei numeri quando si scorre la tabella in orizzontale */
+function fixStickyNum(t) {
+  if (!t) return;
+  const c = t.querySelector('th.num'); if (!c) return;
+  t.style.setProperty('--numw', c.getBoundingClientRect().width + 'px');
+}
+async function deleteProgressRow(r) {
+  if (!await confirmBox('Eliminare il test non consegnato?', 'Il test iniziato da <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente, compresi i progressi salvati. L\'alunno potr\u00e0 ricominciare il test da capo.', 'Elimina', true)) return false;
   try {
     await batchDelete(r.starts.map(st => doc(db, 'starts', st.id)).concat(r.progs.map(pr => doc(db, 'progress', pr.id))));
-    toast(r.cognome + ' ' + r.nome + ' pu\u00f2 ricominciare il test.', 'ok');
-  } catch (ex) { dbError(ex, 'sblocca'); }
+    toast('Test di ' + r.cognome + ' ' + r.nome + ' eliminato: l\'alunno pu\u00f2 ricominciarlo da capo.', 'ok');
+    return true;
+  } catch (ex) { dbError(ex, 'elimina test non consegnato'); return false; }
+}
+async function onProgClick(e) {
+  const b = e.target.closest('[data-unlock]');
+  if (b) { e.stopPropagation(); const r = (S.progRows || [])[+b.dataset.unlock]; if (r) deleteProgressRow(r); return; }
+  const tr = e.target.closest('tbody tr'); if (!tr) return;
+  const r = (S.progRows || [])[+tr.dataset.i]; if (!r) return;
+  modal({
+    title: 'Test non consegnato',
+    body: '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + (r.time ? ' \u00b7 ultimo aggiornamento ' + fmtDate(r.time) + ' alle ' + fmtHour(r.time) : '') + '</div></div></div><p>' + esc(r.txt || '') + '</p>',
+    buttons: [
+      { html: ico('delete') + ' Elimina', cls: 'danger-ghost', onClick: async () => (await deleteProgressRow(r)) ? true : false },
+      { label: 'Chiudi', cls: 'primary', value: true }
+    ]
+  });
 }
 function repTime(r) { return tsToMs(r.submittedAt) || r.clientSubmittedAt || 0; }
 function sortReports(list) {
@@ -2604,7 +2631,8 @@ function renderReportsInner() {
   const qi = reportColumns(R);
   const arrow = k => S.sort.key === k ? '<span class="arrow">' + (S.sort.dir > 0 ? '\u25b2' : '\u25bc') + '</span>' : '';
   let h = '<table class="rep"><thead><tr>' +
-    '<th rowspan="2" class="sortable sticky" data-k="cognome">Cognome' + arrow('cognome') + '</th>' +
+    '<th rowspan="2" class="num sticky">N.</th>' +
+    '<th rowspan="2" class="sortable sticky sticky2" data-k="cognome">Cognome' + arrow('cognome') + '</th>' +
     '<th rowspan="2" class="sortable" data-k="nome">Nome' + arrow('nome') + '</th>' +
     '<th rowspan="2" class="sortable" data-k="classe">Classe' + arrow('classe') + '</th>' +
     '<th rowspan="2" class="sortable" data-k="voto">Voto' + arrow('voto') + '</th>';
@@ -2612,10 +2640,10 @@ function renderReportsInner() {
   h += '<th rowspan="2" class="sortable" data-k="data">Data' + arrow('data') + '</th><th rowspan="2" class="no-print"></th></tr><tr>';
   qi.forEach(() => { h += '<th class="sub l">Punti</th><th class="sub">Tent.</th>'; });
   h += '</tr></thead><tbody>';
-  R.forEach(r => {
+  R.forEach((r, ri) => {
     const v = Number(r.voto) || 0;
     const vc = v >= 8 ? 'v-hi' : v >= 6 ? 'v-mid' : 'v-lo';
-    h += '<tr data-id="' + esc(r.id) + '"><td class="sticky"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="voto ' + vc + '">' + fmtNum(v, 1) + '</td>';
+    h += '<tr data-id="' + esc(r.id) + '"><td class="num sticky">' + (ri + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="voto ' + vc + '">' + fmtNum(v, 1) + '</td>';
     for (let i = 0; i < qi.length; i++) {
       const q = (r.questions || [])[i];
       if (!q) { h += '<td class="pt">\u2013</td><td class="tr">\u2013</td>'; continue; }
@@ -2625,6 +2653,7 @@ function renderReportsInner() {
   });
   h += '</tbody></table>';
   $('#rpTable').innerHTML = h;
+  fixStickyNum($('#rpTable table'));
   const r1 = $('#rpTable thead tr');
   if (r1) { const hh = r1.getBoundingClientRect().height; $$('#rpTable thead tr:nth-child(2) th').forEach(th => { th.style.top = hh + 'px'; }); }
 }
@@ -2634,18 +2663,20 @@ async function onReportTableClick(e) {
   const del = e.target.closest('[data-del]');
   if (del) {
     e.stopPropagation();
-    const r = S.reports.find(x => x.id === del.dataset.del); if (!r) return;
-    if (await confirmBox('Eliminare il report?', 'Il report di <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente e l\'alunno potr\u00e0 svolgere di nuovo il test.', 'Elimina', true)) {
-      try {
-        const k = personKey(r);
-        await batchDelete([doc(db, 'reports', r.id)].concat((S.starts || []).filter(st => personKey(st) === k).map(st => doc(db, 'starts', st.id))));
-        toast('Report eliminato.', 'ok');
-      } catch (ex) { dbError(ex, 'elimina report'); }
-    }
+    const r = S.reports.find(x => x.id === del.dataset.del); if (r) deleteReport(r);
     return;
   }
   const tr = e.target.closest('tbody tr');
   if (tr) { const r = S.reports.find(x => x.id === tr.dataset.id); if (r) showReportDetail(r); }
+}
+async function deleteReport(r) {
+  if (!await confirmBox('Eliminare il test consegnato?', 'Il test consegnato da <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente dal report e l\'alunno potr\u00e0 svolgerlo di nuovo.', 'Elimina', true)) return false;
+  try {
+    const k = personKey(r);
+    await batchDelete([doc(db, 'reports', r.id)].concat((S.starts || []).filter(st => personKey(st) === k).map(st => doc(db, 'starts', st.id))));
+    toast('Test di ' + r.cognome + ' ' + r.nome + ' eliminato dal report.', 'ok');
+    return true;
+  } catch (ex) { dbError(ex, 'elimina report'); return false; }
 }
 function reportDetailHTML(r) {
   const lab = k => k === 0 ? 'Primo svolgimento' : k + '\u00b0 recupero';
@@ -2673,6 +2704,7 @@ function showReportDetail(r) {
           return false;
         }
       },
+      { html: ico('delete') + ' Elimina', cls: 'danger-ghost', onClick: async () => (await deleteReport(r)) ? true : false },
       { label: 'Chiudi', cls: 'primary', value: true }
     ]
   });
@@ -2783,12 +2815,12 @@ function exportCSV() {
   const qi = reportColumns(R);
   const cell = v => { const s = String(v == null ? '' : v); return /[;"\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
   const num = v => String(Math.round(Number(v || 0) * 100) / 100).replace('.', ',');
-  const head = ['Cognome', 'Nome', 'Classe', 'Voto'];
+  const head = ['N.', 'Cognome', 'Nome', 'Classe', 'Voto'];
   qi.forEach((q, i) => { head.push('Q' + (i + 1) + ' punti', 'Q' + (i + 1) + ' tentativi'); });
   head.push('Data', 'Ora invio');
   const rows = [head.map(cell).join(';')];
-  R.forEach(r => {
-    const row = [r.cognome, r.nome, r.classe, num(r.voto)];
+  R.forEach((r, ri) => {
+    const row = [ri + 1, r.cognome, r.nome, r.classe, num(r.voto)];
     qi.forEach((x, i) => { const q = (r.questions || [])[i]; row.push(q ? num(q.value) : '', q ? q.tries : ''); });
     const w = repTime(r);
     row.push(r.date || '', w ? fmtHour(w) : '');
