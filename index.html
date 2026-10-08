@@ -908,7 +908,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 17:58</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 23:27</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -941,7 +941,7 @@ window.__vqReady = true;
    COSTANTI E UTILITA'
    ===================================================================== */
 const TYPE_LABEL = { mc: 'Risposta multipla', tf: 'Vero o falso', fill: 'Completamento' };
-const DEFAULT_GRADING = { minGrade: 4, p2: 10, p3: 6, p4: 2, showGrade: false };
+const DEFAULT_GRADING = { minGrade: 4, p2: 3, p3: 2, p4: 1, showGrade: false };
 
 const ICONS = {
   play: 'M8 5v14l11-7z',
@@ -2211,9 +2211,9 @@ function renderGrading() {
   box.innerHTML = '<div class="grading">' +
     '<div class="g-row"><label for="gMin">Voto minimo</label><div class="g-in"><select id="gMin">' + [1, 2, 3, 4, 5, 6].map(v => '<option value="' + v + '"' + (v === g.minGrade ? ' selected' : '') + '>' + v + '</option>').join('') + '</select></div></div>' +
     '<div class="g-row"><label>Quesito giusto al 1\u00b0 tentativo</label><div class="g-in">100 %</div></div>' +
-    '<div class="g-row"><label for="gP2">Giusto al 2\u00b0 tentativo (1\u00b0 recupero)</label><div class="g-in"><input id="gP2" type="number" min="0" max="100" step="5" value="' + g.p2 + '"> %</div></div>' +
-    '<div class="g-row"><label for="gP3">Giusto al 3\u00b0 tentativo (2\u00b0 recupero)</label><div class="g-in"><input id="gP3" type="number" min="0" max="100" step="5" value="' + g.p3 + '"> %</div></div>' +
-    '<div class="g-row"><label for="gP4">Giusto dal 4\u00b0 tentativo in poi</label><div class="g-in"><input id="gP4" type="number" min="0" max="100" step="5" value="' + g.p4 + '"> %</div></div>' +
+    '<div class="g-row"><label for="gP2">Giusto al 2\u00b0 tentativo (1\u00b0 recupero)</label><div class="g-in"><input id="gP2" type="number" min="0" max="100" step="1" value="' + g.p2 + '"> %</div></div>' +
+    '<div class="g-row"><label for="gP3">Giusto al 3\u00b0 tentativo (2\u00b0 recupero)</label><div class="g-in"><input id="gP3" type="number" min="0" max="100" step="1" value="' + g.p3 + '"> %</div></div>' +
+    '<div class="g-row"><label for="gP4">Giusto dal 4\u00b0 tentativo in poi</label><div class="g-in"><input id="gP4" type="number" min="0" max="100" step="1" value="' + g.p4 + '"> %</div></div>' +
     '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10. Nei quesiti a risposta multipla con pi\u00f9 risposte esatte vale anche il punteggio parziale del primo tentativo (ogni risposta esatta selezionata vale una parte, ogni risposta sbagliata selezionata ne annulla una): il quesito vale il maggiore tra il parziale e il punteggio del recupero. Se cambi questi criteri, anche i voti delle consegne gi\u00e0 ricevute vengono ricalcolati.</p>' +
     '<div class="g-example" id="gExample"></div>' +
     '<label class="check"><input type="checkbox" id="gShow"' + (g.showGrade ? ' checked' : '') + '> Mostra il voto all\'alunno dopo l\'invio</label></div>';
@@ -3229,6 +3229,7 @@ function noCaptions(P) {
 function tryPlay() {
   if (Wake.want && !Wake.lock) wakeOn();
   const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
+  Stu.playReqAt = Date.now(); Stu.movedSinceReq = false;
   try { P.playVideo(); } catch (e) { }
   clearTimeout(Stu.playCheck);
   if (!Stu.everPlayed) {
@@ -3252,10 +3253,28 @@ function stuTogglePlay() {
 function syncShield() { $('#shield').hidden = !(Stu.everPlayed && !Stu.nativeTap && !Stu.adMode); }
 const AD_HINT = 'Se \u00e8 in corso una pubblicit\u00e0 di YouTube, quando compare il pulsante \u00abSalta\u00bb puoi toccarlo direttamente sul video.';
 function setAdMode(on) {
-  Stu.adMode = on; syncShield();
+  Stu.adMode = on; syncShield(); Stu.lastSt = null;
   const h = $('#wHint');
   if (on && testProvider(Stu.test) === 'youtube') h.textContent = AD_HINT;
   else if (!on && h.textContent === AD_HINT) h.textContent = '';
+}
+function ytAdSignal(P) {
+  if (testProvider(Stu.test) !== 'youtube') return false;
+  try {
+    const known = Number(Stu.test.duration) || 0;
+    const d = P.getDuration ? P.getDuration() || 0 : 0;
+    if (known > 0 && d > 0 && Math.abs(d - known) > 2) return true;
+    const vd = P.getVideoData ? P.getVideoData() : null;
+    if (vd && vd.video_id && Stu.test.videoId && vd.video_id !== Stu.test.videoId) return true;
+  } catch (e) { }
+  return false;
+}
+/* il quesito (o la fine) si raggiunge solo dopo aver visto davvero il video fino a quel punto */
+function reachedGoal() {
+  if (Stu.mode === 'segment') return !!(Stu.seg && Stu.segArmed && Stu.maxReached >= Stu.seg.end - 3);
+  const tgt = stuTarget();
+  const goal = tgt ? tgt.time : Math.max(stuDuration(), Number(Stu.test.duration) || 0);
+  return !goal || Stu.maxReached >= goal - 3;
 }
 function realEnd() {
   /* alcune pubblicit\u00e0 segnalano \u00abfine\u00bb quando terminano: si considera finito solo il video arrivato davvero in fondo */
@@ -3268,7 +3287,7 @@ function updatePlayUI(st) {
   Stu.lastSt = st;
   const playing = st === 1 || st === 3;
   $('#cPlay').innerHTML = ico(playing ? 'pause' : 'play');
-  $('#bigPlay').hidden = playing || !!Stu.overlayQ || Stu.nativeTap;
+  $('#bigPlay').hidden = playing || !!Stu.overlayQ || Stu.nativeTap || Stu.adMode;
 }
 function stuTarget() {
   if (Stu.mode === 'segment') return Stu.seg ? Stu.seg.q : null;
@@ -3286,11 +3305,26 @@ function stuTick() {
   }
   /* video \u00abin riproduzione\u00bb ma con il tempo fermo: quasi sempre \u00e8 una pubblicit\u00e0 di YouTube */
   const playingSt = st === 1 || st === 3;
+  const prevT = Stu.lastT;
   if (!playingSt || Stu.lastT == null || Math.abs(t - Stu.lastT) > 0.03) Stu.lastMoveAt = nowT;
   Stu.lastT = t;
   if (st === 1) Stu.lastPlayingAt = Date.now();
   const stuck = nowT - Stu.lastMoveAt;
-  const ad = Stu.everPlayed && !Stu.overlayQ && ((st === 1 && stuck > 1200) || (st === 3 && stuck > 2500));
+  const watchingNow = !$('#sWatch').hidden && (Stu.mode === 'first' || Stu.mode === 'segment');
+  /* durante una pubblicit\u00e0 YouTube pu\u00f2 indicare la durata (e a volte il tempo) della pubblicit\u00e0 invece di quelli del video */
+  const adInfo = ytAdSignal(P);
+  /* recupero: il conteggio parte solo quando il video \u00e8 davvero arrivato all'inizio del tratto da rivedere */
+  if (Stu.mode === 'segment' && Stu.seg && !Stu.segArmed && watchingNow && !Stu.overlayQ && !adInfo) {
+    const near = Math.abs(t - Stu.seg.start) < 1.5;
+    if (near && (prevT == null || Math.abs(t - prevT) > 1 || Stu.segNearAtPlay)) { Stu.segArmed = true; Stu.maxReached = Stu.seg.start; }
+    Stu.segNearAtPlay = false;
+  }
+  const unarmed = Stu.mode === 'segment' && !Stu.segArmed && st !== 2;
+  if (playingSt && prevT != null && Math.abs(t - prevT) > 0.03 && Math.abs(t - prevT) < 1.5) Stu.movedSinceReq = true;
+  /* dopo aver chiesto di far partire il video, il lettore non parte n\u00e9 si muove: pu\u00f2 essere una pubblicit\u00e0 */
+  const sinceReq = Date.now() - (Stu.playReqAt || 0);
+  const idle = !Stu.movedSinceReq && (st === 0 || st === -1 || st === 5) && sinceReq > 1500 && sinceReq < 60000;
+  const ad = Stu.everPlayed && watchingNow && !Stu.overlayQ && (adInfo || unarmed || idle || (st === 1 && stuck > 1200) || (st === 3 && stuck > 2500));
   if (ad !== Stu.adMode) setAdMode(ad);
   if (!ad && Date.now() > Stu.durCheckAt) {
     Stu.durCheckAt = Date.now() + 1000;
@@ -3307,6 +3341,20 @@ function stuTick() {
     if (Date.now() > Stu.fsResumeUntil || Stu.userPauseAt > Stu.fsResumeUntil - 3000) Stu.fsResumeUntil = 0;
     else if (st === 2) { Stu.fsResumeUntil = 0; tryPlay(); }
   }
+  if (Stu.mode === 'segment' && Stu.seg && !Stu.segArmed && !adInfo && Date.now() > (Stu.segReseekAt || 0)) {
+    /* il video non \u00e8 ancora al punto giusto (per esempio dopo una pubblicit\u00e0): lo si riporta all'inizio del tratto */
+    if (st === 0 || (playingSt && Math.abs(t - Stu.seg.start) >= 1.5)) {
+      Stu.segReseekAt = Date.now() + 3000;
+      try { P.seekTo(Stu.seg.start, true); if (st === 0) P.playVideo(); } catch (e) { }
+    }
+  }
+  if (st === 0 && !adInfo && !reachedGoal() && Date.now() > (Stu.endFixAt || 0) && !(Stu.mode === 'segment' && !Stu.segArmed)) {
+    /* il lettore risulta \u00abfinito\u00bb senza che il video sia stato visto fino in fondo (succede dopo alcune pubblicit\u00e0) */
+    Stu.endFixAt = Date.now() + 3000;
+    Stu.seekGuard = { to: Stu.maxReached, until: Date.now() + 1500 };
+    try { P.seekTo(Stu.maxReached, true); P.playVideo(); } catch (e) { }
+    return;
+  }
   if (Stu.adMode) { Stu.lastTickAt = performance.now(); return; }
   if (Stu.seekGuard) {
     if (Math.abs(t - Stu.seekGuard.to) < 1.5 || Date.now() > Stu.seekGuard.until) Stu.seekGuard = null;
@@ -3318,7 +3366,7 @@ function stuTick() {
   if (t > Stu.maxReached + 2.5 + elapsed * 1.25) {
     /* salto in avanti non consentito (per esempio con i comandi del sito del video) */
     Stu.seekGuard = { to: Stu.maxReached, until: Date.now() + 1500 };
-    try { P.seekTo(Stu.maxReached, true); } catch (e) { }
+    try { P.seekTo(Stu.maxReached, true); if (st === 0) P.playVideo(); } catch (e) { }
     return;
   }
   const tgt = stuTarget();
@@ -3343,7 +3391,7 @@ function stuState(st) {
   updatePlayUI(st);
   if (st === 1 || st === 3) noCaptions(Stu.P);
   if (st !== 0) return;
-  if (Stu.overlayQ || $('#sWatch').hidden || Stu.seekGuard || !realEnd()) return;
+  if (Stu.overlayQ || $('#sWatch').hidden || Stu.seekGuard || Stu.adMode || !realEnd() || !reachedGoal()) return;
   if (Stu.mode === 'first') { const tgt = stuTarget(); if (tgt) openQuestion(tgt); else finishFirstRun(); }
   else if (Stu.mode === 'segment' && Stu.seg) openQuestion(Stu.seg.q);
 }
@@ -3565,9 +3613,13 @@ function startSegment(qid) {
   $('#whSub').textContent = 'Guarda di nuovo il video da ' + fmtTime(start) + ' a ' + fmtTime(q.time) + ': alla fine il quesito ti verr\u00e0 riproposto.';
   $('#wBack').hidden = false; $('#wHint').textContent = '';
   stuShow('sWatch'); updateCount(); renderProgMarks();
+  Stu.segArmed = false; Stu.segReseekAt = Date.now() + 3000;
   stuEnsurePlayer(() => {
+    let p0 = -99; try { p0 = Stu.P.getCurrentTime() || 0; } catch (e) { }
     Stu.seekGuard = { to: start, until: Date.now() + 2500 };
     try { Stu.P.seekTo(start, true); } catch (e) { }
+    Stu.segNearAtPlay = Math.abs(p0 - start) < 1.5;
+    Stu.lastT = null;
     updateProg(start);
     tryPlay();
   });
