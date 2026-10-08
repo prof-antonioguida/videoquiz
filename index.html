@@ -240,7 +240,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 
 /* ---------- report ---------- */
 .table-card{padding:0;overflow:hidden}
-.table-wrap{overflow-x:auto;overflow-y:hidden}
+.table-wrap{overflow-x:auto;overflow-y:hidden;touch-action:pan-x pan-y;overscroll-behavior-x:contain}
 table.rep{border-collapse:separate;border-spacing:0;width:100%;font-size:.92rem}
 table.rep th,table.rep td{padding:.5em .65em;border-bottom:1px solid var(--line);white-space:nowrap;text-align:left}
 table.rep thead th{position:sticky;top:0;background:var(--thead);z-index:2;font-weight:800;font-size:.85rem;color:var(--text2)}
@@ -604,8 +604,8 @@ html[data-theme="dark"] .tl-mark{border-color:var(--surface)}
 .pin-show{display:inline-block;font-size:2.4rem;font-weight:900;letter-spacing:.3em;padding:.2em .6em .2em .9em;border-radius:14px;background:var(--primary-l);color:var(--primary);margin:.2em 0 .8em;font-variant-numeric:tabular-nums}
 .prog-card{margin-top:1rem}
 .prog-card .card-head h2{font-size:1.05rem}
-table.rep.prog tbody tr{cursor:default}
-table.rep.prog td.st{white-space:normal;min-width:220px}
+table.rep.inprog tbody tr{cursor:default}
+table.rep.inprog td.st{white-space:normal;min-width:220px}
 @media (orientation:landscape) and (max-height:560px){ #sWatch .save-later{min-height:28px;padding:.15em .7em} }
 
 .l-short{display:none}
@@ -902,7 +902,7 @@ html.scroll-lock,html.scroll-lock body{overflow:hidden}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 11:09</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 17:43</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2546,7 +2546,7 @@ function renderProgress() {
   $('#rpProgCard').hidden = !list.length;
   $('#rpProgCount').textContent = list.length;
   if (!list.length) { $('#rpProg').innerHTML = ''; return; }
-  $('#rpProg').innerHTML = '<table class="rep prog"><thead><tr><th>Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo aggiornamento</th><th class="no-print"></th></tr></thead><tbody>' +
+  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th>Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo aggiornamento</th><th class="no-print"></th></tr></thead><tbody>' +
     list.map((r, i) => {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, va sbloccato)');
