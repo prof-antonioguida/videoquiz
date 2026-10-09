@@ -654,6 +654,8 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
 
 /* parte del video già superata (prima dell'ultimo quesito svolto): non si può più rivedere */
 .prog-lock{position:absolute;left:0;top:0;bottom:0;width:0;background:repeating-linear-gradient(135deg,rgba(13,18,32,.75) 0 3px,rgba(13,18,32,.35) 3px 6px)}
+.qe-sel-fld{margin-top:.9em}
+.qe-sel-hint{margin:.35em 0 0}
 
 </style>
 <script>
@@ -911,7 +913,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 09/10/2026 09:34</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 09/10/2026 10:44</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1091,6 +1093,23 @@ function normAns(s, ignoreCase) {
   let x = String(s || '').normalize('NFC').replace(/[\u2018\u2019\u02bc`\u00b4]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
   x = x.replace(/[.;:!?]+$/, '').trim();
   return ignoreCase ? x.toLowerCase() : x;
+}
+/* risposta multipla: l'alunno pu\u00f2 selezionare pi\u00f9 risposte se le giuste sono pi\u00f9 di una, se l'insegnante lo ha scelto
+   oppure (in automatico) se il testo della domanda ne chiede pi\u00f9 di una, per esempio \u00abSeleziona le affermazioni vere\u00bb */
+function textAsksMulti(text) {
+  const s = ' ' + String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\u2019']/g, "' ").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ') + ' ';
+  if (/ (una sola|un solo|soltanto una|soltanto un|solo una|solo un|l' unica|l' unico|un' unica|un unico) /.test(s)) return false;
+  if (/ (seleziona|selezionare|selezionate|scegli|scegliere|scegliete|indica|indicare|indicate|individua|individuare|individuate|segna|segnare|segnate|evidenzia|evidenziare|trova|trovare|spunta|spuntare|spuntate|clicca|cliccare|barra|barrare|sottolinea|riconosci) (tutte |tutti )?(le|gli|i) /.test(s)) return true;
+  if (/ (quali|tutte le|tutti i|tutte quelle|tutti quelli|una o piu|uno o piu|piu di una|piu di uno|piu risposte|piu opzioni|piu affermazioni) /.test(s)) return true;
+  if (/ (quelle|quelli) (che|vere|false|corrette|esatte|giuste|sbagliate|errate) /.test(s)) return true;
+  if (/ (affermazioni|frasi|risposte|opzioni|parole|termini|elementi|alternative|proposizioni|completamenti|definizioni|caratteristiche) (vere|false|corrette|esatte|giuste|sbagliate|errate|valide) /.test(s)) return true;
+  return false;
+}
+function mcMulti(q) {
+  if ((q.correct || []).length > 1) return true;
+  if (q.select === 'multi') return true;
+  if (q.select === 'single') return false;
+  return textAsksMulti(q.text);
 }
 function checkAnswer(q, v) {
   if (q.type === 'mc') {
@@ -2084,7 +2103,8 @@ function editQuestion(orig, presetTime, qopts) {
     '<div class="qe-sec" data-sec="mc"><label class="fld"><span>Domanda</span><textarea class="qe-mc-text" rows="2" maxlength="600"></textarea></label>' +
     '<div class="fld"><span>Risposte \u00b7 spunta \u00abgiusta\u00bb accanto a quella corretta (anche pi\u00f9 di una) \u00b7 trascina \u22ee\u22ee per cambiare l\'ordine</span><div class="qe-opts"></div><div><button type="button" class="btn sm qe-addopt">' + ico('add') + ' Aggiungi una risposta</button></div></div>' +
     '<label class="check"><input type="checkbox" class="qe-noshuffle"> Non mescolare le risposte di questo quesito</label>' +
-    '<p class="hint" style="margin:.1em 0 0 1.9em">Di solito l\'app mostra le risposte in un ordine diverso per ogni alunno (e le rimescola nei recuperi). Spunta la casella se l\'ordine \u00e8 importante, per esempio con \u00abTutte le precedenti\u00bb o \u00abNessuna delle precedenti\u00bb.</p></div>' +
+    '<p class="hint" style="margin:.1em 0 0 1.9em">Di solito l\'app mostra le risposte in un ordine diverso per ogni alunno (e le rimescola nei recuperi). Spunta la casella se l\'ordine \u00e8 importante, per esempio con \u00abTutte le precedenti\u00bb o \u00abNessuna delle precedenti\u00bb.</p>' +
+    '<label class="fld qe-sel-fld"><span>Quante risposte pu\u00f2 selezionare l\'alunno</span><select class="qe-sel"><option value="auto">Automatico, in base al testo della domanda</option><option value="single">Una sola risposta</option><option value="multi">Una o pi\u00f9 risposte</option></select></label><p class="hint qe-sel-hint"></p></div>' +
     '<div class="qe-sec" data-sec="tf"><label class="fld"><span>Affermazione</span><textarea class="qe-tf-text" rows="2" maxlength="600"></textarea></label>' +
     '<div class="fld"><span>L\'affermazione \u00e8\u2026</span><div class="seg qe-tf-val"><button type="button" data-v="1">Vera</button><button type="button" data-v="0">Falsa</button></div></div></div>' +
     '<div class="qe-sec" data-sec="fill"><label class="fld"><span>Consegna (facoltativa)</span><input type="text" class="qe-fill-instr" maxlength="300" placeholder="Completa il testo inserendo le parole mancanti."></label>' +
@@ -2110,6 +2130,7 @@ function editQuestion(orig, presetTime, qopts) {
   $$('.qe-type button', body).forEach(b => { b.onclick = () => setType(b.dataset.t); });
   $('.qe-mc-text', body).value = q.type === 'mc' ? q.text : '';
   $('.qe-noshuffle', body).checked = q.type === 'mc' && q.noShuffle === true;
+  $('.qe-sel', body).value = q.type === 'mc' && (q.select === 'single' || q.select === 'multi') ? q.select : 'auto';
   $('.qe-tf-text', body).value = q.type === 'tf' ? q.text : '';
   $('.qe-fill-instr', body).value = q.type === 'fill' ? q.text : '';
 
@@ -2126,13 +2147,30 @@ function editQuestion(orig, presetTime, qopts) {
     const i = +e.target.dataset.i;
     if (e.target.checked) corr.add(i); else corr.delete(i);
     e.target.closest('.opt-ok').classList.toggle('on', e.target.checked);
+    selHint();
   });
+  /* quante risposte pu\u00f2 selezionare l'alunno: spiegazione aggiornata mentre si scrive */
+  const selHint = () => {
+    const sel = $('.qe-sel', body), many = corr.size > 1;
+    $('option[value=single]', sel).disabled = many;
+    if (many && sel.value === 'single') sel.value = 'auto';
+    let msg;
+    if (many) msg = 'Le risposte giuste sono pi\u00f9 di una: l\'alunno potr\u00e0 selezionare pi\u00f9 risposte.';
+    else if (sel.value === 'auto') msg = textAsksMulti($('.qe-mc-text', body).value)
+      ? 'In automatico: <b>una o pi\u00f9 risposte</b>, perch\u00e9 la domanda ne chiede pi\u00f9 di una. Se l\'alunno seleziona anche una risposta sbagliata, il quesito \u00e8 sbagliato.'
+      : 'In automatico: <b>una sola risposta</b>. Se la domanda chiede pi\u00f9 risposte (per esempio \u00abSeleziona le affermazioni vere\u00bb), l\'alunno potr\u00e0 selezionarne pi\u00f9 di una.';
+    else if (sel.value === 'multi') msg = 'L\'alunno potr\u00e0 selezionare pi\u00f9 risposte, senza sapere quante sono quelle giuste. Se ne seleziona anche una sbagliata, il quesito \u00e8 sbagliato.';
+    else msg = 'L\'alunno potr\u00e0 selezionare una sola risposta.';
+    $('.qe-sel-hint', body).innerHTML = msg;
+  };
+  $('.qe-sel', body).addEventListener('change', selHint);
+  $('.qe-mc-text', body).addEventListener('input', selHint);
   optBox.addEventListener('click', e => {
     const b = e.target.closest('[data-del]'); if (!b) return;
     const i = +b.dataset.del;
     opts.splice(i, 1);
     const nc = new Set(); corr.forEach(c => { if (c < i) nc.add(c); else if (c > i) nc.add(c - 1); }); corr = nc;
-    renderOpts();
+    renderOpts(); selHint();
   });
   /* riordino delle risposte trascinandole (mouse e dito) o con le frecce della tastiera */
   const applyOrder = order => {
@@ -2194,7 +2232,7 @@ function editQuestion(orig, presetTime, qopts) {
     opts.push(''); renderOpts();
     const ins = $$('input[type=text]', optBox); ins[ins.length - 1].focus();
   };
-  renderOpts();
+  renderOpts(); selHint();
 
   // vero/falso
   let tfVal = (q.type === 'tf' && typeof q.tf === 'boolean') ? q.tf : null;
@@ -2232,7 +2270,8 @@ function editQuestion(orig, presetTime, qopts) {
       if (o.length < 2) { errEl.textContent = 'Servono almeno due risposte.'; return false; }
       if (o.some(s => !s)) { errEl.textContent = 'Compila tutte le risposte oppure elimina quelle vuote.'; return false; }
       if (!corr.size) { errEl.textContent = 'Spunta \u00abgiusta\u00bb accanto ad almeno una risposta.'; return false; }
-      return Object.assign(base, { text, options: o, correct: [...corr].sort((a, b) => a - b), noShuffle: $('.qe-noshuffle', body).checked });
+      const selV = $('.qe-sel', body).value;
+      return Object.assign(base, { text, options: o, correct: [...corr].sort((a, b) => a - b), noShuffle: $('.qe-noshuffle', body).checked }, (selV === 'single' || selV === 'multi') && !(selV === 'single' && corr.size > 1) ? { select: selV } : {});
     }
     if (type === 'tf') {
       const text = $('.qe-tf-text', body).value.trim();
@@ -3589,9 +3628,9 @@ function optionOrder(q) {
 function renderQuestionBody(box, q) {
   box.onchange = null;
   if (q.type === 'mc') {
-    const multi = (q.correct || []).length > 1;
+    const multi = mcMulti(q);
     const order = optionOrder(q);
-    box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div>' + (multi ? '<div class="qc-note">Attenzione: le risposte corrette sono pi\u00f9 di una. Selezionale tutte.</div>' : '') +
+    box.innerHTML = '<div class="qc-text">' + esc(q.text) + '</div>' + (multi ? '<div class="qc-note">Puoi selezionare una o pi\u00f9 risposte.</div>' : '') +
       '<div class="opts-grid">' + order.map((oi, k) => '<label class="opt"><input type="' + (multi ? 'checkbox' : 'radio') + '" name="qopt" value="' + oi + '"><span class="ol">' + letter(k) + '</span><span>' + esc((q.options || [])[oi]) + '</span></label>').join('') + '</div>';
     box.onchange = () => $$('.opt', box).forEach(l => l.classList.toggle('sel', $('input', l).checked));
   } else if (q.type === 'tf') {
@@ -3611,7 +3650,7 @@ function renderQuestionBody(box, q) {
 function readAnswer(q, box) {
   if (q.type === 'mc') {
     const sel = $$('input[name=qopt]:checked', box).map(i => +i.value);
-    if (!sel.length) return { err: (q.correct || []).length > 1 ? 'Seleziona le risposte che ritieni corrette.' : 'Scegli una risposta.' };
+    if (!sel.length) return { err: mcMulti(q) ? 'Seleziona le risposte che ritieni corrette.' : 'Scegli una risposta.' };
     sel.sort((a, b) => a - b);
     return { v: sel, t: sel.map(i => letter(i) + ') ' + q.options[i]).join(' | ') };
   }
