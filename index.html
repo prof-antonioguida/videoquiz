@@ -652,6 +652,9 @@ table.rep .sticky2{left:var(--numw,0)}
 table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
 @media print{ table.rep .sticky2{left:auto} }
 
+/* parte del video già superata (prima dell'ultimo quesito svolto): non si può più rivedere */
+.prog-lock{position:absolute;left:0;top:0;bottom:0;width:0;background:repeating-linear-gradient(135deg,rgba(13,18,32,.75) 0 3px,rgba(13,18,32,.35) 3px 6px)}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -841,7 +844,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
           <div class="ctrl">
             <button type="button" class="cbtn" id="cPlay" aria-label="Avvia o metti in pausa"></button>
             <button type="button" class="cbtn" id="cBack" aria-label="Indietro di 10 secondi" title="Indietro di 10 secondi"></button>
-            <div class="prog" id="prog"><div class="prog-bar"><div class="prog-seg" id="progSeg" hidden></div><div class="prog-reach" id="progReach"></div><div class="prog-fill" id="progFill"></div></div><div class="prog-marks" id="progMarks"></div><div class="prog-knob" id="progKnob"></div></div>
+            <div class="prog" id="prog"><div class="prog-bar"><div class="prog-seg" id="progSeg" hidden></div><div class="prog-reach" id="progReach"></div><div class="prog-fill" id="progFill"></div><div class="prog-lock" id="progLock"></div></div><div class="prog-marks" id="progMarks"></div><div class="prog-knob" id="progKnob"></div></div>
             <span class="ctime" id="cTime">0:00 / 0:00</span>
             <button type="button" class="cbtn" id="cMute" aria-label="Audio"></button>
             <button type="button" class="cbtn" id="cFs" aria-label="Schermo intero" title="Schermo intero"></button>
@@ -908,7 +911,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 09/10/2026 05:36</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 09/10/2026 09:34</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -3005,7 +3008,7 @@ function wireStudent() {
   $('#cBack').innerHTML = ico('rewind');
   $('#cBack').addEventListener('click', () => {
     const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
-    const lo = Stu.mode === 'segment' && Stu.seg ? Stu.seg.start : 0;
+    const lo = stuLowBound();
     const t = Math.max(lo, (P.getCurrentTime() || 0) - 10);
     P.seekTo(t, true); updateProg(t);
   });
@@ -3407,6 +3410,13 @@ function stuTick() {
   const nowMs = performance.now();
   const elapsed = Stu.lastTickAt ? Math.min(2, (nowMs - Stu.lastTickAt) / 1000) : 0.1;
   Stu.lastTickAt = nowMs;
+  const lo = stuLowBound();
+  if (lo > 0 && t < lo - 1 && !(Stu.mode === 'segment' && !Stu.segArmed)) {
+    /* non si torna prima dell'ultimo quesito svolto (per esempio con i comandi del sito del video) */
+    Stu.seekGuard = { to: lo, until: Date.now() + 1500 };
+    try { P.seekTo(lo, true); } catch (e) { }
+    return;
+  }
   if (t > Stu.maxReached + 2.5 + elapsed * 1.25) {
     /* salto in avanti non consentito (per esempio con i comandi del sito del video) */
     Stu.seekGuard = { to: Stu.maxReached, until: Date.now() + 1500 };
@@ -3445,6 +3455,7 @@ function updateProg(t) {
   $('#progFill').style.width = pctOf(t);
   $('#progReach').style.width = pctOf(Math.max(Stu.maxReached, t));
   $('#progKnob').style.left = pctOf(t);
+  $('#progLock').style.width = pctOf(stuLowBound());
   $('#cTime').textContent = fmtTime(t) + ' / ' + fmtTime(d);
 }
 function renderProgMarks() {
@@ -3459,22 +3470,34 @@ function renderProgMarks() {
     box.innerHTML = Stu.qs.map(q => '<span class="pm' + (atts(q.id).some(a => a.r === 0) ? ' done' : '') + '" style="left:' + pctOf(q.time) + '"></span>').join('');
   }
 }
+/* punto pi\u00f9 indietro che l'alunno pu\u00f2 rivedere: nel recupero l'inizio del tratto, nella prima visione l'ultimo quesito gi\u00e0 svolto */
+function stuLowBound() {
+  if (Stu.mode === 'segment' && Stu.seg) return Stu.seg.start;
+  if (Stu.mode !== 'first') return 0;
+  return Stu.qs.filter(q => atts(q.id).some(a => a.r === 0)).reduce((m, q) => Math.max(m, Number(q.time) || 0), 0);
+}
+function flashHint(msg) {
+  const h = $('#wHint'); h.textContent = msg;
+  clearTimeout(flashHint.tm); flashHint.tm = setTimeout(() => { if (h.textContent === msg) h.textContent = ''; }, 3500);
+}
 function clampSeek(clientX) {
   const r = $('#prog').getBoundingClientRect();
   const d = stuDuration(); if (!d || !r.width) return null;
   let t = Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * d;
-  const lo = Stu.mode === 'segment' && Stu.seg ? Stu.seg.start : 0;
+  const lo = stuLowBound();
   const hi = Math.max(lo, Stu.maxReached);
-  let blocked = false;
+  let blocked = false, blockedBack = false;
   if (t > hi + 0.2) { t = hi; blocked = true; }
+  if (t < lo - 0.2) { t = lo; blockedBack = true; }
   if (t < lo) t = lo;
-  return { t, blocked };
+  return { t, blocked, blockedBack };
 }
 function progPreview(clientX) { const c = clampSeek(clientX); if (c) updateProg(c.t); }
 function progSeek(clientX) {
   const P = Stu.P; if (!P || !Stu.ready || Stu.overlayQ) return;
   const c = clampSeek(clientX); if (!c) return;
-  if (c.blocked) { $('#wHint').textContent = 'Puoi tornare indietro, ma non andare oltre il punto che hai gi\u00e0 visto.'; setTimeout(() => { if ($('#wHint').textContent.startsWith('Puoi tornare')) $('#wHint').textContent = ''; }, 3500); }
+  if (c.blocked) flashHint('Puoi tornare indietro, ma non andare oltre il punto che hai gi\u00e0 visto.');
+  else if (c.blockedBack) flashHint(Stu.mode === 'segment' ? 'Puoi rivedere solo il tratto di video di questo recupero.' : 'Puoi rivedere il video solo dall\'ultimo quesito svolto in poi.');
   Stu.seekGuard = { to: c.t, until: Date.now() + 1500 };
   P.seekTo(c.t, true); updateProg(c.t);
 }
