@@ -908,7 +908,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 08/10/2026 23:27</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 09/10/2026 05:36</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -918,7 +918,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
    Video (YouTube, Vimeo, file video) con quesiti, recupero degli errori, assegnazioni e report
    ===================================================================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, deleteUser, reauthenticateWithCredential, EmailAuthProvider, updatePassword } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 import { getFirestore, collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc, query, where, onSnapshot, writeBatch, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 /* ---------- configurazione Firebase (progetto "videoquiz") ---------- */
@@ -964,6 +964,7 @@ const ICONS = {
   logout: 'M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z',
   check: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
   close: 'M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+  key: 'M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z',
   lock: 'M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z',
   lockopen: 'M12 17c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm6-9h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h1.9c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm0 12H6V10h12v10z',
   table: 'M3 3v18h18V3H3zm8 16H5v-6h6v6zm0-8H5V5h6v6zm8 8h-6v-6h6v6zm0-8h-6V5h6v6z',
@@ -1587,6 +1588,7 @@ function wireTeacher() {
   $('#userBtn').addEventListener('click', e => {
     e.stopPropagation();
     popMenu($('#userBtn'), [
+      { label: 'Cambia password', icon: 'key', onClick: changePasswordFlow },
       { label: 'Esci', icon: 'logout', onClick: () => nav(async () => { await signOut(auth); }) },
       { label: 'Elimina account', icon: 'delete', danger: true, onClick: deleteAccountFlow }
     ], S.user ? S.user.email : '');
@@ -1659,6 +1661,7 @@ function initTeacher() {
       if (S.ed) { destroyEditorPlayer(); S.ed = null; }
       if (S.unsubReports) { S.unsubReports(); S.unsubReports = null; }
       S.tests = []; S.assigns = [];
+      setAuthMode('login'); $('#authPassword').value = ''; if ($('#authConfirm')) $('#authConfirm').value = '';
       showView('v-auth');
     }
   });
@@ -1686,6 +1689,47 @@ async function forgotPassword() {
     }]
   });
   if (ok) modal({ title: 'Controlla la posta', body: '<p>Se l\'indirizzo \u00e8 registrato, tra poco riceverai un\'email con il link per reimpostare la password. Se non la trovi, controlla anche nella cartella <b>Spam</b>.</p>', buttons: [{ label: 'Ho capito', cls: 'primary', value: true }] });
+}
+async function changePasswordFlow() {
+  const body = el('<div>' +
+    '<label class="fld"><span>Password attuale</span><input type="password" class="cp-old" autocomplete="current-password"></label>' +
+    '<label class="fld"><span>Nuova password (almeno 6 caratteri)</span><input type="password" class="cp-new" autocomplete="new-password"></label>' +
+    '<label class="fld"><span>Ripeti la nuova password</span><input type="password" class="cp-rep" autocomplete="new-password"></label>' +
+    '<label class="check"><input type="checkbox" class="cp-show"> Mostra le password</label>' +
+    '<div class="err"></div></div>');
+  $('.cp-show', body).addEventListener('change', e => { $$('input[type=password],input.cp-pw', body).forEach(i => { i.classList.add('cp-pw'); i.type = e.target.checked ? 'text' : 'password'; }); });
+  const submit = () => $('.modal-foot .btn.primary', body.closest('.modal')).click();
+  $$('.cp-old,.cp-new,.cp-rep', body).forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } }));
+  await modal({
+    title: 'Cambia password', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: 'Cambia password', cls: 'primary', onClick: async (b, btn) => {
+        const oldP = $('.cp-old', body).value, newP = $('.cp-new', body).value, repP = $('.cp-rep', body).value, errEl = $('.err', body);
+        errEl.textContent = '';
+        if (!oldP) { errEl.textContent = 'Scrivi la password attuale.'; return false; }
+        if (newP.length < 6) { errEl.textContent = 'La nuova password deve avere almeno 6 caratteri.'; return false; }
+        if (newP !== repP) { errEl.textContent = 'Le due nuove password non coincidono.'; return false; }
+        if (newP === oldP) { errEl.textContent = 'La nuova password \u00e8 uguale a quella attuale.'; return false; }
+        btn.disabled = true; btn.classList.add('loading');
+        try {
+          const u = auth.currentUser;
+          try { await reauthenticateWithCredential(u, EmailAuthProvider.credential(u.email, oldP)); }
+          catch (ex) {
+            const c = (ex && ex.code) || '';
+            if (/wrong-password|invalid-credential|invalid-login-credentials|user-mismatch/.test(c)) throw Object.assign(new Error('old'), { mine: 'La password attuale non \u00e8 corretta.' });
+            throw ex;
+          }
+          await updatePassword(u, newP);
+          toast('Password cambiata. Dal prossimo accesso usa la nuova password.', 'ok', 5000);
+          return true;
+        } catch (ex) {
+          console.error(ex);
+          errEl.textContent = ex.mine || ((ex.code || '').startsWith('auth/') ? authErr(ex) : 'Errore: ' + (ex.code || ex.message));
+          btn.disabled = false; btn.classList.remove('loading');
+          return false;
+        }
+      }
+    }]
+  });
 }
 async function deleteAccountFlow() {
   const body = el('<div><p>L\'account e <b>tutti i tuoi dati</b> (test, assegnazioni e report degli alunni) verranno eliminati definitivamente. L\'operazione non si pu\u00f2 annullare.</p><label class="fld"><span>Per confermare, scrivi la tua password</span><input type="password" autocomplete="current-password"></label><div class="err"></div></div>');
