@@ -913,7 +913,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 09/10/2026 10:44</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 13/10/2026 11:41</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -3142,7 +3142,7 @@ async function stuLogin(e) {
 async function resumeFrom(id, pin, errEl) {
   const run = await loadSaved(id);
   if (!run) { errEl.textContent = 'Non trovo un test salvato con questi dati e questo codice. Controlla che cognome, nome e classe siano gli stessi scritti la prima volta e che il codice sia giusto. Se vuoi iniziare il test da capo, lascia vuoto il codice.'; return false; }
-  if (Stu.qs.map(q => q.id).join(',') !== (run.qids || []).join(',')) { errEl.textContent = 'L\'insegnante ha modificato il test dopo il tuo salvataggio: devi ricominciare da capo (lascia vuoto il codice personale).'; return false; }
+  const changed = reconcileRun(run);
   Stu.progId = id; Stu.pin = pin;
   run.pubKey = Stu.pubKey; run.aid = Stu.aid;
   Stu.run = run;
@@ -3152,7 +3152,31 @@ async function resumeFrom(id, pin, errEl) {
   }
   const ph = run.phase;
   if (ph === 'watch') stuStartWatching(); else if (ph === 'results') stuShowResults(false); else stuIntro();
-  toast('Bentornato! Riprendi da dove eri arrivato.', 'ok');
+  toast(changed ? 'Bentornato! L\'insegnante ha aggiornato il test: le risposte che avevi gi\u00e0 dato sono state conservate.' : 'Bentornato! Riprendi da dove eri arrivato.', 'ok', changed ? 6000 : 3000);
+  if (changed) saveRun();
+  return true;
+}
+/* se l'insegnante ha modificato il test dopo il salvataggio (quesiti aggiunti, eliminati o spostati),
+   si conservano le risposte ai quesiti rimasti; i quesiti nuovi andranno svolti */
+function reconcileRun(run) {
+  const ids = Stu.qs.map(q => q.id);
+  if (ids.join(',') === (run.qids || []).join(',')) return false;
+  const keep = new Set(ids), old = new Set(run.qids || Object.keys(run.ans || {}));
+  run.ans = run.ans || {};
+  Object.keys(run.ans).forEach(k => { if (!keep.has(k)) delete run.ans[k]; });
+  if (run.orders) Object.keys(run.orders).forEach(k => { if (!keep.has(k)) delete run.orders[k]; });
+  run.pending = (run.pending || []).filter(k => keep.has(k));
+  run.redone = (run.redone || []).filter(k => keep.has(k));
+  if ((run.round || 0) >= 1) {
+    /* prima visione gi\u00e0 conclusa: i quesiti nuovi (mai svolti) si aggiungono a quelli da recuperare */
+    ids.forEach(k => { if (!old.has(k) && !atts(k).length && !run.pending.includes(k)) run.pending.push(k); });
+    const ord = new Map(ids.map((k, i) => [k, i]));
+    run.pending.sort((a, b) => ord.get(a) - ord.get(b));
+    if (run.pending.length && run.pending.every(k => run.redone.includes(k))) {
+      run.round += 1; run.pending = ids.filter(k => !(run.ans[k] && run.ans[k].att || []).some(a => a.ok && a.r < run.round)); run.redone = [];
+    }
+  }
+  run.qids = ids;
   return true;
 }
 function stuIntro() {
@@ -3208,11 +3232,7 @@ async function stuIntroStart() {
     if (pin) {
       id = await progIdFor(Stu.aid, Stu.run.profile, pin);
       const old = await loadSaved(id);
-      if (old) {
-        const same = Stu.qs.map(q => q.id).join(',') === (old.qids || []).join(',');
-        if (same) { await resumeFrom(id, pin, perr); return; }
-        if (!await confirmBox('Test modificato', 'Con questo codice avevi salvato il test, ma nel frattempo l\'insegnante lo ha modificato: devi ricominciare da capo.', 'Ricomincia da capo')) return;
-      }
+      if (old) { await resumeFrom(id, pin, perr); return; }
     }
     await registerStart();
     if (pin) { Stu.progId = id; Stu.pin = pin; }
@@ -3715,8 +3735,9 @@ function startSegment(qid) {
   const q = Stu.qs[i];
   const start = i > 0 ? Stu.qs[i - 1].time : 0;
   Stu.mode = 'segment'; Stu.seg = { q, start, end: q.time }; Stu.maxReached = start;
-  $('#whTitle').textContent = 'Recupero del quesito ' + (i + 1);
-  $('#whSub').textContent = 'Guarda di nuovo il video da ' + fmtTime(start) + ' a ' + fmtTime(q.time) + ': alla fine il quesito ti verr\u00e0 riproposto.';
+  const fresh = !atts(q.id).length;
+  $('#whTitle').textContent = fresh ? 'Quesito ' + (i + 1) + ' (aggiunto dall\'insegnante)' : 'Recupero del quesito ' + (i + 1);
+  $('#whSub').textContent = fresh ? 'Guarda il video da ' + fmtTime(start) + ' a ' + fmtTime(q.time) + ': alla fine ti verr\u00e0 proposto il quesito.' : 'Guarda di nuovo il video da ' + fmtTime(start) + ' a ' + fmtTime(q.time) + ': alla fine il quesito ti verr\u00e0 riproposto.';
   $('#wBack').hidden = false; $('#wHint').textContent = '';
   stuShow('sWatch'); updateCount(); renderProgMarks();
   Stu.segArmed = false; Stu.segReseekAt = Date.now() + 3000;
@@ -3743,10 +3764,20 @@ function stuShowResults(justClosed) {
   const note = $('#rNote');
   if (!pending.length) { note.className = 'note ok'; note.innerHTML = '<b>Complimenti!</b> Tutte le risposte sono corrette. Ora puoi inviare il test all\'insegnante.'; }
   else if (redone.length) { note.className = 'note wait'; note.innerHTML = 'Recupero in corso: hai rifatto <b>' + redone.length + ' di ' + pending.length + '</b> quesiti. Il nuovo punteggio comparir\u00e0 quando li avrai rifatti tutti.'; }
-  else { note.className = 'note bad'; note.innerHTML = (pending.length === 1 ? 'Hai <b>1 risposta sbagliata</b>.' : 'Hai <b>' + pending.length + ' risposte sbagliate</b>.') + ' Per ciascuna premi \u00abRivedi e rispondi\u00bb: rivedrai la parte di video che va dal quesito precedente fino al quesito sbagliato, poi potrai rispondere di nuovo.'; }
+  else {
+    const nNew = pending.filter(k => !atts(k).length).length, nBad = pending.length - nNew;
+    note.className = 'note bad';
+    note.innerHTML = (nBad ? (nBad === 1 ? 'Hai <b>1 risposta sbagliata</b>.' : 'Hai <b>' + nBad + ' risposte sbagliate</b>.') + ' Per ciascuna premi \u00abRivedi e rispondi\u00bb: rivedrai la parte di video che va dal quesito precedente fino al quesito sbagliato, poi potrai rispondere di nuovo.' : '') +
+      (nNew ? (nBad ? ' ' : '') + 'L\'insegnante ha aggiunto ' + (nNew === 1 ? '<b>1 quesito</b>' : '<b>' + nNew + ' quesiti</b>') + ' al test: per ' + (nNew === 1 ? 'svolgerlo' : 'svolgerli') + ' premi \u00abGuarda e rispondi\u00bb.' : '');
+  }
   $('#rList').innerHTML = Stu.qs.map((q, i) => {
     let cls, icon, state, act = '';
     if (solved(q)) { cls = 'ok'; icon = 'check'; state = 'Risposta corretta'; }
+    else if (!atts(q.id).length) {
+      cls = 'wait'; icon = 'add'; state = 'Quesito aggiunto dall\'insegnante: da svolgere';
+      const s = i > 0 ? Stu.qs[i - 1].time : 0;
+      act = '<div class="r-act"><button type="button" class="btn accent sm" data-redo="' + esc(q.id) + '">' + ico('play') + ' Guarda e rispondi</button><div class="hint" style="margin:.25em 0 0;font-size:.8rem;text-align:center">video da ' + fmtTime(s) + ' a ' + fmtTime(q.time) + '</div></div>';
+    }
     else if (redone.includes(q.id)) { cls = 'wait'; icon = 'hourglass'; state = 'Risposta data: vedrai l\'esito quando avrai rifatto tutti i quesiti sbagliati'; }
     else {
       cls = 'bad'; icon = 'close'; state = 'Risposta sbagliata';
