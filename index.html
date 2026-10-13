@@ -656,6 +656,8 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
 .prog-lock{position:absolute;left:0;top:0;bottom:0;width:0;background:repeating-linear-gradient(135deg,rgba(13,18,32,.75) 0 3px,rgba(13,18,32,.35) 3px 6px)}
 .qe-sel-fld{margin-top:.9em}
 .qe-sel-hint{margin:.35em 0 0}
+.qe-warn{color:var(--warn);font-weight:700}
+.sel-chip.multi{background:var(--primary-l);color:var(--primary)}
 
 </style>
 <script>
@@ -913,7 +915,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 13/10/2026 11:41</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 13/10/2026 11:56</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1096,15 +1098,23 @@ function normAns(s, ignoreCase) {
 }
 /* risposta multipla: l'alunno pu\u00f2 selezionare pi\u00f9 risposte se le giuste sono pi\u00f9 di una, se l'insegnante lo ha scelto
    oppure (in automatico) se il testo della domanda ne chiede pi\u00f9 di una, per esempio \u00abSeleziona le affermazioni vere\u00bb */
-function textAsksMulti(text) {
-  const s = ' ' + String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\u2019']/g, "' ").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ') + ' ';
-  if (/ (una sola|un solo|soltanto una|soltanto un|solo una|solo un|l' unica|l' unico|un' unica|un unico) /.test(s)) return false;
-  if (/ (seleziona|selezionare|selezionate|scegli|scegliere|scegliete|indica|indicare|indicate|individua|individuare|individuate|segna|segnare|segnate|evidenzia|evidenziare|trova|trovare|spunta|spuntare|spuntate|clicca|cliccare|barra|barrare|sottolinea|riconosci) (tutte |tutti )?(le|gli|i) /.test(s)) return true;
-  if (/ (quali|tutte le|tutti i|tutte quelle|tutti quelli|una o piu|uno o piu|piu di una|piu di uno|piu risposte|piu opzioni|piu affermazioni) /.test(s)) return true;
-  if (/ (quelle|quelli) (che|vere|false|corrette|esatte|giuste|sbagliate|errate) /.test(s)) return true;
-  if (/ (affermazioni|frasi|risposte|opzioni|parole|termini|elementi|alternative|proposizioni|completamenti|definizioni|caratteristiche) (vere|false|corrette|esatte|giuste|sbagliate|errate|valide) /.test(s)) return true;
-  return false;
+function qTextNorm(text) { return ' ' + String(text || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[\u2019']/g, "' ").replace(/[^a-z0-9' ]+/g, ' ').replace(/\s+/g, ' ') + ' '; }
+/* cosa chiede il testo della domanda: 'multi' (pi\u00f9 risposte), 'single' (una sola) oppure '' (non si capisce) */
+function qTextCue(text) {
+  const s = qTextNorm(text);
+  if (/ (una o piu|uno o piu|piu di una|piu di uno|piu risposte|piu opzioni|piu affermazioni|piu completamenti) /.test(s)) return 'multi';
+  if (/ (una sola|un solo|soltanto una|soltanto un|solo una|solo un|l' unica|l' unico|un' unica|un unico) /.test(s)) return 'single';
+  if (/ (quale|qual) /.test(s)) return 'single';
+  if (/ (la|l'|una) (risposta|opzione|affermazione|alternativa|frase|proposizione|definizione|parola|soluzione) (corretta|esatta|giusta|vera|falsa|sbagliata|errata|valida) /.test(s)) return 'single';
+  if (/ (il|un) (completamento|termine|nome|numero|valore|significato|risultato) (corretto|esatto|giusto|vero|falso|sbagliato|errato|valido) /.test(s)) return 'single';
+  if (/ (quella|quello) (vera|falsa|corretta|esatta|giusta|sbagliata|errata|vero|falso|corretto|esatto|giusto|sbagliato|errato|che) /.test(s)) return 'single';
+  if (/ (seleziona|selezionare|selezionate|scegli|scegliere|scegliete|indica|indicare|indicate|individua|individuare|individuate|segna|segnare|segnate|evidenzia|evidenziare|trova|trovare|spunta|spuntare|spuntate|clicca|cliccare|barra|barrare|sottolinea|riconosci) (tutte |tutti )?(le|gli|i) /.test(s)) return 'multi';
+  if (/ (quali|tutte le|tutti i|tutte quelle|tutti quelli) /.test(s)) return 'multi';
+  if (/ (quelle|quelli) (che|vere|false|corrette|esatte|giuste|sbagliate|errate) /.test(s)) return 'multi';
+  if (/ (affermazioni|frasi|risposte|opzioni|parole|termini|elementi|alternative|proposizioni|completamenti|definizioni|caratteristiche) (vere|false|corrette|esatte|giuste|sbagliate|errate|valide) /.test(s)) return 'multi';
+  return '';
 }
+function textAsksMulti(text) { return qTextCue(text) === 'multi'; }
 function mcMulti(q) {
   if ((q.correct || []).length > 1) return true;
   if (q.select === 'multi') return true;
@@ -2055,7 +2065,7 @@ function renderQList() {
   $('#edQCount').textContent = Q.length;
   const box = $('#edQList');
   if (!Q.length) box.innerHTML = '<div class="q-empty">Nessun quesito. Avvia il video e, nel punto in cui vuoi fermarlo, premi \u00abAggiungi quesito qui\u00bb.</div>';
-  else box.innerHTML = Q.map((q, i) => '<div class="q-item" data-id="' + esc(q.id) + '"><div class="q-num">' + (i + 1) + '</div><div class="q-main"><div class="q-meta"><span class="time-chip">' + fmtTime(q.time, true) + '</span><span class="type-chip ' + q.type + '">' + TYPE_LABEL[q.type] + '</span>' + (q.type === 'mc' && q.noShuffle ? '<span class="time-chip" title="Le risposte non vengono mescolate">ordine fisso</span>' : '') + '</div><div class="q-text">' + esc(qPlain(q)) + '</div></div><div class="q-acts"><button type="button" class="icon-btn" data-act="go" title="Vai a questo punto del video">' + ico('play') + '</button><button type="button" class="icon-btn" data-act="edit" title="Modifica">' + ico('edit') + '</button><button type="button" class="icon-btn" data-act="copy" title="Copia il quesito in un altro punto del video">' + ico('copy') + '</button><button type="button" class="icon-btn danger" data-act="del" title="Elimina">' + ico('delete') + '</button></div></div>').join('');
+  else box.innerHTML = Q.map((q, i) => '<div class="q-item" data-id="' + esc(q.id) + '"><div class="q-num">' + (i + 1) + '</div><div class="q-main"><div class="q-meta"><span class="time-chip">' + fmtTime(q.time, true) + '</span><span class="type-chip ' + q.type + '">' + TYPE_LABEL[q.type] + '</span>' + (q.type === 'mc' ? (mcMulti(q) ? '<span class="time-chip sel-chip multi" title="L\'alunno pu\u00f2 selezionare pi\u00f9 risposte">una o pi\u00f9 risposte</span>' : '<span class="time-chip sel-chip" title="L\'alunno pu\u00f2 selezionare una sola risposta">una risposta</span>') : '') + (q.type === 'mc' && q.noShuffle ? '<span class="time-chip" title="Le risposte non vengono mescolate">ordine fisso</span>' : '') + '</div><div class="q-text">' + esc(qPlain(q)) + '</div></div><div class="q-acts"><button type="button" class="icon-btn" data-act="go" title="Vai a questo punto del video">' + ico('play') + '</button><button type="button" class="icon-btn" data-act="edit" title="Modifica">' + ico('edit') + '</button><button type="button" class="icon-btn" data-act="copy" title="Copia il quesito in un altro punto del video">' + ico('copy') + '</button><button type="button" class="icon-btn danger" data-act="del" title="Elimina">' + ico('delete') + '</button></div></div>').join('');
   renderTimeline();
   gradingExample();
 }
@@ -2155,7 +2165,8 @@ function editQuestion(orig, presetTime, qopts) {
     $('option[value=single]', sel).disabled = many;
     if (many && sel.value === 'single') sel.value = 'auto';
     let msg;
-    if (many) msg = 'Le risposte giuste sono pi\u00f9 di una: l\'alunno potr\u00e0 selezionare pi\u00f9 risposte.';
+    if (many && qTextCue($('.qe-mc-text', body).value) === 'single') msg = '<span class="qe-warn">Attenzione: la domanda chiede una sola risposta, ma hai spuntato \u00abgiusta\u00bb accanto a ' + corr.size + ' risposte. L\'alunno potr\u00e0 selezionarne pi\u00f9 di una e legger\u00e0 \u00abPuoi selezionare una o pi\u00f9 risposte\u00bb. Se la risposta giusta \u00e8 una sola, lascia la spunta solo su quella.</span>';
+    else if (many) msg = 'Le risposte giuste sono pi\u00f9 di una: l\'alunno potr\u00e0 selezionare pi\u00f9 risposte.';
     else if (sel.value === 'auto') msg = textAsksMulti($('.qe-mc-text', body).value)
       ? 'In automatico: <b>una o pi\u00f9 risposte</b>, perch\u00e9 la domanda ne chiede pi\u00f9 di una. Se l\'alunno seleziona anche una risposta sbagliata, il quesito \u00e8 sbagliato.'
       : 'In automatico: <b>una sola risposta</b>. Se la domanda chiede pi\u00f9 risposte (per esempio \u00abSeleziona le affermazioni vere\u00bb), l\'alunno potr\u00e0 selezionarne pi\u00f9 di una.';
