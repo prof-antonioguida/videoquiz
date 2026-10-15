@@ -658,6 +658,10 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
 .qe-sel-hint{margin:.35em 0 0}
 .qe-warn{color:var(--warn);font-weight:700}
 .sel-chip.multi{background:var(--primary-l);color:var(--primary)}
+table.rep th.sortable .arrow{display:inline-block;min-width:1em;text-align:center}
+table.rep th.sortable:not(.sorted) .arrow{color:var(--muted);opacity:.7}
+table.rep th.sorted{color:var(--primary)}
+@media print{ table.rep th .arrow{display:none} }
 
 </style>
 <script>
@@ -783,11 +787,11 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
       <div class="head-actions no-print"><button class="btn" id="rpLinkBtn" type="button"></button><button class="btn" id="rpCsvBtn" type="button"></button><button class="btn" id="rpPrintBtn" type="button"></button></div>
     </div>
     <div class="card table-card"><div id="rpTable" class="table-wrap"></div></div>
-    <p class="hint no-print">Clicca su una riga per vedere tutte le risposte e i tentativi dell'alunno. «Punti» è il valore del quesito (1 = risolto al primo tentativo); «Tent.» è il numero di tentativi che sono serviti per rispondere correttamente.</p>
+    <p class="hint no-print">Clicca su una riga per vedere tutte le risposte e i tentativi dell'alunno. Clicca sul nome di una colonna con le frecce (Cognome, Nome, Classe, Voto, Data) per ordinare l'elenco; un secondo clic inverte l'ordine. «Punti» è il valore del quesito (1 = risolto al primo tentativo); «Tent.» è il numero di tentativi che sono serviti per rispondere correttamente.</p>
     <div class="card prog-card" id="rpProgCard" hidden>
       <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Clicca su Cognome, Classe o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
     </div>
   </section>
 
@@ -915,7 +919,7 @@ table.rep tbody tr:hover td.sticky{background:var(--rowhover)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 13/10/2026 11:56</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 15/10/2026 11:13</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1528,7 +1532,7 @@ async function fetchVimeoInfo(src) {
 /* =====================================================================
    STATO GENERALE E NAVIGAZIONE (INSEGNANTE)
    ===================================================================== */
-const S = { user: null, entered: false, tests: [], assigns: [], repCounts: {}, view: 'v-loading', ed: null, curTest: null, curAssign: null, reports: [], unsubReports: null, sort: { key: 'cognome', dir: 1 } };
+const S = { user: null, entered: false, tests: [], assigns: [], repCounts: {}, view: 'v-loading', ed: null, curTest: null, curAssign: null, reports: [], unsubReports: null, sort: { key: 'cognome', dir: 1 }, progSort: { key: 'cognome', dir: 1 } };
 
 function showView(id) {
   $$('main > .view').forEach(v => { v.hidden = v.id !== id; });
@@ -2639,8 +2643,20 @@ function progressRows() {
   const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0 }); return rows.get(k); };
   (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); });
   (S.progress || []).forEach(pr => { const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0); });
+  const { key, dir } = S.progSort || { key: 'cognome', dir: 1 };
+  const cs = (a, b) => String(a || '').localeCompare(String(b || ''), 'it', { sensitivity: 'base', numeric: true });
+  const byName = (a, b) => cs(a.cognome, b.cognome) || cs(a.nome, b.nome);
   return [...rows.values()].filter(r => { const t = sent.get(r.key); return !(t && t >= r.time); })
-    .sort((a, b) => String(a.cognome).localeCompare(String(b.cognome), 'it', { sensitivity: 'base' }) || String(a.nome).localeCompare(String(b.nome), 'it', { sensitivity: 'base' }));
+    .sort((a, b) => {
+      if (key === 'time') return ((a.time || 0) - (b.time || 0)) * dir || byName(a, b);
+      if (key === 'classe') return cs(a.classe, b.classe) * dir || byName(a, b);
+      return byName(a, b) * dir;
+    });
+}
+/* intestazione ordinabile: la freccia piena indica l'ordinamento attivo, quella grigia che la colonna si pu\u00f2 ordinare */
+function sortTh(label, key, cur, attrs, cls) {
+  const on = cur.key === key;
+  return '<th' + (attrs || '') + ' class="sortable' + (on ? ' sorted' : '') + (cls ? ' ' + cls : '') + '" title="Tocca per ordinare">' + label + '<span class="arrow">' + (on ? (cur.dir > 0 ? '\u25b2' : '\u25bc') : '\u21c5') + '</span></th>';
 }
 function renderProgress() {
   if (S.view !== 'v-reports') return;
@@ -2649,7 +2665,8 @@ function renderProgress() {
   $('#rpProgCard').hidden = !list.length;
   $('#rpProgCount').textContent = list.length;
   if (!list.length) { $('#rpProg').innerHTML = ''; return; }
-  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th><th class="sticky sticky2">Cognome</th><th>Nome</th><th>Classe</th><th>A che punto \u00e8</th><th>Ultimo aggiornamento</th><th class="no-print"></th></tr></thead><tbody>' +
+  const ps = S.progSort;
+  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th>' + sortTh('Cognome', 'cognome', ps, ' data-pk="cognome"', 'sticky sticky2') + '<th>Nome</th>' + sortTh('Classe', 'classe', ps, ' data-pk="classe"') + '<th>A che punto \u00e8</th>' + sortTh('Ultimo aggiornamento', 'time', ps, ' data-pk="time"') + '<th class="no-print"></th></tr></thead><tbody>' +
     list.map((r, i) => {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
@@ -2673,6 +2690,8 @@ async function deleteProgressRow(r) {
   } catch (ex) { dbError(ex, 'elimina test non consegnato'); return false; }
 }
 async function onProgClick(e) {
+  const th = e.target.closest('th.sortable');
+  if (th) { const k = th.dataset.pk; const cur = S.progSort; S.progSort = { key: k, dir: cur.key === k ? -cur.dir : (k === 'time' ? -1 : 1) }; renderProgress(); return; }
   const b = e.target.closest('[data-unlock]');
   if (b) { e.stopPropagation(); const r = (S.progRows || [])[+b.dataset.unlock]; if (r) deleteProgressRow(r); return; }
   const tr = e.target.closest('tbody tr'); if (!tr) return;
@@ -2690,14 +2709,14 @@ function repTime(r) { return tsToMs(r.submittedAt) || r.clientSubmittedAt || 0; 
 function sortReports(list) {
   const { key, dir } = S.sort;
   const cs = (a, b) => String(a || '').localeCompare(String(b || ''), 'it', { sensitivity: 'base', numeric: true });
+  const byName = (x, y) => cs(x.cognome, y.cognome) || cs(x.nome, y.nome);
   return list.sort((x, y) => {
-    let c;
-    if (key === 'voto') c = (x.voto || 0) - (y.voto || 0);
-    else if (key === 'data') c = repTime(x) - repTime(y);
-    else if (key === 'classe') c = cs(x.classe, y.classe) || cs(x.cognome, y.cognome) || cs(x.nome, y.nome);
-    else if (key === 'nome') c = cs(x.nome, y.nome) || cs(x.cognome, y.cognome);
-    else c = cs(x.cognome, y.cognome) || cs(x.nome, y.nome);
-    return c * dir;
+    /* a parit\u00e0 (stesso voto, stessa classe\u2026) gli alunni restano in ordine alfabetico */
+    if (key === 'voto') return ((Number(x.voto) || 0) - (Number(y.voto) || 0)) * dir || byName(x, y);
+    if (key === 'data') return (repTime(x) - repTime(y)) * dir || byName(x, y);
+    if (key === 'classe') return cs(x.classe, y.classe) * dir || byName(x, y);
+    if (key === 'nome') return (cs(x.nome, y.nome) || cs(x.cognome, y.cognome)) * dir;
+    return byName(x, y) * dir;
   });
 }
 function reportColumns(R) {
@@ -2726,15 +2745,15 @@ function renderReportsInner() {
     return;
   }
   const qi = reportColumns(R);
-  const arrow = k => S.sort.key === k ? '<span class="arrow">' + (S.sort.dir > 0 ? '\u25b2' : '\u25bc') + '</span>' : '';
+  const ss = S.sort;
   let h = '<table class="rep"><thead><tr>' +
     '<th rowspan="2" class="num sticky">N.</th>' +
-    '<th rowspan="2" class="sortable sticky sticky2" data-k="cognome">Cognome' + arrow('cognome') + '</th>' +
-    '<th rowspan="2" class="sortable" data-k="nome">Nome' + arrow('nome') + '</th>' +
-    '<th rowspan="2" class="sortable" data-k="classe">Classe' + arrow('classe') + '</th>' +
-    '<th rowspan="2" class="sortable" data-k="voto">Voto' + arrow('voto') + '</th>';
+    sortTh('Cognome', 'cognome', ss, ' rowspan="2" data-k="cognome"', 'sticky sticky2') +
+    sortTh('Nome', 'nome', ss, ' rowspan="2" data-k="nome"') +
+    sortTh('Classe', 'classe', ss, ' rowspan="2" data-k="classe"') +
+    sortTh('Voto', 'voto', ss, ' rowspan="2" data-k="voto"');
   qi.forEach((q, i) => { h += '<th colspan="2" class="qh" title="' + esc(q ? q.text : '') + '">Q' + (i + 1) + '<small>' + (q ? fmtTime(q.time) : '') + '</small></th>'; });
-  h += '<th rowspan="2" class="sortable" data-k="data">Data' + arrow('data') + '</th><th rowspan="2" class="no-print"></th></tr><tr>';
+  h += sortTh('Data', 'data', ss, ' rowspan="2" data-k="data"') + '<th rowspan="2" class="no-print"></th></tr><tr>';
   qi.forEach(() => { h += '<th class="sub l">Punti</th><th class="sub">Tent.</th>'; });
   h += '</tr></thead><tbody>';
   R.forEach((r, ri) => {
