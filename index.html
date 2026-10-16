@@ -662,6 +662,7 @@ table.rep th.sortable .arrow{display:inline-block;min-width:1em;text-align:cente
 table.rep th.sortable:not(.sorted) .arrow{color:var(--muted);opacity:.7}
 table.rep th.sorted{color:var(--primary)}
 @media print{ table.rep th .arrow{display:none} }
+.rd-oldkey{font-size:.82rem;color:var(--muted);font-weight:600;margin-top:.15em}
 
 </style>
 <script>
@@ -919,7 +920,7 @@ table.rep th.sorted{color:var(--primary)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 15/10/2026 11:13</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 16/10/2026 14:28</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1090,14 +1091,23 @@ function qPlain(q) {
   return q.text || '';
 }
 function qCorrectText(q) {
-  if (q.type === 'mc') return (q.correct || []).map(i => letter(i) + ') ' + (q.options || [])[i]).join(' | ');
+  if (q.type === 'mc') return (q.correct || []).slice().sort((a, b) => a - b).map(i => letter(i) + ') ' + (q.options || [])[i]).join(' | ');
   if (q.type === 'tf') return q.tf ? 'Vero' : 'Falso';
   if (q.type === 'fill') return parseFill(q.fillText).filter(p => p.t === 'blank').map(p => p.alts.join(' / ')).join(' | ');
   return '';
 }
+/* confronto delle risposte scritte: contano le lettere, non le varianti tipografiche
+   (apostrofi e virgolette \u00abcurve\u00bb della tastiera del telefono, trattini lunghi, spazi doppi, punto finale) */
 function normAns(s, ignoreCase) {
-  let x = String(s || '').normalize('NFC').replace(/[\u2018\u2019\u02bc`\u00b4]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/\s+/g, ' ').trim();
-  x = x.replace(/[.;:!?]+$/, '').trim();
+  let x = String(s || '').normalize('NFC')
+    .replace(/[\u2018\u2019\u201A\u201B\u02BC\u02B9\u0060\u00B4\u2032]/g, "'")
+    .replace(/[\u201C\u201D\u201E\u201F\u00AB\u00BB\u2033]/g, '"')
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-')
+    .replace(/\u2026/g, '...')
+    .replace(/\s+/g, ' ').trim();
+  x = x.replace(/\s*'\s*/g, "'");
+  x = x.replace(/^"+\s*|\s*"+$/g, '');
+  x = x.replace(/[.;:!?,]+$/, '').trim();
   return ignoreCase ? x.toLowerCase() : x;
 }
 /* risposta multipla: l'alunno pu\u00f2 selezionare pi\u00f9 risposte se le giuste sono pi\u00f9 di una, se l'insegnante lo ha scelto
@@ -1156,6 +1166,22 @@ function valueForTries(tries, g) {
   return g.p4 / 100;
 }
 /* risposta multipla con pi\u00f9 risposte esatte: ogni esatta selezionata vale una parte, ogni sbagliata ne annulla una */
+/* risposte salvate dalle versioni precedenti (senza il parziale gi\u00e0 calcolato): si ritrovano le risposte scelte
+   dal loro testo, cos\u00ec il parziale resta giusto anche se nel frattempo l'insegnante ha cambiato l'ordine delle risposte */
+/* risposte delle versioni precedenti: la chiave di allora non \u00e8 salvata, ma si pu\u00f2 capire se nel frattempo \u00e8 cambiata */
+function keyChangedSince(q, a) {
+  try { const v = q.type === 'mc' ? legacySel(q, a) : a.v; return v != null && checkAnswer(q, v) !== !!a.ok; } catch (e) { return false; }
+}
+function legacySel(q, att) {
+  const v = Array.isArray(att.v) ? att.v : [];
+  if (q.type !== 'mc' || !att.t) return v;
+  const parts = String(att.t).split(' | ').map(x => x.replace(/^[A-Z]+\) /, ''));
+  if (parts.length !== v.length) return v;
+  const opts = q.options || [];
+  if (v.every((i, k) => opts[i] === parts[k])) return v;
+  const mapped = parts.map(txt => { const hits = opts.map((o, i) => o === txt ? i : -1).filter(i => i >= 0); return hits.length === 1 ? hits[0] : -1; });
+  return mapped.every(i => i >= 0) ? mapped : v;
+}
 function partialScore(q, sel) {
   const C = new Set(q.correct || []);
   if (q.type !== 'mc' || C.size < 2 || !Array.isArray(sel)) return 0;
@@ -2804,7 +2830,7 @@ function reportDetailHTML(r) {
   (r.questions || []).forEach(q => {
     h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + (q.partial > 0 && q.partial < 1 ? ' \u00b7 parziale al 1\u00b0 tentativo ' + Math.round(q.partial * 100) + '%' : '') + '</span></div>' +
       '<div class="rd-qt">' + esc(q.text) + '</div><div class="rd-correct">Risposta corretta: ' + esc(q.correct) + '</div><ol class="rd-att">' +
-      (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b></li>').join('') + '</ol></div>';
+      (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b>' + (a.k != null && a.k !== q.correct ? '<div class="rd-oldkey">Valutata con la risposta corretta di quel momento: ' + esc(a.k) + '</div>' : (a.chg ? '<div class="rd-oldkey">La risposta corretta \u00e8 stata modificata dopo questa risposta: l\'esito \u00e8 quello del momento in cui l\'alunno ha risposto.</div>' : '')) + '</li>').join('') + '</ol></div>';
   });
   return h;
 }
@@ -2911,6 +2937,10 @@ async function downloadReportPdf(r) {
         font(10, 'normal'); color(C.text); doc.text(line, M + 4, y - 1);
         if (k === lines.length - 1) { const w = doc.getTextWidth(line); font(10, 'bold'); color(a.ok ? C.ok : C.bad); doc.text(res, M + 4 + w + 1.5, y - 1); }
       });
+      if ((a.k != null && a.k !== q.correct) || a.chg) {
+        font(9, 'normal'); color(C.muted);
+        doc.splitTextToSize(pdfSafe(a.k != null ? 'Valutata con la risposta corretta di quel momento: ' + a.k : 'La risposta corretta \u00e8 stata modificata dopo questa risposta: l\'esito \u00e8 quello del momento in cui l\'alunno ha risposto.'), CW - 10).forEach(line => { ensure(lh(9)); y += lh(9); doc.text(line, M + 8, y - 1); });
+      }
     });
     rule(2.5);
   });
@@ -3641,8 +3671,10 @@ function openQuestion(q) {
   Stu.overlayQ = q;
   const idx = Stu.qs.indexOf(q);
   $('#qcN').textContent = (Stu.mode === 'segment' ? 'Recupero \u00b7 ' : '') + 'Quesito ' + (idx + 1) + ' di ' + Stu.qs.length;
-  $('#qcType').textContent = TYPE_LABEL[q.type] || '';
+  /* nei quesiti a risposta multipla l'etichetta del tipo non si mostra all'alunno: potrebbe fargli pensare a pi\u00f9 risposte */
+  $('#qcType').textContent = q.type === 'mc' ? '' : (TYPE_LABEL[q.type] || '');
   $('#qcType').className = 'type-chip ' + q.type;
+  $('#qcType').hidden = q.type === 'mc';
   $('#qcErr').textContent = '';
   renderQuestionBody($('#qcBody'), q);
   $('#qov').hidden = false; $('#bigPlay').hidden = true;
@@ -3720,7 +3752,11 @@ function stuConfirm() {
   if (r.err) { $('#qcErr').textContent = r.err; return; }
   const ok = checkAnswer(q, r.v);
   const rec = Stu.run.ans[q.id] || (Stu.run.ans[q.id] = { att: [] });
-  rec.att.push({ r: Stu.run.round, v: r.v, t: r.t, ok });
+  /* si conservano anche la chiave e il punteggio parziale del momento della risposta:
+     se in seguito l'insegnante modifica il quesito, l'esito di questa risposta non cambia */
+  const at = { r: Stu.run.round, v: r.v, t: r.t, ok, k: qCorrectText(q) };
+  if (q.type === 'mc' && (q.correct || []).length > 1) at.p = partialScore(q, r.v);
+  rec.att.push(at);
   Stu.overlayQ = null;
   $('#qov').hidden = true;
   veilVideo(false);
@@ -3831,9 +3867,9 @@ function buildReport() {
     const okIdx = list.findIndex(a => a.ok);
     const tries = okIdx >= 0 ? okIdx + 1 : list.length;
     const first = list.find(a => a.r === 0);
-    const partial = first ? partialScore(q, first.v) : 0;
+    const partial = first ? (typeof first.p === 'number' ? first.p : partialScore(q, legacySel(q, first))) : 0;
     const value = Math.max(okIdx >= 0 ? valueForTries(tries, g) : 0, partial);
-    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, partial, value: Math.round(value * 1000) / 1000, att: list.map(a => ({ r: a.r, a: a.t, ok: a.ok })) };
+    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, partial, value: Math.round(value * 1000) / 1000, att: list.map(a => Object.assign({ r: a.r, a: a.t, ok: a.ok }, a.k != null ? { k: a.k } : (keyChangedSince(q, a) ? { chg: true } : {}))) };
   });
   const p = Stu.run.profile;
   return clean({
