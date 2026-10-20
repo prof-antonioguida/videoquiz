@@ -920,7 +920,7 @@ table.rep th.sorted{color:var(--primary)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 16/10/2026 14:28</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 20/10/2026 11:34</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2661,6 +2661,8 @@ function progressText(st) {
   }
   return 'Prima visione: ' + (st.answered || 0) + ' di ' + (st.total || 0) + ' quesiti svolti' + (st.pos ? ' (video a ' + fmtTime(st.pos) + ')' : '');
 }
+/* \u00ab1 D\u00bb, \u00ab1d\u00bb e \u00ab1D\u00bb sono la stessa classe: nei report si mostrano e si ordinano tutte come \u00ab1D\u00bb */
+function classKey(c) { return String(c || '').replace(/\s+/g, '').toUpperCase(); }
 function personKey(r) { return normKey(r.cognome) + '|' + normKey(r.nome) + '|' + normKey(r.classe); }
 function progressRows() {
   const sent = new Map();
@@ -2675,7 +2677,7 @@ function progressRows() {
   return [...rows.values()].filter(r => { const t = sent.get(r.key); return !(t && t >= r.time); })
     .sort((a, b) => {
       if (key === 'time') return ((a.time || 0) - (b.time || 0)) * dir || byName(a, b);
-      if (key === 'classe') return cs(a.classe, b.classe) * dir || byName(a, b);
+      if (key === 'classe') return cs(classKey(a.classe), classKey(b.classe)) * dir || byName(a, b);
       return byName(a, b) * dir;
     });
 }
@@ -2697,7 +2699,7 @@ function renderProgress() {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
       r.txt = txt;
-      return '<tr data-i="' + i + '"><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="st">' + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></td></tr>';
+      return '<tr data-i="' + i + '"><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></td></tr>';
     }).join('') + '</tbody></table>';
   fixStickyNum($('#rpProg table'));
 }
@@ -2740,7 +2742,7 @@ function sortReports(list) {
     /* a parit\u00e0 (stesso voto, stessa classe\u2026) gli alunni restano in ordine alfabetico */
     if (key === 'voto') return ((Number(x.voto) || 0) - (Number(y.voto) || 0)) * dir || byName(x, y);
     if (key === 'data') return (repTime(x) - repTime(y)) * dir || byName(x, y);
-    if (key === 'classe') return cs(x.classe, y.classe) * dir || byName(x, y);
+    if (key === 'classe') return cs(classKey(x.classe), classKey(y.classe)) * dir || byName(x, y);
     if (key === 'nome') return (cs(x.nome, y.nome) || cs(x.cognome, y.cognome)) * dir;
     return byName(x, y) * dir;
   });
@@ -2785,7 +2787,7 @@ function renderReportsInner() {
   R.forEach((r, ri) => {
     const v = Number(r.voto) || 0;
     const vc = v >= 8 ? 'v-hi' : v >= 6 ? 'v-mid' : 'v-lo';
-    h += '<tr data-id="' + esc(r.id) + '"><td class="num sticky">' + (ri + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(r.classe) + '</td><td class="voto ' + vc + '">' + fmtNum(v, 1) + '</td>';
+    h += '<tr data-id="' + esc(r.id) + '"><td class="num sticky">' + (ri + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="voto ' + vc + '">' + fmtNum(v, 1) + '</td>';
     for (let i = 0; i < qi.length; i++) {
       const q = (r.questions || [])[i];
       if (!q) { h += '<td class="pt">\u2013</td><td class="tr">\u2013</td>'; continue; }
@@ -2966,7 +2968,7 @@ function exportCSV() {
   head.push('Data', 'Ora invio');
   const rows = [head.map(cell).join(';')];
   R.forEach((r, ri) => {
-    const row = [ri + 1, r.cognome, r.nome, r.classe, num(r.voto)];
+    const row = [ri + 1, r.cognome, r.nome, classKey(r.classe), num(r.voto)];
     qi.forEach((x, i) => { const q = (r.questions || [])[i]; row.push(q ? num(q.value) : '', q ? q.tries : ''); });
     const w = repTime(r);
     row.push(r.date || '', w ? fmtHour(w) : '');
