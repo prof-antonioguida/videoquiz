@@ -664,6 +664,10 @@ table.rep th.sorted{color:var(--primary)}
 @media print{ table.rep th .arrow{display:none} }
 .rd-oldkey{font-size:.82rem;color:var(--muted);font-weight:600;margin-top:.15em}
 
+/* scheda del quesito: cliccando sul testo non si evidenzia nulla (si può comunque scrivere nei campi da completare) */
+.qcard,.qcard *{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+.qcard input[type=text],.qcard textarea{-webkit-user-select:text;-moz-user-select:text;user-select:text}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -920,7 +924,7 @@ table.rep th.sorted{color:var(--primary)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 20/10/2026 11:34</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 21/10/2026 11:33</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -953,7 +957,7 @@ window.__vqReady = true;
    COSTANTI E UTILITA'
    ===================================================================== */
 const TYPE_LABEL = { mc: 'Risposta multipla', tf: 'Vero o falso', fill: 'Completamento' };
-const DEFAULT_GRADING = { minGrade: 4, p2: 3, p3: 2, p4: 1, showGrade: false };
+const DEFAULT_GRADING = { minGrade: 4, p2: 10, p3: 5, p4: 2, showGrade: false };
 
 const ICONS = {
   play: 'M8 5v14l11-7z',
@@ -1192,7 +1196,9 @@ function partialScore(q, sel) {
 function computeVoto(values, g) {
   if (!values.length) return 10;
   const avg = values.reduce((a, b) => a + b, 0) / values.length;
-  return Math.round((g.minGrade + (10 - g.minGrade) * avg) * 10) / 10;
+  /* voto in decimi (10 \u00d7 media dei punti), arrotondato a un decimale; sotto il voto minimo si assegna il voto minimo */
+  const v = Math.round(avg * 100 + 1e-9) / 10;
+  return Math.max(g.minGrade, Math.min(10, v));
 }
 
 /* ---------- preferenze di questo dispositivo ---------- */
@@ -2341,7 +2347,7 @@ function renderGrading() {
     '<div class="g-row"><label for="gP2">Giusto al 2\u00b0 tentativo (1\u00b0 recupero)</label><div class="g-in"><input id="gP2" type="number" min="0" max="100" step="1" value="' + g.p2 + '"> %</div></div>' +
     '<div class="g-row"><label for="gP3">Giusto al 3\u00b0 tentativo (2\u00b0 recupero)</label><div class="g-in"><input id="gP3" type="number" min="0" max="100" step="1" value="' + g.p3 + '"> %</div></div>' +
     '<div class="g-row"><label for="gP4">Giusto dal 4\u00b0 tentativo in poi</label><div class="g-in"><input id="gP4" type="number" min="0" max="100" step="1" value="' + g.p4 + '"> %</div></div>' +
-    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = voto minimo + (10 \u2212 voto minimo) \u00d7 media dei quesiti. Chi risponde bene a tutto al primo tentativo prende 10. Nei quesiti a risposta multipla con pi\u00f9 risposte esatte vale anche il punteggio parziale del primo tentativo (ogni risposta esatta selezionata vale una parte, ogni risposta sbagliata selezionata ne annulla una): il quesito vale il maggiore tra il parziale e il punteggio del recupero. Se cambi questi criteri, anche i voti delle consegne gi\u00e0 ricevute vengono ricalcolati.</p>' +
+    '<p class="hint" style="margin-top:.6em">Ogni quesito vale una percentuale che dipende dal tentativo in cui l\'alunno risponde correttamente. Voto = 10 \u00d7 media dei punti dei quesiti (per esempio, 5 quesiti giusti su 10 senza recuperi danno 5). Se il risultato \u00e8 uguale o inferiore al voto minimo, il voto \u00e8 il voto minimo. Chi risponde bene a tutto al primo tentativo prende 10. Nei quesiti a risposta multipla con pi\u00f9 risposte esatte vale anche il punteggio parziale del primo tentativo (ogni risposta esatta selezionata vale una parte, ogni risposta sbagliata selezionata ne annulla una): il quesito vale il maggiore tra il parziale e il punteggio del recupero. Se cambi questi criteri, anche i voti delle consegne gi\u00e0 ricevute vengono ricalcolati.</p>' +
     '<div class="g-example" id="gExample"></div>' +
     '<label class="check"><input type="checkbox" id="gShow"' + (g.showGrade ? ' checked' : '') + '> Mostra il voto all\'alunno dopo l\'invio</label></div>';
   const read = final => {
