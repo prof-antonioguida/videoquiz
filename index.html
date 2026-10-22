@@ -668,6 +668,16 @@ table.rep th.sorted{color:var(--primary)}
 .qcard,.qcard *{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
 .qcard input[type=text],.qcard textarea{-webkit-user-select:text;-moz-user-select:text;user-select:text}
 
+/* blocco dei test non consegnati */
+.row-acts{display:inline-flex;align-items:center;gap:.4em;white-space:nowrap}
+.lock-btn{min-height:32px;padding:.2em .7em}
+.lock-btn.on{background:var(--warn-l);border-color:#f1d58f;color:#6d4300}
+.lock-chip{display:inline-flex;align-items:center;gap:.25em;font-size:.78rem;font-weight:800;color:#6d4300;background:var(--warn-l);border:1px solid #f1d58f;border-radius:999px;padding:.05em .55em;margin-right:.3em;vertical-align:middle}
+.lock-chip .ico{width:13px;height:13px}
+table.rep.inprog tr.locked td{background:#fffaf0}
+html[data-theme="dark"] table.rep.inprog tr.locked td{background:#2b2414}
+html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{background:#3a2f12;border-color:#6b5520;color:#f3d48c}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -796,7 +806,7 @@ table.rep th.sorted{color:var(--primary)}
     <div class="card prog-card" id="rpProgCard" hidden>
       <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Clicca su Cognome, Classe o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Clicca su Cognome, Classe o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
     </div>
   </section>
 
@@ -924,7 +934,7 @@ table.rep th.sorted{color:var(--primary)}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 21/10/2026 11:33</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 22/10/2026 17:11</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2705,7 +2715,9 @@ function renderProgress() {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
       r.txt = txt;
-      return '<tr data-i="' + i + '"><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></td></tr>';
+      r.locked = r.starts.some(st => st.locked === true);
+      const lockBtn = '<button type="button" class="btn sm lock-btn' + (r.locked ? ' on' : '') + '" data-lock="' + i + '" title="' + (r.locked ? 'Sblocca: l\'alunno potr\u00e0 di nuovo continuare il test' : 'Blocca: l\'alunno non potr\u00e0 continuare il test') + '">' + ico(r.locked ? 'lockopen' : 'lock') + (r.locked ? ' Sblocca' : ' Blocca') + '</button>';
+      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><span class="row-acts">' + lockBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
     }).join('') + '</tbody></table>';
   fixStickyNum($('#rpProg table'));
 }
@@ -2714,6 +2726,29 @@ function fixStickyNum(t) {
   if (!t) return;
   const c = t.querySelector('th.num'); if (!c) return;
   t.style.setProperty('--numw', c.getBoundingClientRect().width + 'px');
+}
+/* blocca o sblocca la possibilit\u00e0 di continuare il test (i progressi salvati restano) */
+async function toggleLock(r, btn) {
+  const lock = !r.locked, name = esc(r.cognome + ' ' + r.nome);
+  if (lock && !await confirmBox('Bloccare il test?', '<b>' + name + '</b> non potr\u00e0 pi\u00f9 continuare il test, nemmeno con il codice personale. Se lo sta svolgendo in questo momento, verr\u00e0 interrotto. Le risposte gi\u00e0 date restano salvate e potrai sbloccarlo quando vuoi.', 'Blocca', true)) return false;
+  if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+  try {
+    const A = S.curAssign;
+    if (r.starts.length) {
+      const b = writeBatch(db);
+      r.starts.forEach(st => b.update(doc(db, 'starts', st.id), { locked: lock, lockedAt: Date.now() }));
+      await b.commit();
+    } else {
+      const sid = await startIdFor(A.id, r);
+      await setDoc(doc(db, 'starts', sid), { ownerUid: S.user.uid, assignmentId: A.id, testId: A.testId || '', pubKey: A.pubKey, cognome: r.cognome, nome: r.nome, classe: r.classe, status: 'started', startedAt: r.time || Date.now(), updatedAt: serverTimestamp(), locked: lock, lockedAt: Date.now() });
+    }
+    toast(lock ? 'Test di ' + r.cognome + ' ' + r.nome + ' bloccato.' : 'Test di ' + r.cognome + ' ' + r.nome + ' sbloccato: l\'alunno pu\u00f2 continuare con il suo codice.', 'ok', 4500);
+    return true;
+  } catch (ex) {
+    if (ex && ex.code === 'permission-denied') toast('Il database non ha permesso il blocco: aggiorna le regole di Firestore (vedi le istruzioni).', 'bad', 8000);
+    else dbError(ex, 'blocco');
+    return false;
+  } finally { if (btn) { btn.disabled = false; btn.classList.remove('loading'); } }
 }
 async function deleteProgressRow(r) {
   if (!await confirmBox('Eliminare il test non consegnato?', 'Il test iniziato da <b>' + esc(r.cognome + ' ' + r.nome) + '</b> verr\u00e0 eliminato definitivamente, compresi i progressi salvati. L\'alunno potr\u00e0 ricominciare il test da capo.', 'Elimina', true)) return false;
@@ -2726,15 +2761,18 @@ async function deleteProgressRow(r) {
 async function onProgClick(e) {
   const th = e.target.closest('th.sortable');
   if (th) { const k = th.dataset.pk; const cur = S.progSort; S.progSort = { key: k, dir: cur.key === k ? -cur.dir : (k === 'time' ? -1 : 1) }; renderProgress(); return; }
+  const lb = e.target.closest('[data-lock]');
+  if (lb) { e.stopPropagation(); const r = (S.progRows || [])[+lb.dataset.lock]; if (r) toggleLock(r, lb); return; }
   const b = e.target.closest('[data-unlock]');
   if (b) { e.stopPropagation(); const r = (S.progRows || [])[+b.dataset.unlock]; if (r) deleteProgressRow(r); return; }
   const tr = e.target.closest('tbody tr'); if (!tr) return;
   const r = (S.progRows || [])[+tr.dataset.i]; if (!r) return;
   modal({
     title: 'Test non consegnato',
-    body: '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + (r.time ? ' \u00b7 ultimo aggiornamento ' + fmtDate(r.time) + ' alle ' + fmtHour(r.time) : '') + '</div></div></div><p>' + esc(r.txt || '') + '</p>',
+    body: '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + (r.time ? ' \u00b7 ultimo aggiornamento ' + fmtDate(r.time) + ' alle ' + fmtHour(r.time) : '') + '</div></div></div>' + (r.locked ? '<p><span class="lock-chip">' + ico('lock') + ' Bloccato</span> L\'alunno non pu\u00f2 continuare il test finch\u00e9 non lo sblocchi.</p>' : '') + '<p>' + esc(r.txt || '') + '</p>',
     buttons: [
       { html: ico('delete') + ' Elimina', cls: 'danger-ghost', onClick: async () => (await deleteProgressRow(r)) ? true : false },
+      { html: ico(r.locked ? 'lockopen' : 'lock') + (r.locked ? ' Sblocca' : ' Blocca'), cls: '', onClick: async (b, btn) => (await toggleLock(r, btn)) ? true : false },
       { label: 'Chiudi', cls: 'primary', value: true }
     ]
   });
@@ -3025,11 +3063,11 @@ function normKey(x) { return String(x || '').normalize('NFD').replace(/[\u0300-\
 function progIdFor(aid, p, pin) { return sha256('vqp1|' + aid + '|' + normKey(p.cognome) + '|' + normKey(p.nome) + '|' + normKey(p.classe) + '|' + pin); }
 function loadLocal(id) { try { const v = localStorage.getItem('vq_prog_' + id); return v ? JSON.parse(v) : null; } catch (e) { return null; } }
 function saveLocal() {
-  if (Stu.preview || !Stu.run || !Stu.progId) return;
+  if (Stu.preview || Stu.locked || !Stu.run || !Stu.progId) return;
   Stu.run.updatedAt = Date.now();
   try { localStorage.setItem('vq_prog_' + Stu.progId, JSON.stringify(Stu.run)); } catch (e) { }
 }
-function saveRun() { if (Stu.preview || !Stu.run || !Stu.progId) return; saveLocal(); clearTimeout(remoteTimer); saveRemoteUI(); }
+function saveRun() { if (Stu.preview || Stu.locked || !Stu.run || !Stu.progId) return; saveLocal(); clearTimeout(remoteTimer); saveRemoteUI(); }
 function clearRun() { if (Stu.progId) { try { localStorage.removeItem('vq_prog_' + Stu.progId); } catch (e) { } } }
 let remoteTimer = null;
 function queueRemote() { clearTimeout(remoteTimer); remoteTimer = setTimeout(saveRemoteUI, 1200); }
@@ -3044,7 +3082,7 @@ window.addEventListener('offline', () => autoSaveUI(false));
 window.addEventListener('online', () => { if (!Stu.preview && Stu.run && Stu.progId && Stu.run.phase !== 'sent') saveRemoteUI(); else autoSaveUI(true); });
 /* salvataggio automatico immediato: quando la pagina viene nascosta, chiusa o il telefono si blocca */
 function flushSave() {
-  if (Stu.preview || !Stu.run || !Stu.progId || Stu.run.phase === 'sent') return;
+  if (Stu.preview || Stu.locked || !Stu.run || !Stu.progId || Stu.run.phase === 'sent') return;
   if (Stu.mode === 'first' && Stu.P && Stu.ready) {
     let t = 0; try { t = Stu.P.getCurrentTime() || 0; } catch (e) { }
     Stu.run.pos = Math.max(Stu.run.pos || 0, Math.min(t, Stu.maxReached || 0));
@@ -3064,7 +3102,7 @@ function progressStatus() {
 }
 async function saveRemote() {
   clearTimeout(remoteTimer);
-  if (Stu.preview || !Stu.progId || !Stu.run || !Stu.pub) return;
+  if (Stu.preview || Stu.locked || !Stu.progId || !Stu.run || !Stu.pub) return;
   Stu.lastRemoteAt = Date.now();
   const p = Stu.run.profile;
   await setDoc(doc(db, 'progress', Stu.progId), {
@@ -3170,6 +3208,7 @@ function newRun(profile) {
 async function stuLogin(e) {
   e.preventDefault();
   const err = $('#sLoginErr'); err.textContent = '';
+  Stu.locked = false; stopWatchLock();
   const cognome = nameCase($('#sCognome').value), nome = nameCase($('#sNome').value);
   const classe = $('#sClasse').value.trim().replace(/\s+/g, ' ').toUpperCase();
   const pwd = $('#sPwd').value;
@@ -3192,6 +3231,7 @@ async function stuLogin(e) {
     const sid = await startIdFor(Stu.aid, profile);
     const st = await getStart(sid);
     if (st && st.status === 'sent') { err.textContent = startBlockedMsg(st); return; }
+    if (st && st.locked === true) { err.textContent = LOCK_MSG; return; }
     if (pin) {
       if (!saveAllowed()) { err.textContent = 'Per questo test il salvataggio non \u00e8 attivo, quindi non ci sono test da riprendere: lascia vuoto il codice personale.'; return; }
       Stu.startId = sid;
@@ -3216,7 +3256,10 @@ async function resumeFrom(id, pin, errEl) {
   Stu.run = run;
   if (!Stu.preview) {
     Stu.startId = Stu.startId || await startIdFor(Stu.aid, run.profile);
-    setDoc(doc(db, 'starts', Stu.startId), startData('started')).catch(() => { });
+    let st0 = null; try { st0 = await getStart(Stu.startId); } catch (e) { }
+    if (st0 && st0.locked === true) { Stu.progId = null; Stu.pin = null; Stu.run = null; errEl.textContent = LOCK_MSG; return false; }
+    if (!st0) setDoc(doc(db, 'starts', Stu.startId), startData('started')).catch(() => { });
+    watchLock();
   }
   const ph = run.phase;
   if (ph === 'watch') stuStartWatching(); else if (ph === 'results') stuShowResults(false); else stuIntro();
@@ -3263,7 +3306,30 @@ function saveAllowed() { return !!(Stu.pub && Stu.pub.allowSave === true); }
 /* registro di chi ha iniziato il test: impedisce di ricominciarlo da capo */
 function startIdFor(aid, p) { return sha256('vqs1|' + aid + '|' + normKey(p.cognome) + '|' + normKey(p.nome) + '|' + normKey(p.classe)); }
 async function getStart(id) { const sn = await getDoc(doc(db, 'starts', id)); return sn.exists() ? sn.data() : null; }
+const LOCK_MSG = 'L\'insegnante ha bloccato questo test: per ora non puoi continuare a svolgerlo. Se pensi che sia un errore, parlane con l\'insegnante.';
+/* blocco deciso dall'insegnante: si controlla all'accesso e, mentre l'alunno svolge il test, in tempo reale */
+function watchLock() {
+  if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; }
+  if (Stu.preview || !Stu.startId) return;
+  try {
+    Stu.lockUnsub = onSnapshot(doc(db, 'starts', Stu.startId), snap => {
+      const d = snap && snap.exists && snap.exists() ? snap.data() : null;
+      if (d && d.locked === true) stuLockedOut();
+    }, () => { });
+  } catch (e) { }
+}
+function stopWatchLock() { if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; } }
+function stuLockedOut() {
+  if (Stu.locked) return;
+  Stu.locked = true;
+  stopWatchLock();
+  clearTimeout(remoteTimer);
+  try { stuTeardown(); } catch (e) { }
+  $('#qov').hidden = true;
+  stuFatal('Test bloccato', LOCK_MSG, false);
+}
 function startBlockedMsg(st) {
+  if (st && st.locked === true) return LOCK_MSG;
   if (st && st.status === 'sent') return 'Hai gi\u00e0 svolto e inviato questo test. Se devi rifarlo, chiedi all\'insegnante di sbloccarti.';
   return saveAllowed()
     ? 'Hai gi\u00e0 iniziato questo test e non puoi ricominciarlo da capo. Per continuare, scrivi il tuo codice personale nell\'apposito campo. Se non lo ricordi, chiedi all\'insegnante di sbloccarti.'
@@ -3304,6 +3370,7 @@ async function stuIntroStart() {
     }
     await registerStart();
     if (pin) { Stu.progId = id; Stu.pin = pin; }
+    watchLock();
     stuStartWatching();
   } catch (ex) {
     console.error(ex);
@@ -3325,6 +3392,7 @@ async function stuSaveLater(btn) {
     await saveRemote();
     clearRun();
     const pin = Stu.pin;
+    stopWatchLock();
     stuTeardown(); exitFs();
     Stu.run = null; Stu.progId = null; Stu.pin = null;
     $('#savedPin').textContent = pin;
@@ -3898,6 +3966,7 @@ async function stuSend() {
   if (Stu.preview) { Stu.previewReport = rep; showSent(rep); return; }
   btn.disabled = true; btn.classList.add('loading');
   try {
+    if (Stu.startId) { let st1 = null; try { st1 = await getStart(Stu.startId); } catch (e) { } if (st1 && st1.locked === true) { stuLockedOut(); return; } }
     rep.submittedAt = serverTimestamp();
     await addDoc(collection(db, 'reports'), rep);
     Stu.run.phase = 'sent'; clearRun();
@@ -3912,6 +3981,7 @@ async function stuSend() {
   } finally { btn.disabled = false; btn.classList.remove('loading'); }
 }
 function showSent(rep) {
+  stopWatchLock();
   exitFs();
   try { Stu.P && Stu.ready && Stu.P.pauseVideo(); } catch (e) { }
   const g = normGrading(Stu.test.grading);
