@@ -806,7 +806,7 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
     <div class="card prog-card" id="rpProgCard" hidden>
       <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Clicca su Cognome, Classe o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Clicca su Cognome, Classe, Accesso iniziale o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
     </div>
   </section>
 
@@ -934,7 +934,7 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 22/10/2026 17:11</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 22/10/2026 18:37</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2684,15 +2684,21 @@ function progressRows() {
   const sent = new Map();
   (S.reports || []).forEach(r => { const k = personKey(r), t = repTime(r); if (!sent.has(k) || sent.get(k) < t) sent.set(k, t); });
   const rows = new Map();
-  const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0 }); return rows.get(k); };
-  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); });
-  (S.progress || []).forEach(pr => { const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0); });
+  const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0, first: 0 }); return rows.get(k); };
+  /* accesso iniziale: il momento pi\u00f9 vecchio tra l'inizio registrato e l'inizio scritto nel test salvato (non cambia pi\u00f9) */
+  const firstAt = (r, t) => { t = Number(t) || 0; if (t > 0 && (!r.first || t < r.first)) r.first = t; };
+  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); });
+  (S.progress || []).forEach(pr => {
+    const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0);
+    try { firstAt(r, JSON.parse(pr.run || '{}').startedAt); } catch (e) { }
+  });
   const { key, dir } = S.progSort || { key: 'cognome', dir: 1 };
   const cs = (a, b) => String(a || '').localeCompare(String(b || ''), 'it', { sensitivity: 'base', numeric: true });
   const byName = (a, b) => cs(a.cognome, b.cognome) || cs(a.nome, b.nome);
   return [...rows.values()].filter(r => { const t = sent.get(r.key); return !(t && t >= r.time); })
     .sort((a, b) => {
       if (key === 'time') return ((a.time || 0) - (b.time || 0)) * dir || byName(a, b);
+      if (key === 'first') return ((a.first || 0) - (b.first || 0)) * dir || byName(a, b);
       if (key === 'classe') return cs(classKey(a.classe), classKey(b.classe)) * dir || byName(a, b);
       return byName(a, b) * dir;
     });
@@ -2710,14 +2716,14 @@ function renderProgress() {
   $('#rpProgCount').textContent = list.length;
   if (!list.length) { $('#rpProg').innerHTML = ''; return; }
   const ps = S.progSort;
-  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th>' + sortTh('Cognome', 'cognome', ps, ' data-pk="cognome"', 'sticky sticky2') + '<th>Nome</th>' + sortTh('Classe', 'classe', ps, ' data-pk="classe"') + '<th>A che punto \u00e8</th>' + sortTh('Ultimo aggiornamento', 'time', ps, ' data-pk="time"') + '<th class="no-print"></th></tr></thead><tbody>' +
+  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th>' + sortTh('Cognome', 'cognome', ps, ' data-pk="cognome"', 'sticky sticky2') + '<th>Nome</th>' + sortTh('Classe', 'classe', ps, ' data-pk="classe"') + '<th>A che punto \u00e8</th>' + sortTh('Accesso iniziale', 'first', ps, ' data-pk="first"') + sortTh('Ultimo aggiornamento', 'time', ps, ' data-pk="time"') + '<th class="no-print"></th></tr></thead><tbody>' +
     list.map((r, i) => {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
       r.txt = txt;
       r.locked = r.starts.some(st => st.locked === true);
       const lockBtn = '<button type="button" class="btn sm lock-btn' + (r.locked ? ' on' : '') + '" data-lock="' + i + '" title="' + (r.locked ? 'Sblocca: l\'alunno potr\u00e0 di nuovo continuare il test' : 'Blocca: l\'alunno non potr\u00e0 continuare il test') + '">' + ico(r.locked ? 'lockopen' : 'lock') + (r.locked ? ' Sblocca' : ' Blocca') + '</button>';
-      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + esc(txt) + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><span class="row-acts">' + lockBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
+      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + esc(txt) + '</td><td>' + (r.first ? fmtDate(r.first) + ' ' + fmtHour(r.first) : '') + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><span class="row-acts">' + lockBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
     }).join('') + '</tbody></table>';
   fixStickyNum($('#rpProg table'));
 }
@@ -2760,7 +2766,7 @@ async function deleteProgressRow(r) {
 }
 async function onProgClick(e) {
   const th = e.target.closest('th.sortable');
-  if (th) { const k = th.dataset.pk; const cur = S.progSort; S.progSort = { key: k, dir: cur.key === k ? -cur.dir : (k === 'time' ? -1 : 1) }; renderProgress(); return; }
+  if (th) { const k = th.dataset.pk; const cur = S.progSort; S.progSort = { key: k, dir: cur.key === k ? -cur.dir : (k === 'time' || k === 'first' ? -1 : 1) }; renderProgress(); return; }
   const lb = e.target.closest('[data-lock]');
   if (lb) { e.stopPropagation(); const r = (S.progRows || [])[+lb.dataset.lock]; if (r) toggleLock(r, lb); return; }
   const b = e.target.closest('[data-unlock]');
@@ -2769,7 +2775,7 @@ async function onProgClick(e) {
   const r = (S.progRows || [])[+tr.dataset.i]; if (!r) return;
   modal({
     title: 'Test non consegnato',
-    body: '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + (r.time ? ' \u00b7 ultimo aggiornamento ' + fmtDate(r.time) + ' alle ' + fmtHour(r.time) : '') + '</div></div></div>' + (r.locked ? '<p><span class="lock-chip">' + ico('lock') + ' Bloccato</span> L\'alunno non pu\u00f2 continuare il test finch\u00e9 non lo sblocchi.</p>' : '') + '<p>' + esc(r.txt || '') + '</p>',
+    body: '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + (r.first ? ' \u00b7 accesso iniziale ' + fmtDate(r.first) + ' alle ' + fmtHour(r.first) : '') + (r.time ? ' \u00b7 ultimo aggiornamento ' + fmtDate(r.time) + ' alle ' + fmtHour(r.time) : '') + '</div></div></div>' + (r.locked ? '<p><span class="lock-chip">' + ico('lock') + ' Bloccato</span> L\'alunno non pu\u00f2 continuare il test finch\u00e9 non lo sblocchi.</p>' : '') + '<p>' + esc(r.txt || '') + '</p>',
     buttons: [
       { html: ico('delete') + ' Elimina', cls: 'danger-ghost', onClick: async () => (await deleteProgressRow(r)) ? true : false },
       { html: ico(r.locked ? 'lockopen' : 'lock') + (r.locked ? ' Sblocca' : ' Blocca'), cls: '', onClick: async (b, btn) => (await toggleLock(r, btn)) ? true : false },
