@@ -992,7 +992,7 @@ table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-si
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 26/10/2026 13:58</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 26/10/2026 15:28</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -3356,6 +3356,7 @@ window.addEventListener('online', () => { if (!Stu.preview && Stu.run && Stu.pro
 /* salvataggio automatico immediato: quando la pagina viene nascosta, chiusa o il telefono si blocca */
 function flushSave() {
   if (Stu.preview || Stu.locked || !Stu.run || !Stu.progId || Stu.run.phase === 'sent') return;
+  qTimerSync();
   if (Stu.mode === 'first' && Stu.P && Stu.ready) {
     let t = 0; try { t = Stu.P.getCurrentTime() || 0; } catch (e) { }
     Stu.run.pos = Math.max(Stu.run.pos || 0, Math.min(t, Stu.maxReached || 0));
@@ -3748,6 +3749,7 @@ async function stuSaveLater(btn) {
     Stu.run.pos = Math.max(Stu.run.pos || 0, Math.min(t, Stu.maxReached || t));
   }
   if (Stu.mode === 'segment') Stu.run.phase = 'results';
+  qTimerSync();
   saveLocal();
   btn.disabled = true; btn.classList.add('loading');
   try {
@@ -4122,11 +4124,12 @@ function openQuestion(q) {
   $('#qcType').hidden = q.type === 'mc';
   $('#qcErr').textContent = '';
   renderQuestionBody($('#qcBody'), q);
-  startQTimer(q);
   $('#qov').hidden = false; $('#bigPlay').hidden = true;
   $('#qov').scrollTop = 0;
   const f = $('#qcBody input.blank');
-  if (f) setTimeout(() => { try { f.focus({ preventScroll: true }); } catch (e) { } }, 60);
+  if (f) setTimeout(() => { try { if (Stu.overlayQ === q) f.focus({ preventScroll: true }); } catch (e) { } }, 60);
+  /* per ultimo: se il tempo fosse già finito, il quesito si chiude subito e il video riparte */
+  startQTimer(q);
 }
 function shuffledIdx(n) {
   const a = Array.from({ length: n }, (_, i) => i);
@@ -4192,20 +4195,42 @@ function readAnswer(q, box) {
   if (vals.some(v => !v)) return { err: 'Completa tutti gli spazi vuoti.' };
   return { v: vals, t: vals.join(' | ') };
 }
-/* conto alla rovescia del quesito (l'ora di inizio resta salvata: ricaricando la pagina il tempo non riparte) */
-function stopQTimer() { clearInterval(Stu.qTimerIv); Stu.qTimerIv = null; $('#qcTimer').hidden = true; $('#qcTbar').hidden = true; }
+/* conto alla rovescia del quesito. Si salvano i secondi che restano: se l'alunno interrompe il test
+   (o chiude la pagina) mentre il quesito è aperto, al rientro con il codice il conto riprende dai secondi
+   che restavano; il tempo passato fuori dal test non conta, e ricaricare la pagina non dà tempo in più. */
+const QT_MIN_RESUME = 3;
+function stopQTimer() { clearInterval(Stu.qTimerIv); Stu.qTimerIv = null; Stu.qTimerCur = null; $('#qcTimer').hidden = true; $('#qcTbar').hidden = true; }
+/* aggiorna nel salvataggio i secondi che restano al quesito aperto */
+function qTimerSync() {
+  const k = Stu.qTimerCur, qt = Stu.run && Stu.run.qTimer;
+  if (!k || !qt || qt.id !== k.q.id || Stu.overlayQ !== k.q) return null;
+  const left = k.seconds - (Date.now() - k.at) / 1000;
+  qt.left = Math.max(0, Math.round(left * 10) / 10);
+  return left;
+}
 function startQTimer(q) {
   stopQTimer();
   const tm = normTimer(Stu.test && Stu.test.timer);
   if (!tm.on || !Stu.run) return;
   const r = Stu.run.round || 0, cur = Stu.run.qTimer;
-  let at = cur && cur.id === q.id && cur.r === r ? Number(cur.at) || 0 : 0;
-  if (!at || at > Date.now()) { at = Date.now(); Stu.run.qTimer = { id: q.id, r, at }; saveRun(); }
+  let left = tm.seconds;
+  if (cur && cur.id === q.id && cur.r === r && cur.left != null && isFinite(Number(cur.left))) {
+    /* stesso quesito ripreso dopo un'interruzione: si riparte dai secondi che restavano (almeno qualche secondo per orientarsi) */
+    left = Math.min(tm.seconds, Math.max(Number(cur.left), Math.min(QT_MIN_RESUME, tm.seconds)));
+  }
+  /* (i salvataggi della versione precedente avevano solo l'ora di inizio: in quel caso si riparte con il tempo pieno) */
+  const at = Date.now() - (tm.seconds - left) * 1000;
+  Stu.run.qTimer = { id: q.id, r, left: Math.round(left * 10) / 10 };
+  saveRun();
+  Stu.qTimerCur = { q, at, seconds: tm.seconds };
   const el2 = $('#qcTimer'), bar = $('#qcTbar'), fill = $('i', bar);
   el2.hidden = false; bar.hidden = false;
+  let savedAt = Date.now();
   const tick = () => {
     if (Stu.overlayQ !== q) { stopQTimer(); return; }
     const left = tm.seconds - (Date.now() - at) / 1000;
+    qTimerSync();
+    if (Date.now() - savedAt > 2000) { savedAt = Date.now(); saveLocal(); }
     el2.innerHTML = ico('clock') + ' ' + fmtSecs(left);
     el2.classList.toggle('low', left <= Math.min(10, tm.seconds / 4));
     fill.style.width = Math.max(0, Math.min(100, left / tm.seconds * 100)) + '%';
