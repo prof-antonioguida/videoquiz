@@ -678,6 +678,42 @@ table.rep.inprog tr.locked td{background:#fffaf0}
 html[data-theme="dark"] table.rep.inprog tr.locked td{background:#2b2414}
 html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{background:#3a2f12;border-color:#6b5520;color:#f3d48c}
 
+/* scadenza e consegna senza recuperi */
+.deadline-bar{display:flex;align-items:flex-start;gap:.55em;background:var(--warn-l);border:1px solid #f1d58f;color:#6d4300;border-radius:12px;padding:.55em .8em;margin:0 auto .8rem;max-width:900px;font-size:.92rem}
+.deadline-bar .ico{width:20px;height:20px;flex:none;margin-top:.1em}
+html[data-theme="dark"] .deadline-bar{background:#3a2f12;border-color:#6b5520;color:#f3d48c}
+@media (orientation:landscape) and (max-height:560px){ body.watching .deadline-bar{display:none} }
+.r-asis{margin-top:1rem;padding:.8em 1em;border:1px dashed var(--line);border-radius:12px;background:var(--surface)}
+.r-asis p{margin:0 0 .6em}
+.end-list{margin:.2em 0 .8em;padding-left:1.2em;max-height:30vh;overflow:auto}
+.end-list li{margin:.2em 0}
+.end-opt{display:flex;flex-direction:column;gap:.15em;border:1px solid var(--line);border-radius:12px;padding:.6em .8em;margin:.5em 0}
+.end-opt.rec{border-color:#c9d5fb;background:var(--rowhover)}
+.big-clock{width:64px;height:64px;margin:0 auto .4rem;border-radius:50%;background:var(--warn-l);color:#b76e00;display:flex;align-items:center;justify-content:center}
+.big-clock .ico{width:36px;height:36px}
+.x-sum{display:grid;grid-template-columns:auto 1fr;gap:.45em 1em;margin:1rem auto;max-width:420px;font-size:1.02rem}
+.x-sum dt{color:var(--muted);font-weight:700}
+.x-sum dd{margin:0;font-weight:800}
+table.rep td.tr.t0{color:var(--bad);font-weight:800}
+table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-size:.84rem;color:var(--text2)}
+.dl-btn{min-height:32px;padding:.2em .7em}
+.dl-btn.on{background:var(--primary-l);border-color:#c9d5fb;color:var(--primary)}
+.dl-chip{display:inline-flex;align-items:center;gap:.25em;font-size:.78rem;font-weight:800;color:var(--primary);background:var(--primary-l);border:1px solid #c9d5fb;border-radius:999px;padding:.05em .55em;margin-right:.3em;vertical-align:middle}
+.dl-chip .ico{width:13px;height:13px}
+.dl-chip.late{color:var(--bad);background:#fdece6;border-color:#f3c3b3}
+#rpProgCard .card-head{display:flex;align-items:center;justify-content:space-between;gap:.8em;flex-wrap:wrap}
+
+/* quesiti a tempo */
+.qc-right{display:inline-flex;align-items:center;gap:.5em}
+.qc-timer{display:inline-flex;align-items:center;gap:.3em;font-weight:900;font-variant-numeric:tabular-nums;font-size:1rem;color:var(--primary);background:var(--primary-l);border-radius:999px;padding:.15em .7em}
+.qc-timer .ico{width:17px;height:17px}
+.qc-timer.low{color:#fff;background:var(--bad);animation:tpulse 1s ease-in-out infinite}
+@keyframes tpulse{50%{transform:scale(1.06)}}
+.qc-tbar{height:5px;border-radius:5px;background:var(--line);overflow:hidden;margin:-.4rem 0 .8rem}
+.qc-tbar i{display:block;height:100%;width:100%;background:var(--primary);transition:width .25s linear}
+.tm-row{margin-top:.4em}
+#iTimer{color:var(--text)}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -779,6 +815,10 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
           <div id="edQList" class="q-list"></div>
         </div>
         <div class="card">
+          <div class="card-head"><h2>Tempo per rispondere</h2></div>
+          <div id="edTimer"></div>
+        </div>
+        <div class="card">
           <div class="card-head"><h2>Criteri di valutazione</h2></div>
           <div id="edGrading"></div>
         </div>
@@ -804,9 +844,9 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
     <div class="card table-card"><div id="rpTable" class="table-wrap"></div></div>
     <p class="hint no-print">Clicca su una riga per vedere tutte le risposte e i tentativi dell'alunno. Clicca sul nome di una colonna con le frecce (Cognome, Nome, Classe, Voto, Data) per ordinare l'elenco; un secondo clic inverte l'ordine. «Punti» è il valore del quesito (1 = risolto al primo tentativo); «Tent.» è il numero di tentativi che sono serviti per rispondere correttamente.</p>
     <div class="card prog-card" id="rpProgCard" hidden>
-      <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2></div>
+      <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2><button type="button" class="btn sm no-print" id="rpDlAll"></button></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Clicca su Cognome, Classe, Accesso iniziale o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Con «Scadenza» scegli la data e l'ora in cui il test di un alunno verrà inviato automaticamente (con «Scadenza per tutti» la stessa per tutti gli alunni della tabella). Clicca su Cognome, Classe, Accesso iniziale o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
     </div>
   </section>
 
@@ -814,6 +854,7 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
   <section id="v-student" class="view" hidden>
     <div id="previewBar" class="preview-bar" hidden><span><b>ANTEPRIMA</b> · stai provando il test come un alunno: nessun report verrà inviato.</span><button id="exitPreview" class="btn sm" type="button">Esci dall'anteprima</button></div>
     <div class="stu-wrap">
+      <div class="deadline-bar" id="dlBar" hidden></div>
 
       <div class="s-screen" id="sLogin" hidden>
         <div class="s-card narrow">
@@ -843,6 +884,7 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
             <h3>Come funziona</h3>
             <ol>
               <li>Guarda il video con attenzione: si fermerà <b id="iN"></b> per farti una domanda.</li>
+              <li id="iTimer" hidden></li>
               <li>Rispondi e premi «Conferma risposta»: il video ripartirà da solo. Non saprai subito se la risposta è giusta.</li>
               <li>Alla fine del video vedrai il punteggio e quali risposte sono sbagliate.</li>
               <li>Per ogni risposta sbagliata rivedrai la parte di video che serve e risponderai di nuovo, finché saranno tutte corrette.</li>
@@ -874,7 +916,8 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
           </div>
           <div class="qov" id="qov" hidden>
             <div class="qcard" role="dialog" aria-modal="true" aria-labelledby="qcN">
-              <div class="qc-head"><span class="qc-n" id="qcN"></span><span class="type-chip" id="qcType"></span></div>
+              <div class="qc-head"><span class="qc-n" id="qcN"></span><span class="qc-right"><span class="qc-timer" id="qcTimer" hidden></span><span class="type-chip" id="qcType"></span></span></div>
+              <div class="qc-tbar" id="qcTbar" hidden><i></i></div>
               <div class="qc-body" id="qcBody"></div>
               <div class="err" id="qcErr"></div>
               <button type="button" class="btn primary big block" id="qcConfirm">Conferma risposta</button>
@@ -894,6 +937,11 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
           <div class="r-send" id="rSendBox" hidden>
             <button class="btn success big block" id="rSend" type="button"></button>
             <div class="err" id="rSendErr"></div>
+          </div>
+          <div class="r-asis" id="rAsIsBox" hidden>
+            <p id="rAsIsTxt"></p>
+            <button class="btn block" id="rAsIs" type="button"></button>
+            <div class="err" id="rAsIsErr"></div>
           </div>
           <button type="button" class="btn ghost block mt save-later" id="rSave"></button>
           <p class="center"><span class="autosave" hidden></span></p>
@@ -921,6 +969,16 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
         </div>
       </div>
 
+      <div class="s-screen" id="sExpired" hidden>
+        <div class="s-card narrow">
+          <div class="center"><div class="big-clock" id="xIco"></div><h1 id="xTitle">Tempo scaduto</h1><p id="xMsg"></p></div>
+          <dl class="x-sum" id="xSum"></dl>
+          <div class="err center" id="xErr"></div>
+          <div class="center"><button class="btn primary" id="xRetry" type="button" hidden>Riprova l'invio</button></div>
+          <p class="hint center">Puoi chiudere questa pagina.</p>
+        </div>
+      </div>
+
       <div class="s-screen" id="sError" hidden>
         <div class="s-card narrow center">
           <span class="logo big"></span>
@@ -934,7 +992,7 @@ html[data-theme="dark"] .lock-chip,html[data-theme="dark"] .lock-btn.on{backgrou
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 22/10/2026 18:37</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 26/10/2026 13:58</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1172,6 +1230,13 @@ function normGrading(g) {
   x.showGrade = !!x.showGrade;
   return x;
 }
+/* quesiti a tempo: secondi a disposizione per rispondere a ciascun quesito */
+function normTimer(t) {
+  t = t || {};
+  let sec = Math.round(Number(t.seconds)); if (!isFinite(sec) || sec <= 0) sec = 90;
+  return { on: t.on === true, seconds: Math.min(3600, Math.max(5, sec)) };
+}
+function fmtSecs(n) { n = Math.max(0, Math.ceil(n)); return Math.floor(n / 60) + ':' + pad2(n % 60); }
 function valueForTries(tries, g) {
   if (tries <= 0) return 0;
   if (tries === 1) return 1;
@@ -1728,6 +1793,8 @@ function wireTeacher() {
   $('#rpPrintBtn').addEventListener('click', () => window.print());
   $('#rpTable').addEventListener('click', onReportTableClick);
   $('#rpProg').addEventListener('click', onProgClick);
+  $('#rpDlAll').innerHTML = ico('clock') + ' Scadenza per tutti';
+  $('#rpDlAll').addEventListener('click', () => deadlineDialog(S.progRows || [], true));
 }
 
 function initTeacher() {
@@ -1951,7 +2018,7 @@ async function duplicateTest(id) {
   const title = await promptBox('Duplica il test', 'Titolo della copia', (t.title || '') + ' (copia)', 'Duplica');
   if (!title) return;
   const now = Date.now();
-  const data = clean({ ownerUid: S.user.uid, title, provider: testProvider(t) || 'youtube', videoId: t.videoId || '', videoSrc: t.videoSrc || '', videoThumb: t.videoThumb || '', videoUrl: t.videoUrl || '', videoTitle: t.videoTitle || '', duration: t.duration || 0, questions: t.questions || [], grading: normGrading(t.grading), createdAt: now, updatedAt: now });
+  const data = clean({ ownerUid: S.user.uid, title, provider: testProvider(t) || 'youtube', videoId: t.videoId || '', videoSrc: t.videoSrc || '', videoThumb: t.videoThumb || '', videoUrl: t.videoUrl || '', videoTitle: t.videoTitle || '', duration: t.duration || 0, questions: t.questions || [], grading: normGrading(t.grading), timer: normTimer(t.timer), createdAt: now, updatedAt: now });
   try {
     const ref = await addDoc(collection(db, 'tests'), data);
     S.tests.push(Object.assign({ id: ref.id }, data));
@@ -2001,7 +2068,7 @@ function openEditor(testId) {
   $('#edTlCur').hidden = true;
   $('#edVideoBox .vb-host').innerHTML = '';
   $('#edEmpty').hidden = false;
-  renderQList(); renderGrading();
+  renderQList(); renderGrading(); renderTimer();
   if (hasVideo(data)) mountEditorPlayer();
 }
 function setSaveState(s) {
@@ -2347,6 +2414,29 @@ function editQuestion(orig, presetTime, qopts) {
 }
 
 /* criteri di valutazione */
+function renderTimer() {
+  const E = S.ed; if (!E) return;
+  const tm = E.test.timer = normTimer(E.test.timer);
+  const box = $('#edTimer');
+  box.innerHTML = '<div class="grading"><label class="check"><input type="checkbox" id="tmOn"' + (tm.on ? ' checked' : '') + '><span><b>A tempo</b>: l\'alunno ha un tempo massimo per rispondere a ogni quesito</span></label>' +
+    '<div class="g-row tm-row"' + (tm.on ? '' : ' hidden') + '><label for="tmSec">Secondi per ogni quesito</label><div class="g-in"><input id="tmSec" type="number" min="5" max="3600" step="1" value="' + tm.seconds + '"> s</div></div>' +
+    '<p class="hint" id="tmHint"></p></div>';
+  const hint = () => {
+    $('#tmHint').textContent = tm.on ? 'Nella finestra del quesito l\'alunno vede il conto alla rovescia (' + fmtSecs(tm.seconds) + '). Allo scadere il quesito viene inviato in bianco, conta come sbagliato e il video riprende. Vale anche per i recuperi.' : 'Se lo attivi, scegli quanti secondi ha l\'alunno per rispondere a ciascun quesito.';
+  };
+  const read = final => {
+    tm.on = $('#tmOn').checked;
+    const v = Math.round(Number($('#tmSec').value));
+    if (isFinite(v) && v > 0) tm.seconds = Math.min(3600, Math.max(5, v));
+    if (final) $('#tmSec').value = tm.seconds;
+    $('.tm-row', box).hidden = !tm.on;
+    markDirty(); hint();
+  };
+  $('#tmOn').addEventListener('change', () => read(true));
+  $('#tmSec').addEventListener('input', () => read(false));
+  $('#tmSec').addEventListener('change', () => read(true));
+  hint();
+}
 function renderGrading() {
   const E = S.ed; if (!E) return;
   const g = E.test.grading = normGrading(E.test.grading);
@@ -2381,7 +2471,7 @@ function gradingExample() {
 }
 
 /* salvataggio */
-function pubSnapshot(t) { return clean({ title: t.title || '', provider: testProvider(t) || 'youtube', videoId: t.videoId || '', videoSrc: t.videoSrc || '', duration: t.duration || 0, questions: (t.questions || []).slice().sort((a, b) => a.time - b.time), grading: normGrading(t.grading) }); }
+function pubSnapshot(t) { return clean({ title: t.title || '', provider: testProvider(t) || 'youtube', videoId: t.videoId || '', videoSrc: t.videoSrc || '', duration: t.duration || 0, questions: (t.questions || []).slice().sort((a, b) => a.time - b.time), grading: normGrading(t.grading), timer: normTimer(t.timer) }); }
 async function edSave() {
   const E = S.ed; if (!E) return false;
   const T = E.test;
@@ -2391,7 +2481,7 @@ async function edSave() {
   T.updatedAt = Date.now();
   const btn = $('#edSaveBtn'); btn.disabled = true; btn.classList.add('loading');
   try {
-    const data = clean({ title: T.title, provider: testProvider(T) || 'youtube', videoId: T.videoId || '', videoSrc: T.videoSrc || '', videoThumb: T.videoThumb || '', videoUrl: T.videoUrl || '', videoTitle: T.videoTitle || '', duration: T.duration || 0, questions: T.questions, grading: normGrading(T.grading), updatedAt: T.updatedAt });
+    const data = clean({ title: T.title, provider: testProvider(T) || 'youtube', videoId: T.videoId || '', videoSrc: T.videoSrc || '', videoThumb: T.videoThumb || '', videoUrl: T.videoUrl || '', videoTitle: T.videoTitle || '', duration: T.duration || 0, questions: T.questions, grading: normGrading(T.grading), timer: normTimer(T.timer), updatedAt: T.updatedAt });
     await updateDoc(doc(db, 'tests', E.id), data);
     const idx = S.tests.findIndex(x => x.id === E.id);
     if (idx >= 0) S.tests[idx] = Object.assign({}, S.tests[idx], data);
@@ -2459,7 +2549,7 @@ function renderAssignList() {
   }
   $('#asList').innerHTML = list.map(a => {
     const open = a.open !== false; const n = S.repCounts[a.id] || 0;
-    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + '</div></div>' +
+    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + (a.allowAsIs === true ? '<span class="badge save">' + ico('send') + ' Consegna senza recuperi</span>' : '') + (linkGroup(a).length > 1 ? '<span class="badge save" title="Stesso link di altre assegnazioni: gli alunni entrano nell\'una o nell\'altra a seconda della password">' + ico('link') + (linkGroup(a).length === 2 ? ' Stesso link di un\'altra assegnazione' : ' Stesso link di altre ' + (linkGroup(a).length - 1) + ' assegnazioni') + '</span>' : '') + '</div></div>' +
       '<div class="as-acts"><button type="button" class="btn primary sm" data-act="open">' + ico('table') + ' Report</button><button type="button" class="btn sm" data-act="link">' + ico('link') + ' Link e password</button><button type="button" class="icon-btn" data-act="menu" title="Altre azioni">' + ico('more') + '</button></div></div>';
   }).join('');
 }
@@ -2476,12 +2566,34 @@ function onAssignClick(e) {
       { label: 'Rinomina', icon: 'edit', onClick: () => renameAssign(a) },
       { label: open ? 'Chiudi (gli alunni non possono pi\u00f9 svolgerla)' : 'Riapri', icon: open ? 'lock' : 'lockopen', onClick: () => toggleAssign(a) },
       { label: a.allowSave === true ? 'Disattiva il salvataggio per riprendere pi\u00f9 tardi' : 'Attiva il salvataggio per riprendere pi\u00f9 tardi', icon: 'save', onClick: () => toggleSave(a) },
+      { label: a.allowAsIs === true ? 'Disattiva la consegna senza recuperi' : 'Attiva la consegna senza recuperi', icon: 'send', onClick: () => toggleAsIs(a) },
+      { label: 'Duplica (stesso link, password diversa)', icon: 'copy', onClick: () => duplicateAssign(a) },
       { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteAssign(a) }
     ]);
   }
 }
 function studentLink(aid) { return location.href.split('#')[0].split('?')[0] + '?a=' + encodeURIComponent(aid); }
-function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
+/* assegnazioni duplicate: condividono il link (linkId = id dell'assegnazione originale) e si distinguono per la password.
+   Le assegnazioni create prima di questa funzione non hanno linkId: il loro link è il loro id, come sempre. */
+function linkOf(a) { return (a && a.linkId) || (a && a.id) || ''; }
+function linkGroup(a) { const L = linkOf(a); return S.assigns.filter(x => linkOf(x) === L); }
+/* restituisce il nome dell'assegnazione (con lo stesso link) che usa già questa password, oppure '' */
+async function pwdClash(a, pwd, exceptId) {
+  const L = linkOf(a), np = normPwd(pwd);
+  const c = S.assigns.find(x => linkOf(x) === L && x.id !== exceptId && normPwd(x.password) === np);
+  if (c) return c.name || 'un\'altra assegnazione';
+  const s = await getDoc(doc(db, 'pubs', await pubKeyFor(L, pwd)));
+  if (s.exists() && s.data().assignmentId !== exceptId) return s.data().assignmentName || 'un\'altra assegnazione';
+  return '';
+}
+function clashMsg(name) { return 'Questa password è già usata da «' + name + '», che ha lo stesso link. Scegli una password diversa.'; }
+function assignOptsBody(asis, save) {
+  const d = el('<div></div>');
+  d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-asis"' + (asis ? ' checked' : '') + '> Permetti agli alunni di consegnare il test senza recuperare i quesiti sbagliati</label><p class="hint">Alla fine del test l\'alunno sceglie se consegnarlo così com\'è (vale il punteggio ottenuto) oppure se recuperare i quesiti sbagliati per guadagnare punti. Se non lo attivi, l\'alunno deve recuperare tutti i quesiti sbagliati prima di poter consegnare.</p></div>'));
+  d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"' + (save ? ' checked' : '') + '> Permetti agli alunni di salvare il test e riprenderlo più tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e il suo lavoro viene salvato automaticamente: può interrompere il test (o riprenderlo se chiude la pagina per sbaglio) e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
+  return d;
+}
+function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, linkId: linkOf(a), testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, allowAsIs: a.allowAsIs === true, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
 function passwordBody(value) {
   const body = el('<div><div class="fld"><span>Password per gli alunni</span><div class="copy-row"><input type="text" class="ap" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="btn sm ag">' + ico('refresh') + ' Genera</button></div></div><p class="hint">Scegli una password semplice da comunicare, di almeno 4 caratteri. Maiuscole e minuscole non contano.</p><div class="err"></div></div>');
   $('.ap', body).value = value || genPassword();
@@ -2494,7 +2606,7 @@ async function newAssignment() {
   if (!hasVideo(t) || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
   const body = el('<div><label class="fld"><span>Nome dell\'assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody());
-  body.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"> Permetti agli alunni di salvare il test e riprenderlo pi\u00f9 tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e il suo lavoro viene salvato automaticamente: pu\u00f2 interrompere il test (o riprenderlo se chiude la pagina per sbaglio) e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
+  body.appendChild(assignOptsBody(true, true));
   $('.an', body).value = (t.title || 'Test') + ' del ' + fmtDateLong(Date.now());
   const res = await modal({
     title: 'Nuova assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
@@ -2507,7 +2619,7 @@ async function newAssignment() {
         try {
           const aRef = doc(collection(db, 'assignments'));
           const pubKey = await pubKeyFor(aRef.id, pwd);
-          const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, allowSave: $('.as-save', body).checked, createdAt: Date.now() };
+          const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, allowSave: $('.as-save', body).checked, allowAsIs: $('.as-asis', body).checked, createdAt: Date.now() };
           const bt = writeBatch(db);
           const data = Object.assign({}, a); delete data.id;
           bt.set(aRef, data);
@@ -2520,11 +2632,51 @@ async function newAssignment() {
   });
   if (res) { S.assigns.push(res); renderAssignList(); showLinkModal(res); }
 }
+async function duplicateAssign(a) {
+  const t = S.tests.find(x => x.id === a.testId) || S.curTest;
+  if (!t || !hasVideo(t) || !(t.questions || []).length) { toast('Il test di questa assegnazione non è pronto: aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
+  const L = linkOf(a), grp = linkGroup(a);
+  const used = grp.map(x => normPwd(x.password));
+  let gen = genPassword(); for (let i = 0; i < 20 && used.indexOf(gen) >= 0; i++) gen = genPassword();
+  const body = el('<div><p>La nuova assegnazione avrà <b>lo stesso link</b> di «' + esc(a.name) + '», ma una <b>password diversa</b>: gli alunni che entrano con questa password finiranno nella nuova assegnazione e avranno report separati.</p>' +
+    '<label class="fld"><span>Nome della nuova assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
+  body.appendChild(passwordBody(gen));
+  body.appendChild(el('<p class="hint">Password già usate con questo link: ' + grp.map(x => '<b>' + esc(x.password) + '</b> (' + esc(x.name) + ')').join(', ') + '.</p>'));
+  body.appendChild(assignOptsBody(a.allowAsIs === true, a.allowSave === true));
+  $('.an', body).value = a.name + ' (copia)';
+  const res = await modal({
+    title: 'Duplica l\'assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+      label: 'Duplica', cls: 'primary', onClick: async (b, btn) => {
+        const name = $('.an', body).value.trim(), pwd = $('.ap', body).value.trim(), errEl = $('.err', body);
+        errEl.textContent = '';
+        if (!name) { errEl.textContent = 'Scrivi il nome della nuova assegnazione.'; return false; }
+        const pe = checkPwd(pwd); if (pe) { errEl.textContent = pe; return false; }
+        btn.disabled = true; btn.classList.add('loading');
+        try {
+          const cl = await pwdClash(a, pwd, null);
+          if (cl) { errEl.textContent = clashMsg(cl); btn.disabled = false; btn.classList.remove('loading'); return false; }
+          const aRef = doc(collection(db, 'assignments'));
+          const pubKey = await pubKeyFor(L, pwd);
+          const a2 = { id: aRef.id, ownerUid: S.user.uid, testId: a.testId, name, password: pwd, pubKey, linkId: L, open: true, allowSave: $('.as-save', body).checked, allowAsIs: $('.as-asis', body).checked, createdAt: Date.now() };
+          const bt = writeBatch(db);
+          const data = Object.assign({}, a2); delete data.id;
+          bt.set(aRef, data);
+          bt.set(doc(db, 'pubs', pubKey), pubDoc(a2, t, true));
+          await bt.commit();
+          return a2;
+        } catch (ex) { dbError(ex, 'duplica assegnazione'); btn.disabled = false; btn.classList.remove('loading'); return false; }
+      }
+    }]
+  });
+  if (res) { S.assigns.push(res); renderAssignList(); toast('Assegnazione duplicata: stesso link, password «' + res.password + '».', 'ok', 5000); showLinkModal(res); }
+}
 function showLinkModal(a) {
   if (!a) return;
   const t = S.tests.find(x => x.id === a.testId) || S.curTest || {};
-  const link = studentLink(a.id);
+  const link = studentLink(linkOf(a));
+  const others = linkGroup(a).filter(x => x.id !== a.id);
   const body = el('<div>' +
+    (others.length ? '<div class="msg info">' + ico('link') + ' Questo link è lo stesso di ' + (others.length === 1 ? 'un\'altra assegnazione' : 'altre ' + others.length + ' assegnazioni') + ': ' + others.map(x => '«' + esc(x.name) + '» (password <b>' + esc(x.password) + '</b>)').join(', ') + '. Ogni gruppo di alunni entra con la propria password: chi usa la password di questa assegnazione finisce qui.</div>' : '') +
     '<p>Dai agli alunni <b>il link</b> e <b>la password</b>. Puoi anche collegare il link a un\'immagine cliccabile sul tuo sito: la password non \u00e8 contenuta nel link.</p>' +
     '<div class="fld"><span>Link del test</span><div class="copy-row"><input type="text" readonly class="lk"><button type="button" class="btn sm" data-copy="lk">' + ico('copy') + ' Copia</button></div></div>' +
     '<div class="fld"><span>Password</span><div class="copy-row"><input type="text" readonly class="pw"><button type="button" class="btn sm" data-copy="pw">' + ico('copy') + ' Copia</button></div></div>' +
@@ -2552,7 +2704,9 @@ async function changePassword(a) {
         btn.disabled = true; btn.classList.add('loading');
         try {
           const t = S.tests.find(x => x.id === a.testId) || S.curTest;
-          const key = await pubKeyFor(a.id, pwd);
+          const cl = await pwdClash(a, pwd, a.id);
+          if (cl) { errEl.textContent = clashMsg(cl); btn.disabled = false; btn.classList.remove('loading'); return false; }
+          const key = await pubKeyFor(linkOf(a), pwd);
           if (key === a.pubKey) await updateDoc(doc(db, 'assignments', a.id), { password: pwd });
           else {
             const bt = writeBatch(db);
@@ -2595,6 +2749,17 @@ async function toggleAssign(a) {
     toast(open ? 'Assegnazione riaperta.' : 'Assegnazione chiusa: gli alunni non possono pi\u00f9 svolgerla.', 'ok');
   } catch (ex) { dbError(ex, 'apri/chiudi'); }
 }
+async function toggleAsIs(a) {
+  const on = a.allowAsIs !== true;
+  try {
+    const bt = writeBatch(db);
+    bt.update(doc(db, 'assignments', a.id), { allowAsIs: on });
+    bt.update(doc(db, 'pubs', a.pubKey), { allowAsIs: on });
+    await bt.commit();
+    a.allowAsIs = on; renderAssignList();
+    toast(on ? 'Consegna senza recuperi attivata: alla fine del test gli alunni potranno consegnarlo così com\'è oppure recuperare.' : 'Consegna senza recuperi disattivata: gli alunni dovranno recuperare tutti i quesiti sbagliati prima di consegnare.', 'ok', 6000);
+  } catch (ex) { dbError(ex, 'consegna senza recuperi'); }
+}
 async function toggleSave(a) {
   const on = a.allowSave !== true;
   if (!on && !await confirmBox('Disattivare il salvataggio?', 'Gli alunni non potranno pi\u00f9 salvare il test per completarlo pi\u00f9 tardi, e chi aveva gi\u00e0 salvato non potr\u00e0 riprenderlo: dovr\u00e0 ricominciare da capo.', 'Disattiva', true)) return;
@@ -2609,7 +2774,8 @@ async function toggleSave(a) {
 }
 async function deleteAssign(a) {
   const n = S.repCounts[a.id] || 0;
-  if (!await confirmBox('Eliminare l\'assegnazione?', '\u00ab' + esc(a.name) + '\u00bb verr\u00e0 eliminata definitivamente' + (n ? ', insieme ai <b>' + n + ' report</b> degli alunni' : '') + '. Il link non funzioner\u00e0 pi\u00f9.', 'Elimina', true)) return;
+  const shared = linkGroup(a).length > 1;
+  if (!await confirmBox('Eliminare l\'assegnazione?', '\u00ab' + esc(a.name) + '\u00bb verr\u00e0 eliminata definitivamente' + (n ? ', insieme ai <b>' + n + ' report</b> degli alunni' : '') + '.' + (shared ? ' La password <b>' + esc(a.password) + '</b> non funzioner\u00e0 pi\u00f9; il link resta valido per le altre assegnazioni che lo condividono, ciascuna con la sua password.' : ' Il link non funzioner\u00e0 pi\u00f9.'), 'Elimina', true)) return;
   try {
     const rs = await getDocs(query(collection(db, 'reports'), where('ownerUid', '==', S.user.uid), where('assignmentId', '==', a.id)));
     const refs = rs.docs.map(d => d.ref).concat(await progressRefs([where('ownerUid', '==', S.user.uid), where('assignmentId', '==', a.id)]));
@@ -2655,13 +2821,15 @@ function openReports(aid) {
     snap => { S.starts = snap.docs.map(d => Object.assign({ id: d.id }, d.data())); renderProgress(); },
     ex => { console.warn('starts', ex); S.starts = []; renderProgress(); }
   );
-  S.unsubReports = () => { u1(); u2(); u3(); };
+  clearInterval(S.dlIv); S.dlIv = setInterval(processDeadlines, 20000);
+  S.unsubReports = () => { u1(); u2(); u3(); clearInterval(S.dlIv); S.dlIv = null; };
 }
 /* ricalcola punti e voto con i criteri di valutazione attuali del test */
 function currentGrading() { return normGrading((S.curTest && S.curTest.grading) || null); }
 function regradeReport(r) {
   const g = currentGrading();
   const qs = (r.questions || []).map(q => {
+    if (q.solved === false) return Object.assign({}, q, { value: Math.round((Number(q.partial) || 0) * 1000) / 1000 });
     const tries = Math.max(1, Number(q.tries) || 1);
     return Object.assign({}, q, { value: Math.round(Math.max(valueForTries(tries, g), Number(q.partial) || 0) * 1000) / 1000 });
   });
@@ -2687,8 +2855,8 @@ function progressRows() {
   const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0, first: 0 }); return rows.get(k); };
   /* accesso iniziale: il momento pi\u00f9 vecchio tra l'inizio registrato e l'inizio scritto nel test salvato (non cambia pi\u00f9) */
   const firstAt = (r, t) => { t = Number(t) || 0; if (t > 0 && (!r.first || t < r.first)) r.first = t; };
-  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); });
-  (S.progress || []).forEach(pr => {
+  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); if (Number(st.deadline) > (r.deadline || 0)) r.deadline = Number(st.deadline); });
+  (S.progress || []).filter(pr => !(pr.status && pr.status.phase === 'sent')).forEach(pr => {
     const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0);
     try { firstAt(r, JSON.parse(pr.run || '{}').startedAt); } catch (e) { }
   });
@@ -2722,16 +2890,96 @@ function renderProgress() {
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
       r.txt = txt;
       r.locked = r.starts.some(st => st.locked === true);
+      const dlBtn = '<button type="button" class="btn sm dl-btn' + (r.deadline ? ' on' : '') + '" data-dl="' + i + '" title="Imposta la data e l\'ora di scadenza: a quell\'ora il test verrà inviato automaticamente">' + ico('clock') + ' Scadenza</button>';
+      const expired = r.deadline && Date.now() >= r.deadline;
+      const dlChip = r.deadline ? '<span class="dl-chip' + (expired ? ' late' : '') + '">' + ico('clock') + (expired ? (r.progs.length ? ' Scaduto: invio automatico in corso' : ' Scaduto: nessun test salvato da inviare') : ' Scade il ' + fmtDate(r.deadline) + ' alle ' + fmtHour(r.deadline)) + '</span> ' : '';
       const lockBtn = '<button type="button" class="btn sm lock-btn' + (r.locked ? ' on' : '') + '" data-lock="' + i + '" title="' + (r.locked ? 'Sblocca: l\'alunno potr\u00e0 di nuovo continuare il test' : 'Blocca: l\'alunno non potr\u00e0 continuare il test') + '">' + ico(r.locked ? 'lockopen' : 'lock') + (r.locked ? ' Sblocca' : ' Blocca') + '</button>';
-      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + esc(txt) + '</td><td>' + (r.first ? fmtDate(r.first) + ' ' + fmtHour(r.first) : '') + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><span class="row-acts">' + lockBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
+      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + dlChip + esc(txt) + '</td><td>' + (r.first ? fmtDate(r.first) + ' ' + fmtHour(r.first) : '') + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><span class="row-acts">' + lockBtn + dlBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
     }).join('') + '</tbody></table>';
   fixStickyNum($('#rpProg table'));
+  setTimeout(processDeadlines, 500);
 }
 /* la colonna del cognome resta ferma accanto a quella dei numeri quando si scorre la tabella in orizzontale */
 function fixStickyNum(t) {
   if (!t) return;
   const c = t.querySelector('th.num'); if (!c) return;
   t.style.setProperty('--numw', c.getBoundingClientRect().width + 'px');
+}
+/* ---------- scadenza: data e ora in cui il test viene inviato automaticamente ---------- */
+function toLocalInput(ms) { const d = new Date(ms); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+async function deadlineDialog(rows, all) {
+  if (!rows.length) return;
+  const cur = rows.map(r => r.deadline || 0), same = cur.every(x => x === cur[0]) ? cur[0] : 0, any = cur.some(Boolean);
+  const who = all ? 'tutti gli alunni della tabella (' + rows.length + ')' : '<b>' + esc(rows[0].cognome + ' ' + rows[0].nome) + '</b>';
+  const def = same || (() => { const d = new Date(Date.now() + 7 * 864e5); d.setHours(23, 59, 0, 0); return d.getTime(); })();
+  const body = el('<div><p>Scadenza per ' + who + '. A quell\'ora il test verrà inviato automaticamente con le risposte date fino a quel momento (anche se incompleto o senza recuperi). L\'alunno vedrà la scadenza mentre svolge il test.</p>' +
+    (all && any && !same ? '<p class="hint">Ora gli alunni hanno scadenze diverse: salvando, a tutti verrà assegnata quella che scegli qui.</p>' : '') +
+    '<label class="fld"><span>Data e ora di scadenza</span><input type="datetime-local" class="dl-in"></label><div class="err"></div>' +
+    '<p class="hint">L\'app non ha un server sempre acceso: alla scadenza il test viene inviato dalla pagina dell\'alunno, se è aperta; altrimenti appena l\'alunno rientra con il suo codice o appena apri questi report.</p></div>');
+  $('.dl-in', body).value = toLocalInput(def);
+  const buttons = [{ label: 'Annulla', cls: 'ghost', value: null }];
+  if (any) buttons.push({ html: ico('close') + ' Rimuovi la scadenza', cls: 'danger-ghost', onClick: async (b, btn) => (await setDeadline(rows, 0, btn)) ? true : false });
+  buttons.push({ label: 'Salva la scadenza', cls: 'primary', onClick: async (b, btn) => {
+    const v = $('.dl-in', body).value, err = $('.err', body); err.textContent = '';
+    const ms = v ? new Date(v).getTime() : NaN;
+    if (!isFinite(ms)) { err.textContent = 'Scegli una data e un\'ora.'; return false; }
+    if (ms <= Date.now() && !await confirmBox('Scadenza già passata', 'La data scelta è già passata: il test verrà inviato subito con le risposte date finora. Continuare?', 'Continua', true)) return false;
+    return (await setDeadline(rows, ms, btn)) ? true : false;
+  } });
+  await modal({ title: all ? 'Scadenza per tutti' : 'Scadenza del test', body, buttons });
+}
+async function setDeadline(rows, ms, btn) {
+  if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+  try {
+    const A = S.curAssign, b = writeBatch(db);
+    for (const r of rows) {
+      if (r.starts.length) r.starts.forEach(st => b.update(doc(db, 'starts', st.id), { deadline: ms || null, deadlineSetAt: Date.now() }));
+      else b.set(doc(db, 'starts', await startIdFor(A.id, r)), { ownerUid: S.user.uid, assignmentId: A.id, testId: A.testId || '', pubKey: A.pubKey, cognome: r.cognome, nome: r.nome, classe: r.classe, status: 'started', startedAt: r.first || r.time || Date.now(), updatedAt: serverTimestamp(), deadline: ms || null, deadlineSetAt: Date.now() });
+    }
+    await b.commit();
+    toast(ms ? 'Scadenza impostata: ' + fmtDate(ms) + ' alle ' + fmtHour(ms) + (rows.length > 1 ? ' per ' + rows.length + ' alunni.' : '.') : 'Scadenza rimossa.', 'ok', 4500);
+    return true;
+  } catch (ex) {
+    if (ex && ex.code === 'permission-denied') toast('Il database non ha permesso di salvare la scadenza: aggiorna le regole di Firestore (vedi le istruzioni).', 'bad', 8000);
+    else dbError(ex, 'scadenza');
+    return false;
+  } finally { if (btn) { btn.disabled = false; btn.classList.remove('loading'); } }
+}
+/* invio automatico dei test scaduti: si usa il test salvato dall'alunno fino alla scadenza
+   (si aspetta un minuto, per lasciare l'invio alla pagina dell'alunno se è aperta) */
+async function processDeadlines() {
+  if (S.view !== 'v-reports' || !S.curAssign || S.dlBusy) return;
+  S.dlDone = S.dlDone || new Set();
+  const due = (S.progRows || []).filter(r => r.deadline && Date.now() >= r.deadline + 60000 && r.progs.length && !S.dlDone.has(r.key + '|' + r.deadline));
+  if (!due.length) return;
+  S.dlBusy = true;
+  try {
+    const A = S.curAssign;
+    const ps = await getDoc(doc(db, 'pubs', A.pubKey)); const pub = ps.exists() ? ps.data() : null;
+    if (!pub) return;
+    const test = pub.test || {}, qs = (test.questions || []).slice().sort((a, b) => a.time - b.time);
+    for (const r of due) {
+      S.dlDone.add(r.key + '|' + r.deadline);
+      const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
+      let run = null; try { run = JSON.parse(pr.run || '{}'); } catch (e) { }
+      if (!run || !run.profile) continue;
+      try {
+        const rep = buildReportFrom({ run, qs, test, pub, aid: A.id, pubKey: A.pubKey, by: 'auto', deadline: r.deadline });
+        rep.sendInfo.at = r.deadline; rep.autoSentBy = 'teacher'; rep.submittedAt = serverTimestamp();
+        await addDoc(collection(db, 'reports'), rep);
+        const si = rep.sendInfo;
+        run.phase = 'sent';
+        run.sentInfo = { at: r.deadline, deadline: r.deadline, total: si.total, correct: si.correct, wrong: Math.max(0, si.done - si.correct), notDone: Math.max(0, si.total - si.done), voto: rep.voto };
+        const b = writeBatch(db);
+        r.starts.forEach(st => b.update(doc(db, 'starts', st.id), { status: 'sent', sentAt: Date.now(), autoSent: true, updatedAt: serverTimestamp() }));
+        b.update(doc(db, 'progress', pr.id), { run: JSON.stringify(run), status: Object.assign({}, pr.status || {}, { phase: 'sent' }) });
+        await b.commit().catch(e => console.warn('auto-send cleanup', e && e.code));
+      } catch (ex) {
+        console.warn('auto-send', ex);
+        if (ex && ex.code === 'permission-denied' && !S.dlWarned) { S.dlWarned = true; toast('Alcuni test sono scaduti ma non è stato possibile inviarli: l\'assegnazione deve essere aperta.', 'bad', 8000); }
+      }
+    }
+  } finally { S.dlBusy = false; }
 }
 /* blocca o sblocca la possibilit\u00e0 di continuare il test (i progressi salvati restano) */
 async function toggleLock(r, btn) {
@@ -2765,6 +3013,8 @@ async function deleteProgressRow(r) {
   } catch (ex) { dbError(ex, 'elimina test non consegnato'); return false; }
 }
 async function onProgClick(e) {
+  const db0 = e.target.closest('[data-dl]');
+  if (db0) { e.stopPropagation(); const r = (S.progRows || [])[+db0.dataset.dl]; if (r) deadlineDialog([r], false); return; }
   const th = e.target.closest('th.sortable');
   if (th) { const k = th.dataset.pk; const cur = S.progSort; S.progSort = { key: k, dir: cur.key === k ? -cur.dir : (k === 'time' || k === 'first' ? -1 : 1) }; renderProgress(); return; }
   const lb = e.target.closest('[data-lock]');
@@ -2831,7 +3081,7 @@ function renderReportsInner() {
     sortTh('Classe', 'classe', ss, ' rowspan="2" data-k="classe"') +
     sortTh('Voto', 'voto', ss, ' rowspan="2" data-k="voto"');
   qi.forEach((q, i) => { h += '<th colspan="2" class="qh" title="' + esc(q ? q.text : '') + '">Q' + (i + 1) + '<small>' + (q ? fmtTime(q.time) : '') + '</small></th>'; });
-  h += sortTh('Data', 'data', ss, ' rowspan="2" data-k="data"') + '<th rowspan="2" class="no-print"></th></tr><tr>';
+  h += sortTh('Data', 'data', ss, ' rowspan="2" data-k="data"') + '<th rowspan="2">Invio</th><th rowspan="2" class="no-print"></th></tr><tr>';
   qi.forEach(() => { h += '<th class="sub l">Punti</th><th class="sub">Tent.</th>'; });
   h += '</tr></thead><tbody>';
   R.forEach((r, ri) => {
@@ -2841,9 +3091,10 @@ function renderReportsInner() {
     for (let i = 0; i < qi.length; i++) {
       const q = (r.questions || [])[i];
       if (!q) { h += '<td class="pt">\u2013</td><td class="tr">\u2013</td>'; continue; }
+      if (q.solved === false) { h += '<td class="pt">' + fmtNum(q.value, 2) + '</td><td class="tr t0" title="' + (q.attempts ? 'Non risolto' : 'Non svolto') + '">' + (q.attempts ? '\u2717' : '\u2013') + '</td>'; continue; }
       h += '<td class="pt">' + fmtNum(q.value, 2) + '</td><td class="tr t' + Math.min(4, q.tries || 1) + '">' + (q.tries || '\u2013') + '</td>';
     }
-    h += '<td>' + esc(r.date || '') + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-del="' + esc(r.id) + '" title="Elimina questo report">' + ico('delete') + '</button></td></tr>';
+    h += '<td>' + esc(r.date || '') + '</td><td class="sendmode">' + esc(sendModeText(r)) + '</td><td class="no-print"><button type="button" class="icon-btn danger" data-del="' + esc(r.id) + '" title="Elimina questo report">' + ico('delete') + '</button></td></tr>';
   });
   h += '</tbody></table>';
   $('#rpTable').innerHTML = h;
@@ -2872,15 +3123,31 @@ async function deleteReport(r) {
     return true;
   } catch (ex) { dbError(ex, 'elimina report'); return false; }
 }
+/* come è stato inviato il test (solo per i test con una scadenza) */
+function sendModeText(r) {
+  const si = r.sendInfo; if (!si || !si.deadline) return '';
+  const T = si.total || 0, C = si.correct || 0, D = si.done || 0;
+  if (si.by === 'auto') {
+    if (D < T) return 'Alla scadenza, test incompleto: svolti ' + D + '/' + T + ', giusti ' + C;
+    if (C === T) return 'Alla scadenza, tutto giusto: ' + C + '/' + T;
+    if (si.recovered > 0) return 'Alla scadenza, con alcuni quesiti recuperati: giusti ' + C + '/' + T;
+    return 'Alla scadenza, test completo senza recuperi: giusti ' + C + '/' + T;
+  }
+  if (C === T) return si.wrongFirst > 0 ? 'Prima della scadenza, tutti i quesiti recuperati' : 'Prima della scadenza, tutto giusto al primo tentativo';
+  return 'Prima della scadenza, senza recuperare tutti i quesiti: giusti ' + C + '/' + T;
+}
+function triesText(q) { return q.solved === false ? (q.attempts ? 'non risolto (' + q.attempts + (q.attempts === 1 ? ' tentativo)' : ' tentativi)') : 'non svolto') : q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi'); }
 function reportDetailHTML(r) {
   const lab = k => k === 0 ? 'Primo svolgimento' : k + '\u00b0 recupero';
   const when = repTime(r);
   let h = '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + ' \u00b7 ' + esc(r.date || '') + (when ? ' \u00b7 inviato alle ' + fmtHour(when) : '') + '</div></div><div class="rd-voto">Voto ' + fmtNum(r.voto, 1) + '</div></div>';
   if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) h += '<div class="msg info">Voto ricalcolato con i criteri di valutazione attuali del test. Al momento della consegna il voto era ' + fmtNum(r.votoOriginale, 1) + '.</div>';
   if ((r.questions || []).some(q => q.type === 'mc')) h += '<p class="hint" style="margin:-.3em 0 .6em">Le risposte multiple vengono mostrate a ogni alunno in ordine diverso: qui le lettere seguono l\'ordine originale del test.</p>';
+  if (sendModeText(r)) h += '<div class="msg info">Modalità di invio: ' + esc(sendModeText(r)) + (r.sendInfo.deadline ? ' (scadenza ' + fmtDate(r.sendInfo.deadline) + ' alle ' + fmtHour(r.sendInfo.deadline) + ')' : '') + '</div>';
+  else if (r.sendInfo && r.sendInfo.correct < r.sendInfo.total) h += '<div class="msg info">L\'alunno ha consegnato il test senza recuperare tutti i quesiti sbagliati (giusti ' + r.sendInfo.correct + ' su ' + r.sendInfo.total + ').</div>';
   h += '<p>Risposte corrette al primo svolgimento: <b>' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '</b> \u00b7 Turni di recupero: <b>' + (r.recoveryRounds || 0) + '</b></p>';
   (r.questions || []).forEach(q => {
-    h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + (q.partial > 0 && q.partial < 1 ? ' \u00b7 parziale al 1\u00b0 tentativo ' + Math.round(q.partial * 100) + '%' : '') + '</span></div>' +
+    h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + triesText(q) + (q.partial > 0 && q.partial < 1 ? ' \u00b7 parziale al 1\u00b0 tentativo ' + Math.round(q.partial * 100) + '%' : '') + '</span></div>' +
       '<div class="rd-qt">' + esc(q.text) + '</div><div class="rd-correct">Risposta corretta: ' + esc(q.correct) + '</div><ol class="rd-att">' +
       (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b>' + (a.k != null && a.k !== q.correct ? '<div class="rd-oldkey">Valutata con la risposta corretta di quel momento: ' + esc(a.k) + '</div>' : (a.chg ? '<div class="rd-oldkey">La risposta corretta \u00e8 stata modificata dopo questa risposta: l\'esito \u00e8 quello del momento in cui l\'alunno ha risposto.</div>' : '')) + '</li>').join('') + '</ol></div>';
   });
@@ -2976,7 +3243,7 @@ async function downloadReportPdf(r) {
     const head = 'Quesito ' + q.n + '   ' + fmtTime(q.time) + '   ' + (TYPE_LABEL[q.type] || '');
     y += lh(11.5); doc.text(pdfSafe(head), M, y - 1);
     font(9.5, 'normal'); color(C.muted);
-    doc.text(pdfSafe('punti ' + fmtNum(q.value, 2) + '  \u00b7  ' + q.tries + (q.tries === 1 ? ' tentativo' : ' tentativi') + (q.partial > 0 && q.partial < 1 ? '  \u00b7  parziale ' + Math.round(q.partial * 100) + '%' : '')), W - M, y - 1, { align: 'right' });
+    doc.text(pdfSafe('punti ' + fmtNum(q.value, 2) + '  \u00b7  ' + triesText(q) + (q.partial > 0 && q.partial < 1 ? '  \u00b7  parziale ' + Math.round(q.partial * 100) + '%' : '')), W - M, y - 1, { align: 'right' });
     y += 1;
     para(q.text, 10.5, 'normal', C.text);
     para('Risposta corretta: ' + (q.correct || ''), 10, 'bold', C.ok);
@@ -3015,13 +3282,13 @@ function exportCSV() {
   const num = v => String(Math.round(Number(v || 0) * 100) / 100).replace('.', ',');
   const head = ['N.', 'Cognome', 'Nome', 'Classe', 'Voto'];
   qi.forEach((q, i) => { head.push('Q' + (i + 1) + ' punti', 'Q' + (i + 1) + ' tentativi'); });
-  head.push('Data', 'Ora invio');
+  head.push('Data', 'Ora invio', 'Invio');
   const rows = [head.map(cell).join(';')];
   R.forEach((r, ri) => {
     const row = [ri + 1, r.cognome, r.nome, classKey(r.classe), num(r.voto)];
-    qi.forEach((x, i) => { const q = (r.questions || [])[i]; row.push(q ? num(q.value) : '', q ? q.tries : ''); });
+    qi.forEach((x, i) => { const q = (r.questions || [])[i]; row.push(q ? num(q.value) : '', q ? (q.solved === false ? (q.attempts ? 'non risolto' : 'non svolto') : q.tries) : ''); });
     const w = repTime(r);
-    row.push(r.date || '', w ? fmtHour(w) : '');
+    row.push(r.date || '', w ? fmtHour(w) : '', sendModeText(r));
     rows.push(row.map(cell).join(';'));
   });
   const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -3129,6 +3396,7 @@ function atts(qid) { const r = Stu.run && Stu.run.ans[qid]; return (r && r.att) 
 
 function stuShow(id) {
   $$('.s-screen').forEach(s => { s.hidden = s.id !== id; });
+  setTimeout(renderDeadline, 0);
   document.body.classList.toggle('watching', id === 'sWatch');
   if (id === 'sIntro' || id === 'sWatch' || id === 'sResults') wakeOn(); else wakeOff();
   $$('.save-later').forEach(b => { b.hidden = Stu.preview || !Stu.progId; });
@@ -3186,6 +3454,8 @@ function wireStudent() {
   $('#wBack').addEventListener('click', () => { Stu.mode = null; Stu.seg = null; stuShowResults(false); });
   $('#rList').addEventListener('click', e => { const b = e.target.closest('[data-redo]'); if (b) startSegment(b.dataset.redo); });
   $('#rSend').addEventListener('click', stuSend);
+  $('#rAsIs').addEventListener('click', () => stuSendAsIs(false));
+  $('#xRetry').addEventListener('click', () => stuAutoSend());
   $('#eRetry').addEventListener('click', () => location.reload());
   $('#exitPreview').addEventListener('click', exitPreview);
   $('#sentExitPreview').addEventListener('click', exitPreview);
@@ -3194,7 +3464,7 @@ function wireStudent() {
 
 /* ---------- avvio alunno ---------- */
 function initStudent(aid) {
-  Stu.aid = aid; Stu.preview = false;
+  Stu.linkId = aid; Stu.aid = aid; Stu.preview = false;
   showView('v-student');
   $('#previewBar').hidden = true;
   $('#sDate').textContent = fmtDate(Date.now());
@@ -3225,18 +3495,41 @@ async function stuLogin(e) {
 
   const btn = $('#sLoginBtn'); btn.disabled = true; btn.classList.add('loading');
   try {
-    const key = await pubKeyFor(Stu.aid, pwd);
+    /* il link pu\u00f2 essere condiviso da pi\u00f9 assegnazioni (duplicate): la password decide in quale si entra */
+    const L = Stu.linkId || Stu.aid; Stu.aid = L;
+    const key = await pubKeyFor(L, pwd);
     const snap = await getDoc(doc(db, 'pubs', key));
     if (!snap.exists()) { err.textContent = 'Password non corretta (oppure link sbagliato). Controlla e riprova.'; return; }
     const pub = snap.data();
-    if (pub.assignmentId !== Stu.aid) { err.textContent = 'Password non corretta. Controlla e riprova.'; return; }
+    if (!pub.assignmentId || (pub.assignmentId !== L && pub.linkId !== L)) { err.textContent = 'Password non corretta. Controlla e riprova.'; return; }
+    Stu.aid = pub.assignmentId;
     if (pub.open === false) { err.textContent = 'Questa assegnazione \u00e8 chiusa: non \u00e8 pi\u00f9 possibile svolgere il test.'; return; }
     stuSetPub(key, pub);
     if (!Stu.qs.length || !hasVideo(Stu.test)) { err.textContent = 'Questo test non \u00e8 ancora pronto. Avvisa l\'insegnante.'; return; }
     const profile = { cognome, nome, classe, date: fmtDate(Date.now()) };
     const sid = await startIdFor(Stu.aid, profile);
     const st = await getStart(sid);
-    if (st && st.status === 'sent') { err.textContent = startBlockedMsg(st); return; }
+    Stu.accessAt = Date.now(); Stu.deadline = (st && Number(st.deadline)) || 0;
+    if (st && st.status === 'sent') {
+      /* inviato automaticamente alla scadenza: con il codice personale si vede il riepilogo */
+      if (pin && saveAllowed()) { const r0 = await loadSaved(await progIdFor(Stu.aid, profile, pin)); if (r0 && r0.sentInfo) { showExpired(Object.assign({}, r0.sentInfo, { access: Stu.accessAt }), 'done'); return; } }
+      err.textContent = st.autoSent ? 'Il tempo per svolgere questo test è scaduto e il test è stato inviato automaticamente all\'insegnante.' + (saveAllowed() ? ' Per vedere il riepilogo scrivi anche il tuo codice personale.' : '') : startBlockedMsg(st);
+      return;
+    }
+    if (st && st.status !== 'sent' && Stu.deadline && Date.now() >= Stu.deadline) {
+      /* scadenza superata: si invia quello che l'alunno aveva salvato fino alla scadenza */
+      if (pin && saveAllowed()) {
+        const pid = await progIdFor(Stu.aid, profile, pin);
+        const r1 = await loadSaved(pid);
+        if (!r1) { err.textContent = 'Non trovo un test salvato con questi dati e questo codice. Controlla che cognome, nome, classe e codice siano quelli scritti la prima volta.'; return; }
+        if (r1.sentInfo) { showExpired(Object.assign({}, r1.sentInfo, { access: Stu.accessAt }), 'done'); return; }
+        Stu.startId = sid; Stu.progId = pid; Stu.pin = pin; reconcileRun(r1); r1.pubKey = Stu.pubKey; r1.aid = Stu.aid; Stu.run = r1;
+        stuAutoSend();
+        return;
+      }
+      err.textContent = 'Il tempo per svolgere questo test è scaduto il ' + fmtDate(Stu.deadline) + ' alle ' + fmtHour(Stu.deadline) + '.' + (saveAllowed() ? ' Se avevi salvato il test, scrivi anche il tuo codice personale: il test verrà inviato con le risposte date fino alla scadenza e vedrai il riepilogo.' : ' Non è più possibile svolgerlo.');
+      return;
+    }
     if (st && st.locked === true) { err.textContent = LOCK_MSG; return; }
     if (pin) {
       if (!saveAllowed()) { err.textContent = 'Per questo test il salvataggio non \u00e8 attivo, quindi non ci sono test da riprendere: lascia vuoto il codice personale.'; return; }
@@ -3256,6 +3549,10 @@ async function stuLogin(e) {
 async function resumeFrom(id, pin, errEl) {
   const run = await loadSaved(id);
   if (!run) { errEl.textContent = 'Non trovo un test salvato con questi dati e questo codice. Controlla che cognome, nome e classe siano gli stessi scritti la prima volta e che il codice sia giusto. Se vuoi iniziare il test da capo, lascia vuoto il codice.'; return false; }
+  if (run.phase === 'sent') {
+    if (run.sentInfo) { showExpired(Object.assign({}, run.sentInfo, { access: Stu.accessAt || Date.now() }), 'done'); return true; }
+    errEl.textContent = 'Questo test è già stato inviato. Se l\'insegnante ti ha permesso di rifarlo, lascia vuoto il codice personale.'; return false;
+  }
   const changed = reconcileRun(run);
   Stu.progId = id; Stu.pin = pin;
   run.pubKey = Stu.pubKey; run.aid = Stu.aid;
@@ -3304,6 +3601,9 @@ function stuIntro() {
   const p = Stu.run.profile;
   $('#iWho').textContent = p.cognome + ' ' + p.nome + ' \u00b7 classe ' + p.classe + ' \u00b7 ' + p.date;
   $('#iN').textContent = n === 1 ? '1 volta' : n + ' volte';
+  const tmi = normTimer(Stu.test.timer);
+  $('#iTimer').hidden = !tmi.on;
+  if (tmi.on) $('#iTimer').innerHTML = 'Per rispondere a ogni quesito hai <b>' + (tmi.seconds < 60 ? tmi.seconds + ' secondi' : fmtSecs(tmi.seconds) + ' minuti') + '</b>: un orologio ti mostra il tempo che resta. Se il tempo finisce, il quesito conta come sbagliato e il video riprende.';
   $('#iPinBox').hidden = Stu.preview || !!Stu.progId || !saveAllowed();
   $('#iPin').value = ''; $('#iPinErr').textContent = ''; $('#iErr').textContent = '';
   stuShow('sIntro');
@@ -3320,11 +3620,67 @@ function watchLock() {
   try {
     Stu.lockUnsub = onSnapshot(doc(db, 'starts', Stu.startId), snap => {
       const d = snap && snap.exists && snap.exists() ? snap.data() : null;
-      if (d && d.locked === true) stuLockedOut();
+      if (d && d.locked === true && !(Number(d.deadline) && Date.now() >= Number(d.deadline))) { stuLockedOut(); return; }
+      const nd = (d && Number(d.deadline)) || 0;
+      if (nd !== Stu.deadline) { Stu.deadline = nd; renderDeadline(); }
+      checkDeadline();
     }, () => { });
   } catch (e) { }
+  clearInterval(Stu.dlTimer); Stu.dlTimer = setInterval(checkDeadline, 5000);
 }
-function stopWatchLock() { if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; } }
+function stopWatchLock() { if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; } clearInterval(Stu.dlTimer); Stu.dlTimer = null; }
+/* ---------- scadenza decisa dall'insegnante ---------- */
+function renderDeadline() {
+  const bar = $('#dlBar'); if (!bar) return;
+  const vis = !Stu.preview && !!Stu.deadline && ['sIntro', 'sWatch', 'sResults'].some(id => !$('#' + id).hidden);
+  bar.hidden = !vis;
+  if (vis) bar.innerHTML = ico('clock') + '<span><b>Scadenza del test: ' + fmtDate(Stu.deadline) + ' alle ' + fmtHour(Stu.deadline) + '.</b> A quell\'ora il test verrà inviato automaticamente con le risposte date fino a quel momento.</span>';
+}
+function checkDeadline() {
+  if (Stu.preview || !Stu.deadline || Date.now() < Stu.deadline || !Stu.run || Stu.run.phase === 'sent') return;
+  if (!['sIntro', 'sWatch', 'sResults'].some(id => !$('#' + id).hidden)) return;
+  stuAutoSend();
+}
+/* invio automatico alla scadenza: vale quello che l'alunno ha fatto fino a quel momento */
+async function stuAutoSend() {
+  if (Stu.autoBusy || Stu.preview || !Stu.run || Stu.run.phase === 'sent') return;
+  Stu.autoBusy = true;
+  try { Stu.overlayQ = null; $('#qov').hidden = true; veilVideo(false); } catch (e) { }
+  try { stuTeardown(); } catch (e) { }
+  exitFs();
+  $$('.modal-ov').forEach(m => m.remove()); syncScrollLock();
+  const rep = buildReportFrom({ run: Stu.run, qs: Stu.qs, test: Stu.test, pub: Stu.pub, aid: Stu.aid, pubKey: Stu.pubKey, by: 'auto', deadline: Stu.deadline });
+  const info = sentSummary(rep, Stu.deadline);
+  showExpired(info, 'sending');
+  try {
+    await deliverReport(rep, { auto: true, info });
+    showExpired(info, 'done');
+  } catch (ex) {
+    console.error(ex);
+    showExpired(info, ex && ex.code === 'permission-denied' ? 'denied' : 'error');
+  } finally { Stu.autoBusy = false; }
+}
+function sentSummary(rep, deadline) {
+  const si = rep.sendInfo || {};
+  return { at: Date.now(), access: Stu.accessAt || Date.now(), deadline: deadline || 0, total: si.total || 0, correct: si.correct || 0, wrong: Math.max(0, (si.done || 0) - (si.correct || 0)), notDone: Math.max(0, (si.total || 0) - (si.done || 0)), voto: rep.voto };
+}
+function showExpired(info, state) {
+  stopWatchLock();
+  $('#xIco').innerHTML = ico('clock');
+  $('#xTitle').textContent = 'Tempo scaduto';
+  $('#xMsg').textContent = state === 'sending' ? 'Invio del test in corso…' : state === 'done' ? 'Il tempo per svolgere il test è finito: il test è stato inviato automaticamente all\'insegnante con le risposte date fino alla scadenza.' : 'Il tempo per svolgere il test è finito, ma l\'invio non è riuscito.';
+  const row = (k, v) => '<dt>' + k + '</dt><dd>' + v + '</dd>';
+  const acc = info.access || Date.now();
+  $('#xSum').innerHTML = row('Accesso al test', fmtDate(acc) + ' alle ' + fmtHour(acc)) +
+    row('Quesiti giusti', info.correct + ' su ' + info.total) +
+    (info.notDone ? row('Quesiti non svolti', String(info.notDone)) : '') +
+    row('Quesiti errati', String(info.wrong)) +
+    row('Voto', fmtNum(info.voto, 1)) +
+    (info.deadline ? row('Scadenza', fmtDate(info.deadline) + ' alle ' + fmtHour(info.deadline)) : '');
+  $('#xErr').textContent = state === 'denied' ? 'L\'assegnazione potrebbe essere stata chiusa dall\'insegnante: avvisalo.' : state === 'error' ? 'Controlla la connessione a internet e premi «Riprova l\'invio».' : '';
+  $('#xRetry').hidden = state !== 'error';
+  stuShow('sExpired');
+}
 function stuLockedOut() {
   if (Stu.locked) return;
   Stu.locked = true;
@@ -3441,6 +3797,7 @@ async function stuEnsurePlayer(cb) {
   $('#stuVideoBox .vb-host').innerHTML = '<div id="stuPlayer"></div>';
   Stu.ready = false; Stu.everPlayed = false; Stu.nativeTap = false; Stu.lastSt = null; Stu.adMode = false; Stu.lastT = null;
   $('#shield').hidden = true; $('#bigPlay').hidden = false;
+  const gen = Stu.playerGen = (Stu.playerGen || 0) + 1;
   let P;
   try {
     P = await createPlayer('stuPlayer', Stu.test, false, {
@@ -3454,12 +3811,18 @@ async function stuEnsurePlayer(cb) {
       onState: st => { if (Stu.P === P) stuState(st); },
       onError: msg => { Stu.creating = false; stuFatal('Problema con il video', msg + ' Avvisa il tuo insegnante.', true); }
     });
-  } catch (e) { Stu.creating = false; stuFatal('Video non disponibile', 'Il lettore video non risponde. Controlla la connessione a internet e ricarica la pagina: il test riprender\u00e0 da dove eri arrivato.', true); return; }
+  } catch (e) {
+    /* il lettore è stato chiuso mentre si stava caricando (per esempio con «Interrompi e continua più tardi»): nessun errore */
+    if (gen !== Stu.playerGen) return;
+    Stu.creating = false; stuFatal('Video non disponibile', 'Il lettore video non risponde. Controlla la connessione a internet e ricarica la pagina: il test riprender\u00e0 da dove eri arrivato.', true); return; }
+  if (gen !== Stu.playerGen) { try { if (P && P.destroy) P.destroy(); } catch (e) { } return; }
   Stu.P = P;
   clearInterval(Stu.timer);
   Stu.timer = setInterval(stuTick, 100);
 }
 function stuTeardown() {
+  stopQTimer();
+  Stu.playerGen = (Stu.playerGen || 0) + 1;
   clearInterval(Stu.timer); Stu.timer = null; clearTimeout(Stu.playCheck);
   try { if (Stu.P && Stu.P.destroy) Stu.P.destroy(); } catch (e) { }
   Stu.P = null; Stu.ready = false; Stu.creating = false; Stu.everPlayed = false; Stu.nativeTap = false;
@@ -3759,6 +4122,7 @@ function openQuestion(q) {
   $('#qcType').hidden = q.type === 'mc';
   $('#qcErr').textContent = '';
   renderQuestionBody($('#qcBody'), q);
+  startQTimer(q);
   $('#qov').hidden = false; $('#bigPlay').hidden = true;
   $('#qov').scrollTop = 0;
   const f = $('#qcBody input.blank');
@@ -3828,16 +4192,43 @@ function readAnswer(q, box) {
   if (vals.some(v => !v)) return { err: 'Completa tutti gli spazi vuoti.' };
   return { v: vals, t: vals.join(' | ') };
 }
-function stuConfirm() {
+/* conto alla rovescia del quesito (l'ora di inizio resta salvata: ricaricando la pagina il tempo non riparte) */
+function stopQTimer() { clearInterval(Stu.qTimerIv); Stu.qTimerIv = null; $('#qcTimer').hidden = true; $('#qcTbar').hidden = true; }
+function startQTimer(q) {
+  stopQTimer();
+  const tm = normTimer(Stu.test && Stu.test.timer);
+  if (!tm.on || !Stu.run) return;
+  const r = Stu.run.round || 0, cur = Stu.run.qTimer;
+  let at = cur && cur.id === q.id && cur.r === r ? Number(cur.at) || 0 : 0;
+  if (!at || at > Date.now()) { at = Date.now(); Stu.run.qTimer = { id: q.id, r, at }; saveRun(); }
+  const el2 = $('#qcTimer'), bar = $('#qcTbar'), fill = $('i', bar);
+  el2.hidden = false; bar.hidden = false;
+  const tick = () => {
+    if (Stu.overlayQ !== q) { stopQTimer(); return; }
+    const left = tm.seconds - (Date.now() - at) / 1000;
+    el2.innerHTML = ico('clock') + ' ' + fmtSecs(left);
+    el2.classList.toggle('low', left <= Math.min(10, tm.seconds / 4));
+    fill.style.width = Math.max(0, Math.min(100, left / tm.seconds * 100)) + '%';
+    if (left <= 0) { stopQTimer(); stuConfirm(true); }
+  };
+  tick();
+  Stu.qTimerIv = setInterval(tick, 250);
+}
+function stuConfirm(timedOut) {
   const q = Stu.overlayQ; if (!q) return;
-  const r = readAnswer(q, $('#qcBody'));
+  timedOut = timedOut === true;
+  const r = timedOut ? { v: null, t: 'Nessuna risposta (tempo scaduto)' } : readAnswer(q, $('#qcBody'));
   if (r.err) { $('#qcErr').textContent = r.err; return; }
-  const ok = checkAnswer(q, r.v);
+  stopQTimer();
+  if (Stu.run) Stu.run.qTimer = null;
+  if (timedOut) toast('Tempo scaduto: il quesito conta come sbagliato.', 'bad', 3500);
+  const ok = timedOut ? false : checkAnswer(q, r.v);
   const rec = Stu.run.ans[q.id] || (Stu.run.ans[q.id] = { att: [] });
   /* si conservano anche la chiave e il punteggio parziale del momento della risposta:
      se in seguito l'insegnante modifica il quesito, l'esito di questa risposta non cambia */
   const at = { r: Stu.run.round, v: r.v, t: r.t, ok, k: qCorrectText(q) };
-  if (q.type === 'mc' && (q.correct || []).length > 1) at.p = partialScore(q, r.v);
+  if (q.type === 'mc' && (q.correct || []).length > 1) at.p = timedOut ? 0 : partialScore(q, r.v);
+  if (timedOut) at.to = true;
   rec.att.push(at);
   Stu.overlayQ = null;
   $('#qov').hidden = true;
@@ -3872,6 +4263,7 @@ function finishFirstRun() {
   Stu.run.pos = 0;
   saveRun();
   stuShowResults(false);
+  if (asIsAllowed() && Stu.run.pending.length) showEndDialog();
 }
 function closeRound() {
   Stu.run.round += 1;
@@ -3935,6 +4327,14 @@ function stuShowResults(justClosed) {
     return '<div class="r-item ' + cls + '"><div class="r-ico">' + ico(icon) + '</div><div class="r-main"><div class="r-top">Quesito ' + (i + 1) + ' <span class="time-chip">' + fmtTime(q.time) + '</span></div><div class="r-text">' + esc(trunc(qPlain(q), 150)) + '</div><div class="r-state">' + state + '</div></div>' + act + '</div>';
   }).join('');
   $('#rSendBox').hidden = pending.length > 0;
+  const asis = pending.length > 0 && asIsAllowed();
+  $('#rAsIsBox').hidden = !asis;
+  if (asis) {
+    const o = gradeOutlook();
+    $('#rAsIsTxt').innerHTML = 'Puoi anche <b>consegnare il test così com\'è</b>: il tuo voto sarà <b>' + fmtNum(o.now, 1) + '</b>. ' + gainText(o);
+    $('#rAsIs').innerHTML = ico('send') + ' Consegna così com\'è (voto ' + fmtNum(o.now, 1) + ')';
+    $('#rAsIsErr').textContent = '';
+  }
   $('#rSend').innerHTML = ico('send') + (Stu.preview ? ' Invia (anteprima)' : ' Invia il test all\'insegnante');
   $('#rSendErr').textContent = '';
   stuShow('sResults');
@@ -3942,28 +4342,100 @@ function stuShowResults(justClosed) {
 }
 
 /* ---------- invio ---------- */
-function buildReport() {
-  const g = normGrading(Stu.test.grading);
-  const questions = Stu.qs.map((q, i) => {
-    const list = atts(q.id);
+function buildReportFrom(o) {
+  const run = o.run, qs = o.qs, test = o.test || {}, pub = o.pub || {};
+  const g = normGrading(test.grading);
+  const at = id => (run.ans && run.ans[id] && run.ans[id].att) || [];
+  const questions = qs.map((q, i) => {
+    const list = at(q.id);
     const okIdx = list.findIndex(a => a.ok);
-    const tries = okIdx >= 0 ? okIdx + 1 : list.length;
+    const solved = okIdx >= 0;
+    /* quesiti non risolti (consegna senza recuperi o alla scadenza): 0 tentativi validi, vale solo l'eventuale parziale */
+    const tries = solved ? okIdx + 1 : 0;
     const first = list.find(a => a.r === 0);
     const partial = first ? (typeof first.p === 'number' ? first.p : partialScore(q, legacySel(q, first))) : 0;
-    const value = Math.max(okIdx >= 0 ? valueForTries(tries, g) : 0, partial);
-    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, partial, value: Math.round(value * 1000) / 1000, att: list.map(a => Object.assign({ r: a.r, a: a.t, ok: a.ok }, a.k != null ? { k: a.k } : (keyChangedSince(q, a) ? { chg: true } : {}))) };
+    const value = Math.max(solved ? valueForTries(tries, g) : 0, partial);
+    return { n: i + 1, id: q.id, time: q.time, type: q.type, text: qPlain(q), correct: qCorrectText(q), tries, solved, attempts: list.length, partial, value: Math.round(value * 1000) / 1000, att: list.map(a => Object.assign({ r: a.r, a: a.t, ok: a.ok }, a.k != null ? { k: a.k } : (keyChangedSince(q, a) ? { chg: true } : {}))) };
   });
-  const p = Stu.run.profile;
+  const p = run.profile || {};
+  const done = questions.filter(q => q.attempts > 0).length, correct = questions.filter(q => q.solved).length;
+  const sendInfo = { by: o.by || 'student', deadline: o.deadline || 0, at: Date.now(), total: questions.length, done, correct, recovered: questions.filter(q => q.solved && q.tries > 1).length, wrongFirst: questions.filter(q => q.attempts > 0 && q.tries !== 1).length };
   return clean({
-    ownerUid: (Stu.pub && Stu.pub.ownerUid) || '', assignmentId: Stu.aid, testId: (Stu.pub && Stu.pub.testId) || '', pubKey: Stu.pubKey || '',
-    assignmentName: (Stu.pub && Stu.pub.assignmentName) || '', testTitle: Stu.test.title || '',
+    ownerUid: pub.ownerUid || '', assignmentId: o.aid, testId: pub.testId || '', pubKey: o.pubKey || '',
+    assignmentName: pub.assignmentName || '', testTitle: test.title || '',
     cognome: p.cognome, nome: p.nome, classe: p.classe, date: p.date,
-    startedAt: Stu.run.startedAt || 0, clientSubmittedAt: Date.now(),
+    startedAt: run.startedAt || 0, clientSubmittedAt: Date.now(),
     voto: computeVoto(questions.map(q => q.value), g),
     firstCorrect: questions.filter(q => q.tries === 1 && q.value > 0).length,
-    total: questions.length, recoveryRounds: Math.max(0, (Stu.run.round || 1) - 1),
-    grading: g, questions
+    total: questions.length, recoveryRounds: Math.max(0, (run.round || 1) - 1),
+    grading: g, questions, sendInfo
   });
+}
+function buildReport(by) { return buildReportFrom({ run: Stu.run, qs: Stu.qs, test: Stu.test, pub: Stu.pub, aid: Stu.aid, pubKey: Stu.pubKey, by: by || 'student', deadline: Stu.deadline || 0 }); }
+/* invia il report; con l'invio automatico il test salvato resta (con il riepilogo) per mostrarlo all'alunno */
+async function deliverReport(rep, opts) {
+  opts = opts || {};
+  if (Stu.startId) {
+    let st1 = null; try { st1 = await getStart(Stu.startId); } catch (e) { }
+    if (st1 && st1.locked === true && !opts.auto) { stuLockedOut(); return 'locked'; }
+    if (st1 && st1.status === 'sent') { Stu.run.phase = 'sent'; return 'already'; }
+  }
+  rep.submittedAt = serverTimestamp();
+  await addDoc(collection(db, 'reports'), rep);
+  Stu.run.phase = 'sent';
+  clearTimeout(remoteTimer);
+  if (opts.auto && Stu.progId && !Stu.preview) {
+    Stu.run.sentInfo = opts.info;
+    try { await saveRemote(); } catch (e) { console.warn('progress sent', e && e.code); }
+    clearRun();
+  } else {
+    clearRun();
+    if (Stu.progId) { const pid = Stu.progId; deleteDoc(doc(db, 'progress', pid)).catch(e => console.warn('progress delete', e && e.code)); }
+  }
+  if (Stu.startId) { updateDoc(doc(db, 'starts', Stu.startId), Object.assign({ status: 'sent', pubKey: Stu.pubKey, sentAt: Date.now(), updatedAt: serverTimestamp() }, opts.auto ? { autoSent: true } : {})).catch(e => console.warn('start sent', e && e.code)); }
+  Stu.progId = null;
+  return 'ok';
+}
+/* ---------- consegna senza recuperi ---------- */
+function asIsAllowed() { return Stu.preview || !!(Stu.pub && Stu.pub.allowAsIs === true); }
+function gradeOutlook() {
+  const rep = buildReport(); const g = normGrading(Stu.test.grading);
+  const maxVals = rep.questions.map(q => q.solved ? q.value : Math.max(valueForTries(q.attempts + 1, g), Number(q.partial) || 0));
+  const max = computeVoto(maxVals, g);
+  return { now: rep.voto, max, gain: Math.max(0, Math.round((max - rep.voto) * 10) / 10), rep };
+}
+function gainText(o) {
+  return o.gain > 0 ? 'Recuperando i quesiti sbagliati puoi guadagnare fino a <b>' + fmtNum(o.gain, 1) + (o.gain === 1 ? ' punto' : ' punti') + '</b> in più (voto massimo ' + fmtNum(o.max, 1) + ').' : 'Recuperando i quesiti sbagliati il voto resterebbe ' + fmtNum(o.now, 1) + '.';
+}
+async function showEndDialog() {
+  const pend = (Stu.run.pending || []).map(id => Stu.qs.findIndex(q => q.id === id)).filter(i => i >= 0);
+  if (!pend.length) return;
+  const o = gradeOutlook();
+  const n = Stu.qs.length, ok = o.rep.sendInfo.correct;
+  const body = el('<div class="end-dlg">' +
+    '<p>Hai risposto correttamente a <b>' + ok + ' quesiti su ' + n + '</b>. ' + (pend.length === 1 ? 'C\'è <b>1 quesito da recuperare</b>:' : 'Ci sono <b>' + pend.length + ' quesiti da recuperare</b>:') + '</p>' +
+    '<ul class="end-list">' + pend.map(i => '<li><b>Quesito ' + (i + 1) + '</b> · ' + esc(trunc(qPlain(Stu.qs[i]), 90)) + '</li>').join('') + '</ul>' +
+    (Stu.deadline ? '<p class="hint">Scadenza del test: ' + fmtDate(Stu.deadline) + ' alle ' + fmtHour(Stu.deadline) + '.</p>' : '') +
+    '<div class="end-opt"><b>Consegna così com\'è</b><span>Il tuo voto sarà <b>' + fmtNum(o.now, 1) + '</b>.</span></div>' +
+    '<div class="end-opt rec"><b>Recupera i quesiti sbagliati</b><span>' + gainText(o) + '</span></div>' +
+    '</div>');
+  const r = await modal({ title: 'Hai terminato il test', body, wide: true, dismissible: false, buttons: [
+    { html: ico('send') + ' Consegna così com\'è', cls: '', value: 'asis' },
+    { html: ico('replay') + ' Recupera i quesiti', cls: 'primary', value: 'rec' }
+  ] });
+  if (r === 'asis') stuSendAsIs(true);
+}
+async function stuSendAsIs(confirmed) {
+  if (!Stu.run || Stu.run.phase === 'sent') return;
+  const o = gradeOutlook();
+  if (!confirmed && !await confirmBox('Consegnare il test così com\'è?', 'Il tuo voto sarà <b>' + fmtNum(o.now, 1) + '</b>. Dopo la consegna non potrai più recuperare i quesiti sbagliati.', 'Consegna', false)) return;
+  const btn = $('#rAsIs'), err = $('#rAsIsErr'); err.textContent = '';
+  const rep = o.rep;
+  if (Stu.preview) { Stu.previewReport = rep; showSent(rep); return; }
+  btn.disabled = true; btn.classList.add('loading');
+  try { const r = await deliverReport(rep); if (r === 'locked') return; showSent(rep); }
+  catch (ex) { console.error(ex); err.textContent = ex && ex.code === 'permission-denied' ? 'Invio non riuscito: l\'insegnante potrebbe aver chiuso l\'assegnazione o cambiato la password. Avvisalo.' : 'Invio non riuscito: controlla la connessione a internet e riprova.'; }
+  finally { btn.disabled = false; btn.classList.remove('loading'); }
 }
 async function stuSend() {
   const btn = $('#rSend'), err = $('#rSendErr'); err.textContent = '';
@@ -3972,14 +4444,8 @@ async function stuSend() {
   if (Stu.preview) { Stu.previewReport = rep; showSent(rep); return; }
   btn.disabled = true; btn.classList.add('loading');
   try {
-    if (Stu.startId) { let st1 = null; try { st1 = await getStart(Stu.startId); } catch (e) { } if (st1 && st1.locked === true) { stuLockedOut(); return; } }
-    rep.submittedAt = serverTimestamp();
-    await addDoc(collection(db, 'reports'), rep);
-    Stu.run.phase = 'sent'; clearRun();
-    clearTimeout(remoteTimer);
-    if (Stu.progId) { const pid = Stu.progId; deleteDoc(doc(db, 'progress', pid)).catch(e => console.warn('progress delete', e && e.code)); }
-    if (Stu.startId) { updateDoc(doc(db, 'starts', Stu.startId), { status: 'sent', pubKey: Stu.pubKey, sentAt: Date.now(), updatedAt: serverTimestamp() }).catch(e => console.warn('start sent', e && e.code)); }
-    Stu.progId = null;
+    const r = await deliverReport(rep);
+    if (r === 'locked') return;
     showSent(rep);
   } catch (ex) {
     console.error(ex);
