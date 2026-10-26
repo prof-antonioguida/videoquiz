@@ -887,8 +887,8 @@ table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-si
               <li id="iTimer" hidden></li>
               <li>Rispondi e premi «Conferma risposta»: il video ripartirà da solo. Non saprai subito se la risposta è giusta.</li>
               <li>Alla fine del video vedrai il punteggio e quali risposte sono sbagliate.</li>
-              <li>Per ogni risposta sbagliata rivedrai la parte di video che serve e risponderai di nuovo, finché saranno tutte corrette.</li>
-              <li>Solo allora potrai premere «Invia» e il tuo lavoro arriverà all'insegnante.</li>
+              <li id="iRec">Per ogni risposta sbagliata rivedrai la parte di video che serve e risponderai di nuovo, finché saranno tutte corrette.</li>
+              <li id="iSend">Solo allora potrai premere «Invia» e il tuo lavoro arriverà all'insegnante.</li>
             </ol>
             <p class="hint">Meno tentativi ti serviranno, più alto sarà il voto.</p>
           </div>
@@ -992,7 +992,7 @@ table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-si
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 26/10/2026 15:28</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 26/10/2026 17:14</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -3605,6 +3605,14 @@ function stuIntro() {
   const tmi = normTimer(Stu.test.timer);
   $('#iTimer').hidden = !tmi.on;
   if (tmi.on) $('#iTimer').innerHTML = 'Per rispondere a ogni quesito hai <b>' + (tmi.seconds < 60 ? tmi.seconds + ' secondi' : fmtSecs(tmi.seconds) + ' minuti') + '</b>: un orologio ti mostra il tempo che resta. Se il tempo finisce, il quesito conta come sbagliato e il video riprende.';
+  /* le ultime istruzioni dipendono dall'assegnazione: con la consegna senza recuperi l'alunno pu\u00f2 consegnare anche senza recuperare */
+  if (asIsAllowed()) {
+    $('#iRec').innerHTML = 'Se qualche risposta \u00e8 sbagliata, potrai scegliere se <b>consegnare il test cos\u00ec com\'\u00e8</b> oppure se <b>recuperare le risposte sbagliate</b>: rivedrai la parte di video che serve e risponderai di nuovo, per migliorare il voto.';
+    $('#iSend').textContent = 'Quando consegni, il tuo lavoro arriver\u00e0 all\'insegnante.';
+  } else {
+    $('#iRec').textContent = 'Per ogni risposta sbagliata rivedrai la parte di video che serve e risponderai di nuovo, finch\u00e9 saranno tutte corrette.';
+    $('#iSend').textContent = 'Solo allora potrai premere \u00abInvia\u00bb e il tuo lavoro arriver\u00e0 all\'insegnante.';
+  }
   $('#iPinBox').hidden = Stu.preview || !!Stu.progId || !saveAllowed();
   $('#iPin').value = ''; $('#iPinErr').textContent = ''; $('#iErr').textContent = '';
   stuShow('sIntro');
