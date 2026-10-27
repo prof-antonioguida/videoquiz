@@ -697,6 +697,15 @@ html[data-theme="dark"] .deadline-bar{background:#3a2f12;border-color:#6b5520;co
 table.rep td.tr.t0{color:var(--bad);font-weight:800}
 table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-size:.84rem;color:var(--text2)}
 .dl-btn{min-height:32px;padding:.2em .7em}
+.head-acts{display:inline-flex;gap:.4em;flex-wrap:wrap;justify-content:flex-end}
+.tm-btn{min-height:32px;padding:.2em .7em;white-space:nowrap}
+.tm-btn .tm-sub{font-weight:600;opacity:.75}
+.tm-btn.on{background:var(--primary-l);border-color:#c9d5fb;color:var(--primary)}
+.tm-btn.off{background:#f1f2f6;color:var(--muted)}
+.tm-opts{display:flex;flex-direction:column;gap:.55em;margin:.4em 0 .6em}
+.tm-opts label.check{align-items:center}
+.tm-opts .tm-sec{width:6.5em;margin:0 .4em}
+html[data-theme="dark"] .tm-btn.off{background:#252b3a}
 .dl-btn.on{background:var(--primary-l);border-color:#c9d5fb;color:var(--primary)}
 .dl-chip{display:inline-flex;align-items:center;gap:.25em;font-size:.78rem;font-weight:800;color:var(--primary);background:var(--primary-l);border:1px solid #c9d5fb;border-radius:999px;padding:.05em .55em;margin-right:.3em;vertical-align:middle}
 .dl-chip .ico{width:13px;height:13px}
@@ -844,9 +853,9 @@ table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-si
     <div class="card table-card"><div id="rpTable" class="table-wrap"></div></div>
     <p class="hint no-print">Clicca su una riga per vedere tutte le risposte e i tentativi dell'alunno. Clicca sul nome di una colonna con le frecce (Cognome, Nome, Classe, Voto, Data) per ordinare l'elenco; un secondo clic inverte l'ordine. «Punti» è il valore del quesito (1 = risolto al primo tentativo); «Tent.» è il numero di tentativi che sono serviti per rispondere correttamente.</p>
     <div class="card prog-card" id="rpProgCard" hidden>
-      <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2><button type="button" class="btn sm no-print" id="rpDlAll"></button></div>
+      <div class="card-head"><h2>Test iniziati ma non consegnati <span class="count" id="rpProgCount"></span></h2><span class="head-acts no-print"><button type="button" class="btn sm" id="rpTmAll"></button><button type="button" class="btn sm" id="rpDlAll"></button></span></div>
       <div id="rpProg" class="table-wrap"></div>
-      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Con «Scadenza» scegli la data e l'ora in cui il test di un alunno verrà inviato automaticamente (con «Scadenza per tutti» la stessa per tutti gli alunni della tabella). Clicca su Cognome, Classe, Accesso iniziale o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
+      <p class="hint no-print" style="margin:.6em 0 0">Sono gli alunni che hanno iniziato il test ma non l'hanno ancora inviato: non possono ricominciarlo da capo. Se elimini il test di un alunno (con il cestino, oppure toccando la riga), l'alunno potrà ricominciarlo da capo: per esempio se ha chiuso la pagina per sbaglio o ha dimenticato il codice personale. Con «Blocca» impedisci a un alunno di continuare il test (anche con il codice personale): le risposte già date restano salvate e con «Sblocca» può riprendere da dove era arrivato. Con «Scadenza» scegli la data e l'ora in cui il test di un alunno verrà inviato automaticamente (con «Scadenza per tutti» la stessa per tutti gli alunni della tabella). Con il pulsante della colonna «Tempo ai quesiti» decidi se i quesiti di un alunno sono a tempo e quanti secondi ha per ciascuno (con «Tempo per tutti» la stessa impostazione per tutti gli alunni della tabella): la modifica vale subito, anche mentre l'alunno sta svolgendo il test. Clicca su Cognome, Classe, Accesso iniziale o Ultimo aggiornamento per ordinare l'elenco; un secondo clic inverte l'ordine.</p>
     </div>
   </section>
 
@@ -992,7 +1001,7 @@ table.rep td.sendmode{white-space:normal;min-width:180px;max-width:260px;font-si
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 26/10/2026 17:14</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 27/10/2026 11:37</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1237,6 +1246,21 @@ function normTimer(t) {
   return { on: t.on === true, seconds: Math.min(3600, Math.max(5, sec)) };
 }
 function fmtSecs(n) { n = Math.max(0, Math.ceil(n)); return Math.floor(n / 60) + ':' + pad2(n % 60); }
+/* tempo ai quesiti per l'alunno: quello deciso dall'insegnante per lui (se c'è), altrimenti quello del test */
+function stuTimerCfg() {
+  const o = !Stu.preview && Stu.tmOverride ? Stu.tmOverride : null;
+  return normTimer(o || (Stu.test && Stu.test.timer));
+}
+function setTmOverride(t, live) {
+  const v = t && typeof t === 'object' && (t.on === true || t.on === false) ? { on: t.on === true, seconds: t.seconds } : null;
+  const before = JSON.stringify(stuTimerCfg());
+  Stu.tmOverride = v;
+  const now = stuTimerCfg();
+  if (JSON.stringify(now) === before || !live) return;
+  if (Stu.run && !$('#sIntro').hidden) renderIntroTimer();
+  if (Stu.overlayQ) { qTimerSync(); startQTimer(Stu.overlayQ); }
+  toast(now.on ? 'L\'insegnante ha cambiato il tempo: ora per ogni quesito hai ' + (now.seconds < 60 ? now.seconds + ' secondi' : fmtSecs(now.seconds) + ' minuti') + '.' : 'L\'insegnante ha tolto il tempo: ora puoi rispondere ai quesiti senza limite di tempo.', 'ok', 6000);
+}
 function valueForTries(tries, g) {
   if (tries <= 0) return 0;
   if (tries === 1) return 1;
@@ -1793,6 +1817,8 @@ function wireTeacher() {
   $('#rpPrintBtn').addEventListener('click', () => window.print());
   $('#rpTable').addEventListener('click', onReportTableClick);
   $('#rpProg').addEventListener('click', onProgClick);
+  $('#rpTmAll').innerHTML = ico('hourglass') + ' Tempo per tutti';
+  $('#rpTmAll').addEventListener('click', () => timerDialog(S.progRows || [], true));
   $('#rpDlAll').innerHTML = ico('clock') + ' Scadenza per tutti';
   $('#rpDlAll').addEventListener('click', () => deadlineDialog(S.progRows || [], true));
 }
@@ -2855,7 +2881,7 @@ function progressRows() {
   const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0, first: 0 }); return rows.get(k); };
   /* accesso iniziale: il momento pi\u00f9 vecchio tra l'inizio registrato e l'inizio scritto nel test salvato (non cambia pi\u00f9) */
   const firstAt = (r, t) => { t = Number(t) || 0; if (t > 0 && (!r.first || t < r.first)) r.first = t; };
-  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); if (Number(st.deadline) > (r.deadline || 0)) r.deadline = Number(st.deadline); });
+  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); if (Number(st.deadline) > (r.deadline || 0)) r.deadline = Number(st.deadline); if (validTmOverride(st.timer)) r.timer = validTmOverride(st.timer); });
   (S.progress || []).filter(pr => !(pr.status && pr.status.phase === 'sent')).forEach(pr => {
     const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0);
     try { firstAt(r, JSON.parse(pr.run || '{}').startedAt); } catch (e) { }
@@ -2884,7 +2910,7 @@ function renderProgress() {
   $('#rpProgCount').textContent = list.length;
   if (!list.length) { $('#rpProg').innerHTML = ''; return; }
   const ps = S.progSort;
-  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th>' + sortTh('Cognome', 'cognome', ps, ' data-pk="cognome"', 'sticky sticky2') + '<th>Nome</th>' + sortTh('Classe', 'classe', ps, ' data-pk="classe"') + '<th>A che punto \u00e8</th>' + sortTh('Accesso iniziale', 'first', ps, ' data-pk="first"') + sortTh('Ultimo aggiornamento', 'time', ps, ' data-pk="time"') + '<th class="no-print"></th></tr></thead><tbody>' +
+  $('#rpProg').innerHTML = '<table class="rep inprog"><thead><tr><th class="num sticky">N.</th>' + sortTh('Cognome', 'cognome', ps, ' data-pk="cognome"', 'sticky sticky2') + '<th>Nome</th>' + sortTh('Classe', 'classe', ps, ' data-pk="classe"') + '<th>A che punto \u00e8</th>' + sortTh('Accesso iniziale', 'first', ps, ' data-pk="first"') + sortTh('Ultimo aggiornamento', 'time', ps, ' data-pk="time"') + '<th class="no-print">Tempo ai quesiti</th><th class="no-print"></th></tr></thead><tbody>' +
     list.map((r, i) => {
       const pr = r.progs.slice().sort((a, b) => (b.clientUpdatedAt || 0) - (a.clientUpdatedAt || 0))[0];
       const txt = pr ? progressText(pr.status) : ((S.curAssign && S.curAssign.allowSave === true) ? 'Ha iniziato il test (non ha ancora salvato i progressi)' : 'Ha iniziato il test (salvataggio non attivo: se ha chiuso la pagina, elimina il test per farlo ricominciare)');
@@ -2894,7 +2920,7 @@ function renderProgress() {
       const expired = r.deadline && Date.now() >= r.deadline;
       const dlChip = r.deadline ? '<span class="dl-chip' + (expired ? ' late' : '') + '">' + ico('clock') + (expired ? (r.progs.length ? ' Scaduto: invio automatico in corso' : ' Scaduto: nessun test salvato da inviare') : ' Scade il ' + fmtDate(r.deadline) + ' alle ' + fmtHour(r.deadline)) + '</span> ' : '';
       const lockBtn = '<button type="button" class="btn sm lock-btn' + (r.locked ? ' on' : '') + '" data-lock="' + i + '" title="' + (r.locked ? 'Sblocca: l\'alunno potr\u00e0 di nuovo continuare il test' : 'Blocca: l\'alunno non potr\u00e0 continuare il test') + '">' + ico(r.locked ? 'lockopen' : 'lock') + (r.locked ? ' Sblocca' : ' Blocca') + '</button>';
-      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + dlChip + esc(txt) + '</td><td>' + (r.first ? fmtDate(r.first) + ' ' + fmtHour(r.first) : '') + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print"><span class="row-acts">' + lockBtn + dlBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
+      return '<tr data-i="' + i + '"' + (r.locked ? ' class="locked"' : '') + '><td class="num sticky">' + (i + 1) + '</td><td class="sticky sticky2"><b>' + esc(r.cognome) + '</b></td><td>' + esc(r.nome) + '</td><td>' + esc(classKey(r.classe)) + '</td><td class="st">' + (r.locked ? '<span class="lock-chip">' + ico('lock') + ' Bloccato</span> ' : '') + dlChip + esc(txt) + '</td><td>' + (r.first ? fmtDate(r.first) + ' ' + fmtHour(r.first) : '') + '</td><td>' + (r.time ? fmtDate(r.time) + ' ' + fmtHour(r.time) : '') + '</td><td class="no-print">' + timerBtn(r, i) + '</td><td class="no-print"><span class="row-acts">' + lockBtn + dlBtn + '<button type="button" class="icon-btn danger" data-unlock="' + i + '" title="Elimina questo test (l\'alunno potr\u00e0 ricominciarlo da capo)">' + ico('delete') + '</button></span></td></tr>';
     }).join('') + '</tbody></table>';
   fixStickyNum($('#rpProg table'));
   setTimeout(processDeadlines, 500);
@@ -2904,6 +2930,69 @@ function fixStickyNum(t) {
   if (!t) return;
   const c = t.querySelector('th.num'); if (!c) return;
   t.style.setProperty('--numw', c.getBoundingClientRect().width + 'px');
+}
+/* ---------- tempo ai quesiti per il singolo alunno (starts.timer): se non c'è, vale quello del test ---------- */
+function validTmOverride(t) { return t && typeof t === 'object' && (t.on === true || t.on === false) ? normTimer(t) : null; }
+function testTimerNow() { return normTimer(S.curTest && S.curTest.timer); }
+function secsText(s) { return s < 60 ? s + ' s' : fmtSecs(s) + ' min'; }
+function timerBtn(r, i) {
+  const own = r.timer, tt = testTimerNow();
+  let cls = '', main, sub = '';
+  if (own) { cls = own.on ? ' on' : ' off'; main = own.on ? secsText(own.seconds) + ' per quesito' : 'Senza tempo'; }
+  else { main = tt.on ? secsText(tt.seconds) : 'Senza tempo'; sub = ' <span class="tm-sub">(come il test)</span>'; }
+  return '<button type="button" class="btn sm tm-btn' + cls + '" data-tm="' + i + '" title="Stabilisci se i quesiti di questo alunno sono a tempo e quanti secondi ha per ciascuno">' + ico('hourglass') + ' ' + main + sub + '</button>';
+}
+async function timerDialog(rows, all) {
+  if (!rows.length) return;
+  const tt = testTimerNow();
+  const cur = rows.map(r => r.timer ? JSON.stringify(r.timer) : ''), same = cur.every(x => x === cur[0]);
+  const first = rows[0].timer;
+  const mode = !same ? 'test' : !first ? 'test' : first.on ? 'on' : 'off';
+  const secs = (same && first && first.on ? first.seconds : (tt.on ? tt.seconds : 30));
+  const who = all ? 'tutti gli alunni della tabella (' + rows.length + ')' : '<b>' + esc(rows[0].cognome + ' ' + rows[0].nome) + '</b>';
+  const body = el('<div><p>Tempo ai quesiti per ' + who + '.</p>' +
+    (all && !same ? '<p class="hint">Ora gli alunni hanno impostazioni diverse: salvando, a tutti verrà assegnata quella che scegli qui.</p>' : '') +
+    '<div class="tm-opts">' +
+    '<label class="check"><input type="radio" name="tmm" value="test"> Come nel test (' + (tt.on ? secsText(tt.seconds) + ' per ogni quesito' : 'senza tempo') + ')</label>' +
+    '<label class="check"><input type="radio" name="tmm" value="off"> Senza tempo</label>' +
+    '<label class="check"><input type="radio" name="tmm" value="on"> A tempo:<input type="number" class="tm-sec" min="5" max="3600" step="1"> secondi per ogni quesito</label>' +
+    '</div><div class="err"></div>' +
+    '<p class="hint">La modifica vale subito, anche se l\'alunno sta svolgendo il test in questo momento, e vale anche per i recuperi. Le risposte già date non cambiano. Allo scadere del tempo il quesito viene inviato in bianco e conta come sbagliato.</p></div>');
+  $('input[name=tmm][value="' + mode + '"]', body).checked = true;
+  $('.tm-sec', body).value = secs;
+  $('.tm-sec', body).addEventListener('focus', () => { $('input[name=tmm][value=on]', body).checked = true; });
+  const res = await modal({ title: all ? 'Tempo ai quesiti per tutti' : 'Tempo ai quesiti', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
+    label: 'Salva', cls: 'primary', onClick: async (b, btn) => {
+      const m = $('input[name=tmm]:checked', body).value, err = $('.err', body); err.textContent = '';
+      let val = null;
+      if (m === 'off') val = { on: false, seconds: secs };
+      if (m === 'on') {
+        const v = Math.round(Number($('.tm-sec', body).value));
+        if (!isFinite(v) || v < 5 || v > 3600) { err.textContent = 'Scrivi un numero di secondi tra 5 e 3600.'; return false; }
+        val = { on: true, seconds: v };
+      }
+      return (await setStudentTimer(rows, val, btn)) ? true : false;
+    }
+  }] });
+  return res;
+}
+async function setStudentTimer(rows, val, btn) {
+  if (btn) { btn.disabled = true; btn.classList.add('loading'); }
+  try {
+    const A = S.curAssign, b = writeBatch(db);
+    for (const r of rows) {
+      if (r.starts.length) r.starts.forEach(st => b.update(doc(db, 'starts', st.id), { timer: val, timerSetAt: Date.now() }));
+      else b.set(doc(db, 'starts', await startIdFor(A.id, r)), { ownerUid: S.user.uid, assignmentId: A.id, testId: A.testId || '', pubKey: A.pubKey, cognome: r.cognome, nome: r.nome, classe: r.classe, status: 'started', startedAt: r.first || r.time || Date.now(), updatedAt: serverTimestamp(), timer: val, timerSetAt: Date.now() });
+    }
+    await b.commit();
+    const what = !val ? 'come nel test' : val.on ? secsText(val.seconds) + ' per ogni quesito' : 'senza tempo';
+    toast('Tempo ai quesiti: ' + what + (rows.length > 1 ? ' per ' + rows.length + ' alunni.' : ' per ' + rows[0].cognome + ' ' + rows[0].nome + '.'), 'ok', 4500);
+    return true;
+  } catch (ex) {
+    if (ex && ex.code === 'permission-denied') toast('Il database non ha permesso di salvare il tempo: l\'assegnazione deve essere aperta.', 'bad', 8000);
+    else dbError(ex, 'tempo ai quesiti');
+    return false;
+  } finally { if (btn) { btn.disabled = false; btn.classList.remove('loading'); } }
 }
 /* ---------- scadenza: data e ora in cui il test viene inviato automaticamente ---------- */
 function toLocalInput(ms) { const d = new Date(ms); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()) + 'T' + pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
@@ -3013,6 +3102,8 @@ async function deleteProgressRow(r) {
   } catch (ex) { dbError(ex, 'elimina test non consegnato'); return false; }
 }
 async function onProgClick(e) {
+  const tb = e.target.closest('[data-tm]');
+  if (tb) { e.stopPropagation(); const r = (S.progRows || [])[+tb.dataset.tm]; if (r) timerDialog([r], false); return; }
   const db0 = e.target.closest('[data-dl]');
   if (db0) { e.stopPropagation(); const r = (S.progRows || [])[+db0.dataset.dl]; if (r) deadlineDialog([r], false); return; }
   const th = e.target.closest('th.sortable');
@@ -3511,6 +3602,7 @@ async function stuLogin(e) {
     const sid = await startIdFor(Stu.aid, profile);
     const st = await getStart(sid);
     Stu.accessAt = Date.now(); Stu.deadline = (st && Number(st.deadline)) || 0;
+    Stu.tmOverride = null; setTmOverride(st && st.timer, false);
     if (st && st.status === 'sent') {
       /* inviato automaticamente alla scadenza: con il codice personale si vede il riepilogo */
       if (pin && saveAllowed()) { const r0 = await loadSaved(await progIdFor(Stu.aid, profile, pin)); if (r0 && r0.sentInfo) { showExpired(Object.assign({}, r0.sentInfo, { access: Stu.accessAt }), 'done'); return; } }
@@ -3594,6 +3686,11 @@ function reconcileRun(run) {
   run.qids = ids;
   return true;
 }
+function renderIntroTimer() {
+  const tmi = stuTimerCfg();
+  $('#iTimer').hidden = !tmi.on;
+  if (tmi.on) $('#iTimer').innerHTML = 'Per rispondere a ogni quesito hai <b>' + (tmi.seconds < 60 ? tmi.seconds + ' secondi' : fmtSecs(tmi.seconds) + ' minuti') + '</b>: un orologio ti mostra il tempo che resta. Se il tempo finisce, il quesito conta come sbagliato e il video riprende.';
+}
 function stuIntro() {
   Stu.run.phase = 'intro'; saveRun();
   const n = Stu.qs.length;
@@ -3602,9 +3699,7 @@ function stuIntro() {
   const p = Stu.run.profile;
   $('#iWho').textContent = p.cognome + ' ' + p.nome + ' \u00b7 classe ' + p.classe + ' \u00b7 ' + p.date;
   $('#iN').textContent = n === 1 ? '1 volta' : n + ' volte';
-  const tmi = normTimer(Stu.test.timer);
-  $('#iTimer').hidden = !tmi.on;
-  if (tmi.on) $('#iTimer').innerHTML = 'Per rispondere a ogni quesito hai <b>' + (tmi.seconds < 60 ? tmi.seconds + ' secondi' : fmtSecs(tmi.seconds) + ' minuti') + '</b>: un orologio ti mostra il tempo che resta. Se il tempo finisce, il quesito conta come sbagliato e il video riprende.';
+  renderIntroTimer();
   /* le ultime istruzioni dipendono dall'assegnazione: con la consegna senza recuperi l'alunno pu\u00f2 consegnare anche senza recuperare */
   if (asIsAllowed()) {
     $('#iRec').innerHTML = 'Se qualche risposta \u00e8 sbagliata, potrai scegliere se <b>consegnare il test cos\u00ec com\'\u00e8</b> oppure se <b>recuperare le risposte sbagliate</b>: rivedrai la parte di video che serve e risponderai di nuovo, per migliorare il voto.';
@@ -3632,6 +3727,7 @@ function watchLock() {
       if (d && d.locked === true && !(Number(d.deadline) && Date.now() >= Number(d.deadline))) { stuLockedOut(); return; }
       const nd = (d && Number(d.deadline)) || 0;
       if (nd !== Stu.deadline) { Stu.deadline = nd; renderDeadline(); }
+      setTmOverride(d && d.timer, true);
       checkDeadline();
     }, () => { });
   } catch (e) { }
@@ -3776,7 +3872,7 @@ async function stuSaveLater(btn) {
 }
 function stuStartPreview(test) {
   if (Stu.P) stuTeardown();
-  Stu.preview = true; Stu.aid = 'preview'; Stu.pub = null; Stu.pubKey = ''; Stu.progId = null; Stu.pin = null; Stu.startId = null;
+  Stu.preview = true; Stu.aid = 'preview'; Stu.pub = null; Stu.pubKey = ''; Stu.progId = null; Stu.pin = null; Stu.startId = null; Stu.tmOverride = null;
   Stu.test = test;
   Stu.qs = (test.questions || []).slice().sort((a, b) => a.time - b.time);
   Stu.duration = 0; Stu.previewReport = null;
@@ -4218,8 +4314,8 @@ function qTimerSync() {
 }
 function startQTimer(q) {
   stopQTimer();
-  const tm = normTimer(Stu.test && Stu.test.timer);
-  if (!tm.on || !Stu.run) return;
+  const tm = stuTimerCfg();
+  if (!tm.on || !Stu.run) { if (Stu.run && Stu.run.qTimer) Stu.run.qTimer = null; return; }
   const r = Stu.run.round || 0, cur = Stu.run.qTimer;
   let left = tm.seconds;
   if (cur && cur.id === q.id && cur.r === r && cur.left != null && isFinite(Number(cur.left))) {
