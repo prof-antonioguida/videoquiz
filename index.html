@@ -618,6 +618,9 @@ table.rep.inprog td.st{white-space:normal;min-width:220px}
 
 .save-opt{border-top:1px solid var(--line);padding-top:.7em;margin-top:.2em}
 .save-opt .hint{margin:.2em 0 0 1.9em}
+.opt-sub{display:flex;align-items:center;gap:.5em;flex-wrap:wrap;margin:.45em 0 .1em 1.9em;font-weight:600}
+.opt-sub input[type=number]{width:6.5em}
+.opt-sub input[type=datetime-local],.dl-in,.as-dl-in{font:inherit;color:inherit;border:1.5px solid var(--line);border-radius:10px;padding:.45em .75em;background:var(--surface);min-height:42px;max-width:100%}
 .badge.save{background:var(--primary-l);color:var(--primary)}
 .badge.save .ico{width:14px;height:14px}
 
@@ -894,6 +897,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
             <ol>
               <li>Guarda il video con attenzione: si fermerà <b id="iN"></b> per farti una domanda.</li>
               <li id="iTimer" hidden></li>
+              <li id="iDl" hidden></li>
               <li>Rispondi e premi «Conferma risposta»: il video ripartirà da solo. Non saprai subito se la risposta è giusta.</li>
               <li>Alla fine del video vedrai il punteggio e quali risposte sono sbagliate.</li>
               <li id="iRec">Per ogni risposta sbagliata rivedrai la parte di video che serve e risponderai di nuovo, finché saranno tutte corrette.</li>
@@ -1001,7 +1005,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 27/10/2026 11:37</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 27/10/2026 16:41</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1246,17 +1250,36 @@ function normTimer(t) {
   return { on: t.on === true, seconds: Math.min(3600, Math.max(5, sec)) };
 }
 function fmtSecs(n) { n = Math.max(0, Math.ceil(n)); return Math.floor(n / 60) + ':' + pad2(n % 60); }
+/* scadenza dell'assegnazione espressa in giorni dall'inizio del test di ciascun alunno (stessa ora del giorno) */
+function normDays(n) { n = Math.round(Number(n)); return isFinite(n) && n > 0 ? Math.min(365, n) : 0; }
+function addDays(t0, n) { const d = new Date(t0); d.setDate(d.getDate() + n); return d.getTime(); }
+function daysText(n) { return n === 1 ? '1 giorno' : n + ' giorni'; }
+/* a = assegnazione o pubblicazione; t0 = inizio del test dell'alunno */
+function assignDeadlineFrom(a, t0) {
+  const days = normDays(a && a.deadlineDays);
+  if (days) return Number(t0) > 0 ? addDays(Number(t0), days) : 0;
+  return Number(a && a.deadline) || 0;          /* (scadenza fissa delle versioni precedenti) */
+}
 /* tempo ai quesiti per l'alunno: quello deciso dall'insegnante per lui (se c'è), altrimenti quello del test */
 function stuTimerCfg() {
-  const o = !Stu.preview && Stu.tmOverride ? Stu.tmOverride : null;
+  const o = Stu.preview ? null : (Stu.tmOverride || validTmOverride(Stu.pub && Stu.pub.timer));
   return normTimer(o || (Stu.test && Stu.test.timer));
+}
+/* scadenza dell'alunno: quella decisa per lui (se l'insegnante l'ha impostata o tolta), altrimenti quella dell'assegnazione */
+function effDeadline(st) {
+  if (st && Object.prototype.hasOwnProperty.call(st, 'deadline')) return Number(st.deadline) || 0;
+  return assignDeadlineFrom(Stu.pub, st && st.startedAt);
 }
 function setTmOverride(t, live) {
   const v = t && typeof t === 'object' && (t.on === true || t.on === false) ? { on: t.on === true, seconds: t.seconds } : null;
   const before = JSON.stringify(stuTimerCfg());
   Stu.tmOverride = v;
+  if (live) timerChangedLive(before);
+}
+/* il tempo ai quesiti è cambiato mentre l'alunno svolge il test: vale subito, anche per il quesito aperto */
+function timerChangedLive(before) {
   const now = stuTimerCfg();
-  if (JSON.stringify(now) === before || !live) return;
+  if (JSON.stringify(now) === before) return;
   if (Stu.run && !$('#sIntro').hidden) renderIntroTimer();
   if (Stu.overlayQ) { qTimerSync(); startQTimer(Stu.overlayQ); }
   toast(now.on ? 'L\'insegnante ha cambiato il tempo: ora per ogni quesito hai ' + (now.seconds < 60 ? now.seconds + ' secondi' : fmtSecs(now.seconds) + ' minuti') + '.' : 'L\'insegnante ha tolto il tempo: ora puoi rispondere ai quesiti senza limite di tempo.', 'ok', 6000);
@@ -2575,7 +2598,7 @@ function renderAssignList() {
   }
   $('#asList').innerHTML = list.map(a => {
     const open = a.open !== false; const n = S.repCounts[a.id] || 0;
-    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + (a.allowAsIs === true ? '<span class="badge save">' + ico('send') + ' Consegna senza recuperi</span>' : '') + (linkGroup(a).length > 1 ? '<span class="badge save" title="Stesso link di altre assegnazioni: gli alunni entrano nell\'una o nell\'altra a seconda della password">' + ico('link') + (linkGroup(a).length === 2 ? ' Stesso link di un\'altra assegnazione' : ' Stesso link di altre ' + (linkGroup(a).length - 1) + ' assegnazioni') + '</span>' : '') + '</div></div>' +
+    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + (a.allowAsIs === true ? '<span class="badge save">' + ico('send') + ' Consegna senza recuperi</span>' : '') + (assignTimerNow(a).on ? '<span class="badge save">' + ico('hourglass') + ' ' + secsText(assignTimerNow(a).seconds) + ' per quesito</span>' : '') + (normDays(a.deadlineDays) ? '<span class="badge save">' + ico('clock') + ' Scade ' + daysText(normDays(a.deadlineDays)) + ' dopo l\'inizio</span>' : Number(a.deadline) ? '<span class="badge save">' + ico('clock') + ' Scade il ' + fmtDate(a.deadline) + ' alle ' + fmtHour(a.deadline) + '</span>' : '') + (linkGroup(a).length > 1 ? '<span class="badge save" title="Stesso link di altre assegnazioni: gli alunni entrano nell\'una o nell\'altra a seconda della password">' + ico('link') + (linkGroup(a).length === 2 ? ' Stesso link di un\'altra assegnazione' : ' Stesso link di altre ' + (linkGroup(a).length - 1) + ' assegnazioni') + '</span>' : '') + '</div></div>' +
       '<div class="as-acts"><button type="button" class="btn primary sm" data-act="open">' + ico('table') + ' Report</button><button type="button" class="btn sm" data-act="link">' + ico('link') + ' Link e password</button><button type="button" class="icon-btn" data-act="menu" title="Altre azioni">' + ico('more') + '</button></div></div>';
   }).join('');
 }
@@ -2593,6 +2616,8 @@ function onAssignClick(e) {
       { label: open ? 'Chiudi (gli alunni non possono pi\u00f9 svolgerla)' : 'Riapri', icon: open ? 'lock' : 'lockopen', onClick: () => toggleAssign(a) },
       { label: a.allowSave === true ? 'Disattiva il salvataggio per riprendere pi\u00f9 tardi' : 'Attiva il salvataggio per riprendere pi\u00f9 tardi', icon: 'save', onClick: () => toggleSave(a) },
       { label: a.allowAsIs === true ? 'Disattiva la consegna senza recuperi' : 'Attiva la consegna senza recuperi', icon: 'send', onClick: () => toggleAsIs(a) },
+      { label: 'Tempo ai quesiti', icon: 'hourglass', onClick: () => assignTimerDialog(a) },
+      { label: 'Scadenza', icon: 'clock', onClick: () => assignDeadlineDialog(a) },
       { label: 'Duplica (stesso link, password diversa)', icon: 'copy', onClick: () => duplicateAssign(a) },
       { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteAssign(a) }
     ]);
@@ -2613,13 +2638,45 @@ async function pwdClash(a, pwd, exceptId) {
   return '';
 }
 function clashMsg(name) { return 'Questa password è già usata da «' + name + '», che ha lo stesso link. Scegli una password diversa.'; }
-function assignOptsBody(asis, save) {
+/* tempo ai quesiti e scadenza dell'assegnazione (nel modulo di creazione e duplicazione) */
+function assignExtraOpts(d, tm, days) {
+  tm = normTimer(tm);
+  d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-tm"' + (tm.on ? ' checked' : '') + '> Tempo ai quesiti</label>' +
+    '<div class="opt-sub as-tm-row"' + (tm.on ? '' : ' hidden') + '><input type="number" class="as-tm-sec" min="5" max="3600" step="1" value="' + tm.seconds + '"> secondi per ogni quesito</div>' +
+    '<p class="hint">Se lo attivi, l\'alunno ha un tempo massimo per rispondere a ogni quesito: vede il conto alla rovescia e, allo scadere, il quesito viene inviato in bianco e conta come sbagliato. Vale anche per i recuperi. Potrai cambiarlo per i singoli alunni nella tabella dei test iniziati.</p></div>'));
+  days = normDays(days);
+  d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-dl"' + (days ? ' checked' : '') + '> Scadenza</label>' +
+    '<div class="opt-sub as-dl-row"' + (days ? '' : ' hidden') + '>dopo <input type="number" class="as-dl-days" min="1" max="365" step="1" value="' + (days || 7) + '"> giorni dall\'inizio del test</div>' +
+    '<p class="hint">Se la attivi, ogni alunno ha questo numero di giorni per completare il test, a partire dal momento in cui lo inizia: per esempio, con 6 giorni, chi inizia il 5/11 alle 15:45 ha tempo fino all\'11/11 alle 15:45. Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento. Potrai cambiare la scadenza dei singoli alunni nella tabella dei test iniziati.</p></div>'));
+  $('.as-tm', d).addEventListener('change', () => { $('.as-tm-row', d).hidden = !$('.as-tm', d).checked; });
+  $('.as-dl', d).addEventListener('change', () => { $('.as-dl-row', d).hidden = !$('.as-dl', d).checked; });
+}
+/* legge tempo e scadenza dal modulo: il tempo si salva solo se è diverso da quello del test */
+function readAssignExtra(body, t) {
+  const out = { timer: null, days: 0, err: '' };
+  if ($('.as-tm', body).checked) {
+    const v = Math.round(Number($('.as-tm-sec', body).value));
+    if (!isFinite(v) || v < 5 || v > 3600) { out.err = 'Tempo ai quesiti: scrivi un numero di secondi tra 5 e 3600.'; return out; }
+    out.timer = { on: true, seconds: v };
+  } else out.timer = { on: false, seconds: normTimer(t && t.timer).seconds };
+  const tt = normTimer(t && t.timer);
+  if (out.timer.on === tt.on && (!tt.on || out.timer.seconds === tt.seconds)) out.timer = null;
+  if ($('.as-dl', body).checked) {
+    const v = Math.round(Number($('.as-dl-days', body).value));
+    if (!isFinite(v) || v < 1 || v > 365) { out.err = 'Scadenza: scrivi un numero di giorni tra 1 e 365.'; return out; }
+    out.days = v;
+  }
+  return out;
+}
+function assignTimerNow(a) { const t = S.tests.find(x => x.id === (a && a.testId)) || S.curTest; return validTmOverride(a && a.timer) || normTimer(t && t.timer); }
+function assignOptsBody(asis, save, tm, dl) {
   const d = el('<div></div>');
   d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-asis"' + (asis ? ' checked' : '') + '> Permetti agli alunni di consegnare il test senza recuperare i quesiti sbagliati</label><p class="hint">Alla fine del test l\'alunno sceglie se consegnarlo così com\'è (vale il punteggio ottenuto) oppure se recuperare i quesiti sbagliati per guadagnare punti. Se non lo attivi, l\'alunno deve recuperare tutti i quesiti sbagliati prima di poter consegnare.</p></div>'));
   d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"' + (save ? ' checked' : '') + '> Permetti agli alunni di salvare il test e riprenderlo più tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e il suo lavoro viene salvato automaticamente: può interrompere il test (o riprenderlo se chiude la pagina per sbaglio) e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
+  assignExtraOpts(d, tm, dl);
   return d;
 }
-function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, linkId: linkOf(a), testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, allowAsIs: a.allowAsIs === true, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
+function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, linkId: linkOf(a), testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, allowAsIs: a.allowAsIs === true, timer: validTmOverride(a.timer), deadlineDays: normDays(a.deadlineDays), deadline: Number(a.deadline) || 0, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
 function passwordBody(value) {
   const body = el('<div><div class="fld"><span>Password per gli alunni</span><div class="copy-row"><input type="text" class="ap" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="btn sm ag">' + ico('refresh') + ' Genera</button></div></div><p class="hint">Scegli una password semplice da comunicare, di almeno 4 caratteri. Maiuscole e minuscole non contano.</p><div class="err"></div></div>');
   $('.ap', body).value = value || genPassword();
@@ -2632,7 +2689,7 @@ async function newAssignment() {
   if (!hasVideo(t) || !(t.questions || []).length) { toast('Prima di assegnare il test, aprilo, carica il video, aggiungi almeno un quesito e salva.', 'bad', 6000); return; }
   const body = el('<div><label class="fld"><span>Nome dell\'assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody());
-  body.appendChild(assignOptsBody(true, true));
+  body.appendChild(assignOptsBody(true, true, t.timer, 0));
   $('.an', body).value = (t.title || 'Test') + ' del ' + fmtDateLong(Date.now());
   const res = await modal({
     title: 'Nuova assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
@@ -2641,11 +2698,14 @@ async function newAssignment() {
         errEl.textContent = '';
         if (!name) { errEl.textContent = 'Scrivi il nome dell\'assegnazione.'; return false; }
         const pe = checkPwd(pwd); if (pe) { errEl.textContent = pe; return false; }
+        const ex2 = readAssignExtra(body, t); if (ex2.err) { errEl.textContent = ex2.err; return false; }
         btn.disabled = true; btn.classList.add('loading');
         try {
           const aRef = doc(collection(db, 'assignments'));
           const pubKey = await pubKeyFor(aRef.id, pwd);
           const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, allowSave: $('.as-save', body).checked, allowAsIs: $('.as-asis', body).checked, createdAt: Date.now() };
+          if (ex2.timer) a.timer = ex2.timer;
+          if (ex2.days) a.deadlineDays = ex2.days;
           const bt = writeBatch(db);
           const data = Object.assign({}, a); delete data.id;
           bt.set(aRef, data);
@@ -2668,7 +2728,7 @@ async function duplicateAssign(a) {
     '<label class="fld"><span>Nome della nuova assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody(gen));
   body.appendChild(el('<p class="hint">Password già usate con questo link: ' + grp.map(x => '<b>' + esc(x.password) + '</b> (' + esc(x.name) + ')').join(', ') + '.</p>'));
-  body.appendChild(assignOptsBody(a.allowAsIs === true, a.allowSave === true));
+  body.appendChild(assignOptsBody(a.allowAsIs === true, a.allowSave === true, assignTimerNow(a), normDays(a.deadlineDays)));
   $('.an', body).value = a.name + ' (copia)';
   const res = await modal({
     title: 'Duplica l\'assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
@@ -2677,6 +2737,7 @@ async function duplicateAssign(a) {
         errEl.textContent = '';
         if (!name) { errEl.textContent = 'Scrivi il nome della nuova assegnazione.'; return false; }
         const pe = checkPwd(pwd); if (pe) { errEl.textContent = pe; return false; }
+        const ex2 = readAssignExtra(body, t); if (ex2.err) { errEl.textContent = ex2.err; return false; }
         btn.disabled = true; btn.classList.add('loading');
         try {
           const cl = await pwdClash(a, pwd, null);
@@ -2684,6 +2745,8 @@ async function duplicateAssign(a) {
           const aRef = doc(collection(db, 'assignments'));
           const pubKey = await pubKeyFor(L, pwd);
           const a2 = { id: aRef.id, ownerUid: S.user.uid, testId: a.testId, name, password: pwd, pubKey, linkId: L, open: true, allowSave: $('.as-save', body).checked, allowAsIs: $('.as-asis', body).checked, createdAt: Date.now() };
+          if (ex2.timer) a2.timer = ex2.timer;
+          if (ex2.days) a2.deadlineDays = ex2.days;
           const bt = writeBatch(db);
           const data = Object.assign({}, a2); delete data.id;
           bt.set(aRef, data);
@@ -2774,6 +2837,58 @@ async function toggleAssign(a) {
     a.open = open; renderAssignList();
     toast(open ? 'Assegnazione riaperta.' : 'Assegnazione chiusa: gli alunni non possono pi\u00f9 svolgerla.', 'ok');
   } catch (ex) { dbError(ex, 'apri/chiudi'); }
+}
+async function saveAssignFields(a, fields, what) {
+  try {
+    const bt = writeBatch(db);
+    bt.update(doc(db, 'assignments', a.id), fields);
+    bt.update(doc(db, 'pubs', a.pubKey), fields);
+    await bt.commit();
+    Object.assign(a, fields); renderAssignList();
+    return true;
+  } catch (ex) { dbError(ex, what); return false; }
+}
+async function assignTimerDialog(a) {
+  const t = S.tests.find(x => x.id === a.testId) || S.curTest, tt = normTimer(t && t.timer), own = validTmOverride(a.timer);
+  const mode = !own ? 'test' : own.on ? 'on' : 'off';
+  const body = el('<div><p>Tempo ai quesiti per l\'assegnazione <b>' + esc(a.name) + '</b>.</p><div class="tm-opts">' +
+    '<label class="check"><input type="radio" name="tmm" value="test"> Come nel test (' + (tt.on ? secsText(tt.seconds) + ' per ogni quesito' : 'senza tempo') + ')</label>' +
+    '<label class="check"><input type="radio" name="tmm" value="off"> Senza tempo</label>' +
+    '<label class="check"><input type="radio" name="tmm" value="on"> A tempo:<input type="number" class="tm-sec" min="5" max="3600" step="1"> secondi per ogni quesito</label>' +
+    '</div><div class="err"></div><p class="hint">Vale per gli alunni a cui non hai impostato un tempo personale nella tabella dei test iniziati, anche per chi sta svolgendo il test in questo momento.</p></div>');
+  $('input[name=tmm][value="' + mode + '"]', body).checked = true;
+  $('.tm-sec', body).value = own && own.on ? own.seconds : (tt.on ? tt.seconds : 30);
+  $('.tm-sec', body).addEventListener('focus', () => { $('input[name=tmm][value=on]', body).checked = true; });
+  await modal({ title: 'Tempo ai quesiti', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, { label: 'Salva', cls: 'primary', onClick: async (b, btn) => {
+    const m = $('input[name=tmm]:checked', body).value, err = $('.err', body); err.textContent = '';
+    let val = null;
+    if (m === 'off') val = { on: false, seconds: tt.seconds };
+    if (m === 'on') { const v = Math.round(Number($('.tm-sec', body).value)); if (!isFinite(v) || v < 5 || v > 3600) { err.textContent = 'Scrivi un numero di secondi tra 5 e 3600.'; return false; } val = { on: true, seconds: v }; }
+    btn.disabled = true; btn.classList.add('loading');
+    const ok = await saveAssignFields(a, { timer: val }, 'tempo ai quesiti');
+    btn.disabled = false; btn.classList.remove('loading');
+    if (ok) toast('Tempo ai quesiti: ' + (!val ? 'come nel test' : val.on ? secsText(val.seconds) + ' per ogni quesito' : 'senza tempo') + '.', 'ok');
+    return ok;
+  } }] });
+}
+async function assignDeadlineDialog(a) {
+  const cur = normDays(a.deadlineDays) || (Number(a.deadline) ? 1 : 0);
+  const body = el('<div><p>Scadenza dell\'assegnazione <b>' + esc(a.name) + '</b>: ogni alunno ha questo numero di giorni per completare il test, a partire dal momento in cui lo inizia (alla stessa ora). Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento.</p>' +
+    '<div class="opt-sub" style="margin-left:0">dopo <input type="number" class="dl-days" min="1" max="365" step="1"> giorni dall\'inizio del test</div><div class="err"></div>' +
+    '<p class="hint">Vale per gli alunni a cui non hai impostato una scadenza personale nella tabella dei test iniziati, anche per chi ha già iniziato: la sua scadenza si calcola dal momento in cui ha iniziato.</p></div>');
+  $('.dl-days', body).value = normDays(a.deadlineDays) || 7;
+  const buttons = [{ label: 'Annulla', cls: 'ghost', value: null }];
+  if (cur) buttons.push({ html: ico('close') + ' Rimuovi la scadenza', cls: 'danger-ghost', onClick: async () => { const ok = await saveAssignFields(a, { deadlineDays: 0, deadline: 0 }, 'scadenza'); if (ok) toast('Scadenza rimossa.', 'ok'); return ok; } });
+  buttons.push({ label: 'Salva la scadenza', cls: 'primary', onClick: async (b, btn) => {
+    const v = Math.round(Number($('.dl-days', body).value)), err = $('.err', body); err.textContent = '';
+    if (!isFinite(v) || v < 1 || v > 365) { err.textContent = 'Scrivi un numero di giorni tra 1 e 365.'; return false; }
+    btn.disabled = true; btn.classList.add('loading');
+    const ok = await saveAssignFields(a, { deadlineDays: v, deadline: 0 }, 'scadenza');
+    btn.disabled = false; btn.classList.remove('loading');
+    if (ok) toast('Scadenza: ' + daysText(v) + ' dall\'inizio del test.', 'ok');
+    return ok;
+  } });
+  await modal({ title: 'Scadenza', body, buttons });
 }
 async function toggleAsIs(a) {
   const on = a.allowAsIs !== true;
@@ -2881,11 +2996,12 @@ function progressRows() {
   const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0, first: 0 }); return rows.get(k); };
   /* accesso iniziale: il momento pi\u00f9 vecchio tra l'inizio registrato e l'inizio scritto nel test salvato (non cambia pi\u00f9) */
   const firstAt = (r, t) => { t = Number(t) || 0; if (t > 0 && (!r.first || t < r.first)) r.first = t; };
-  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); if (Number(st.deadline) > (r.deadline || 0)) r.deadline = Number(st.deadline); if (validTmOverride(st.timer)) r.timer = validTmOverride(st.timer); });
+  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); const sdl = Object.prototype.hasOwnProperty.call(st, 'deadline') ? Number(st.deadline) || 0 : assignDeadlineFrom(S.curAssign, st.startedAt); if (sdl > (r.deadline || 0)) r.deadline = sdl; if (validTmOverride(st.timer)) r.timer = validTmOverride(st.timer); });
   (S.progress || []).filter(pr => !(pr.status && pr.status.phase === 'sent')).forEach(pr => {
     const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0);
     try { firstAt(r, JSON.parse(pr.run || '{}').startedAt); } catch (e) { }
   });
+  rows.forEach(r => { if (!r.starts.length && S.curAssign) { const x = assignDeadlineFrom(S.curAssign, r.first); if (x) r.deadline = x; } });
   const { key, dir } = S.progSort || { key: 'cognome', dir: 1 };
   const cs = (a, b) => String(a || '').localeCompare(String(b || ''), 'it', { sensitivity: 'base', numeric: true });
   const byName = (a, b) => cs(a.cognome, b.cognome) || cs(a.nome, b.nome);
@@ -2933,13 +3049,13 @@ function fixStickyNum(t) {
 }
 /* ---------- tempo ai quesiti per il singolo alunno (starts.timer): se non c'è, vale quello del test ---------- */
 function validTmOverride(t) { return t && typeof t === 'object' && (t.on === true || t.on === false) ? normTimer(t) : null; }
-function testTimerNow() { return normTimer(S.curTest && S.curTest.timer); }
+function testTimerNow() { return S.curAssign ? assignTimerNow(S.curAssign) : normTimer(S.curTest && S.curTest.timer); }
 function secsText(s) { return s < 60 ? s + ' s' : fmtSecs(s) + ' min'; }
 function timerBtn(r, i) {
   const own = r.timer, tt = testTimerNow();
   let cls = '', main, sub = '';
   if (own) { cls = own.on ? ' on' : ' off'; main = own.on ? secsText(own.seconds) + ' per quesito' : 'Senza tempo'; }
-  else { main = tt.on ? secsText(tt.seconds) : 'Senza tempo'; sub = ' <span class="tm-sub">(come il test)</span>'; }
+  else { main = tt.on ? secsText(tt.seconds) : 'Senza tempo'; sub = ' <span class="tm-sub">(come l\'assegnazione)</span>'; }
   return '<button type="button" class="btn sm tm-btn' + cls + '" data-tm="' + i + '" title="Stabilisci se i quesiti di questo alunno sono a tempo e quanti secondi ha per ciascuno">' + ico('hourglass') + ' ' + main + sub + '</button>';
 }
 async function timerDialog(rows, all) {
@@ -2953,7 +3069,7 @@ async function timerDialog(rows, all) {
   const body = el('<div><p>Tempo ai quesiti per ' + who + '.</p>' +
     (all && !same ? '<p class="hint">Ora gli alunni hanno impostazioni diverse: salvando, a tutti verrà assegnata quella che scegli qui.</p>' : '') +
     '<div class="tm-opts">' +
-    '<label class="check"><input type="radio" name="tmm" value="test"> Come nel test (' + (tt.on ? secsText(tt.seconds) + ' per ogni quesito' : 'senza tempo') + ')</label>' +
+    '<label class="check"><input type="radio" name="tmm" value="test"> Come nell\'assegnazione (' + (tt.on ? secsText(tt.seconds) + ' per ogni quesito' : 'senza tempo') + ')</label>' +
     '<label class="check"><input type="radio" name="tmm" value="off"> Senza tempo</label>' +
     '<label class="check"><input type="radio" name="tmm" value="on"> A tempo:<input type="number" class="tm-sec" min="5" max="3600" step="1"> secondi per ogni quesito</label>' +
     '</div><div class="err"></div>' +
@@ -2985,7 +3101,7 @@ async function setStudentTimer(rows, val, btn) {
       else b.set(doc(db, 'starts', await startIdFor(A.id, r)), { ownerUid: S.user.uid, assignmentId: A.id, testId: A.testId || '', pubKey: A.pubKey, cognome: r.cognome, nome: r.nome, classe: r.classe, status: 'started', startedAt: r.first || r.time || Date.now(), updatedAt: serverTimestamp(), timer: val, timerSetAt: Date.now() });
     }
     await b.commit();
-    const what = !val ? 'come nel test' : val.on ? secsText(val.seconds) + ' per ogni quesito' : 'senza tempo';
+    const what = !val ? 'come nell\'assegnazione' : val.on ? secsText(val.seconds) + ' per ogni quesito' : 'senza tempo';
     toast('Tempo ai quesiti: ' + what + (rows.length > 1 ? ' per ' + rows.length + ' alunni.' : ' per ' + rows[0].cognome + ' ' + rows[0].nome + '.'), 'ok', 4500);
     return true;
   } catch (ex) {
@@ -3601,7 +3717,7 @@ async function stuLogin(e) {
     const profile = { cognome, nome, classe, date: fmtDate(Date.now()) };
     const sid = await startIdFor(Stu.aid, profile);
     const st = await getStart(sid);
-    Stu.accessAt = Date.now(); Stu.deadline = (st && Number(st.deadline)) || 0;
+    Stu.accessAt = Date.now(); Stu.deadline = effDeadline(st);
     Stu.tmOverride = null; setTmOverride(st && st.timer, false);
     if (st && st.status === 'sent') {
       /* inviato automaticamente alla scadenza: con il codice personale si vede il riepilogo */
@@ -3623,6 +3739,7 @@ async function stuLogin(e) {
       err.textContent = 'Il tempo per svolgere questo test è scaduto il ' + fmtDate(Stu.deadline) + ' alle ' + fmtHour(Stu.deadline) + '.' + (saveAllowed() ? ' Se avevi salvato il test, scrivi anche il tuo codice personale: il test verrà inviato con le risposte date fino alla scadenza e vedrai il riepilogo.' : ' Non è più possibile svolgerlo.');
       return;
     }
+    if (!st && Stu.deadline && Date.now() >= Stu.deadline) { err.textContent = 'Il tempo per svolgere questo test è scaduto il ' + fmtDate(Stu.deadline) + ' alle ' + fmtHour(Stu.deadline) + ': non è più possibile iniziarlo.'; return; }
     if (st && st.locked === true) { err.textContent = LOCK_MSG; return; }
     if (pin) {
       if (!saveAllowed()) { err.textContent = 'Per questo test il salvataggio non \u00e8 attivo, quindi non ci sono test da riprendere: lascia vuoto il codice personale.'; return; }
@@ -3686,6 +3803,13 @@ function reconcileRun(run) {
   run.qids = ids;
   return true;
 }
+/* scadenza a giorni: prima di iniziare l'alunno sa quanto tempo avrà */
+function renderIntroDeadline() {
+  const days = Stu.preview ? 0 : normDays(Stu.pub && Stu.pub.deadlineDays);
+  const show = !!days && !Stu.deadline;
+  $('#iDl').hidden = !show;
+  if (show) { const dl = addDays(Date.now(), days); $('#iDl').innerHTML = 'Da quando inizi hai <b>' + daysText(days) + '</b> per completare il test: se inizi adesso, la scadenza sarà il <b>' + fmtDate(dl) + ' alle ' + fmtHour(dl) + '</b>. A quell\'ora il test verrà inviato automaticamente con le risposte date fino a quel momento.'; }
+}
 function renderIntroTimer() {
   const tmi = stuTimerCfg();
   $('#iTimer').hidden = !tmi.on;
@@ -3700,6 +3824,7 @@ function stuIntro() {
   $('#iWho').textContent = p.cognome + ' ' + p.nome + ' \u00b7 classe ' + p.classe + ' \u00b7 ' + p.date;
   $('#iN').textContent = n === 1 ? '1 volta' : n + ' volte';
   renderIntroTimer();
+  renderIntroDeadline();
   /* le ultime istruzioni dipendono dall'assegnazione: con la consegna senza recuperi l'alunno pu\u00f2 consegnare anche senza recuperare */
   if (asIsAllowed()) {
     $('#iRec').innerHTML = 'Se qualche risposta \u00e8 sbagliata, potrai scegliere se <b>consegnare il test cos\u00ec com\'\u00e8</b> oppure se <b>recuperare le risposte sbagliate</b>: rivedrai la parte di video che serve e risponderai di nuovo, per migliorare il voto.';
@@ -3720,20 +3845,36 @@ const LOCK_MSG = 'L\'insegnante ha bloccato questo test: per ora non puoi contin
 /* blocco deciso dall'insegnante: si controlla all'accesso e, mentre l'alunno svolge il test, in tempo reale */
 function watchLock() {
   if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; }
+  Stu.lastStart = undefined;
   if (Stu.preview || !Stu.startId) return;
   try {
     Stu.lockUnsub = onSnapshot(doc(db, 'starts', Stu.startId), snap => {
       const d = snap && snap.exists && snap.exists() ? snap.data() : null;
-      if (d && d.locked === true && !(Number(d.deadline) && Date.now() >= Number(d.deadline))) { stuLockedOut(); return; }
-      const nd = (d && Number(d.deadline)) || 0;
+      Stu.lastStart = d;
+      const nd = effDeadline(d);
+      if (d && d.locked === true && !(nd && Date.now() >= nd)) { stuLockedOut(); return; }
       if (nd !== Stu.deadline) { Stu.deadline = nd; renderDeadline(); }
       setTmOverride(d && d.timer, true);
       checkDeadline();
     }, () => { });
   } catch (e) { }
+  /* tempo e scadenza dell'assegnazione: se l'insegnante li cambia, valgono subito */
+  if (Stu.pubUnsub) { Stu.pubUnsub(); Stu.pubUnsub = null; }
+  try {
+    if (Stu.pubKey) Stu.pubUnsub = onSnapshot(doc(db, 'pubs', Stu.pubKey), snap => {
+      const p = snap && snap.exists && snap.exists() ? snap.data() : null;
+      if (!p || !Stu.pub) return;
+      const before = JSON.stringify(stuTimerCfg());
+      Stu.pub.timer = p.timer; Stu.pub.deadlineDays = p.deadlineDays; Stu.pub.deadline = p.deadline;
+      timerChangedLive(before);
+      if (Stu.lastStart === undefined) return;
+      const nd = effDeadline(Stu.lastStart);
+      if (nd !== Stu.deadline) { Stu.deadline = nd; renderDeadline(); checkDeadline(); }
+    }, () => { });
+  } catch (e) { }
   clearInterval(Stu.dlTimer); Stu.dlTimer = setInterval(checkDeadline, 5000);
 }
-function stopWatchLock() { if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; } clearInterval(Stu.dlTimer); Stu.dlTimer = null; }
+function stopWatchLock() { if (Stu.lockUnsub) { Stu.lockUnsub(); Stu.lockUnsub = null; } if (Stu.pubUnsub) { Stu.pubUnsub(); Stu.pubUnsub = null; } clearInterval(Stu.dlTimer); Stu.dlTimer = null; }
 /* ---------- scadenza decisa dall'insegnante ---------- */
 function renderDeadline() {
   const bar = $('#dlBar'); if (!bar) return;
@@ -3835,7 +3976,9 @@ async function stuIntroStart() {
       const old = await loadSaved(id);
       if (old) { await resumeFrom(id, pin, perr); return; }
     }
+    if (Stu.deadline && Date.now() >= Stu.deadline) { gerr.textContent = 'Il tempo per svolgere questo test è scaduto il ' + fmtDate(Stu.deadline) + ' alle ' + fmtHour(Stu.deadline) + ': non è più possibile iniziarlo.'; return; }
     await registerStart();
+    if (!Stu.deadline) { Stu.deadline = effDeadline({ startedAt: Date.now() }); renderDeadline(); }
     if (pin) { Stu.progId = id; Stu.pin = pin; }
     watchLock();
     stuStartWatching();
