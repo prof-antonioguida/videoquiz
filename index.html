@@ -620,7 +620,7 @@ table.rep.inprog td.st{white-space:normal;min-width:220px}
 .save-opt .hint{margin:.2em 0 0 1.9em}
 .opt-sub{display:flex;align-items:center;gap:.5em;flex-wrap:wrap;margin:.45em 0 .1em 1.9em;font-weight:600}
 .opt-sub input[type=number]{width:6.5em}
-.opt-sub input[type=datetime-local],.dl-in,.as-dl-in{font:inherit;color:inherit;border:1.5px solid var(--line);border-radius:10px;padding:.45em .75em;background:var(--surface);min-height:42px;max-width:100%}
+.opt-sub input[type=datetime-local],.dl-in,.as-dl-in,.cdl-date,.cdl-time{font:inherit;color:inherit;border:1.5px solid var(--line);border-radius:10px;padding:.45em .75em;background:var(--surface);min-height:42px;max-width:100%}
 .badge.save{background:var(--primary-l);color:var(--primary)}
 .badge.save .ico{width:14px;height:14px}
 
@@ -725,6 +725,8 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
 .qc-tbar i{display:block;height:100%;width:100%;background:var(--primary);transition:width .25s linear}
 .tm-row{margin-top:.4em}
 #iTimer{color:var(--text)}
+
+.cdl-date{cursor:pointer}
 
 </style>
 <script>
@@ -1005,7 +1007,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 27/10/2026 16:41</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 18/11/2026 19:09</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2598,7 +2600,7 @@ function renderAssignList() {
   }
   $('#asList').innerHTML = list.map(a => {
     const open = a.open !== false; const n = S.repCounts[a.id] || 0;
-    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + (a.allowAsIs === true ? '<span class="badge save">' + ico('send') + ' Consegna senza recuperi</span>' : '') + (assignTimerNow(a).on ? '<span class="badge save">' + ico('hourglass') + ' ' + secsText(assignTimerNow(a).seconds) + ' per quesito</span>' : '') + (normDays(a.deadlineDays) ? '<span class="badge save">' + ico('clock') + ' Scade ' + daysText(normDays(a.deadlineDays)) + ' dopo l\'inizio</span>' : Number(a.deadline) ? '<span class="badge save">' + ico('clock') + ' Scade il ' + fmtDate(a.deadline) + ' alle ' + fmtHour(a.deadline) + '</span>' : '') + (linkGroup(a).length > 1 ? '<span class="badge save" title="Stesso link di altre assegnazioni: gli alunni entrano nell\'una o nell\'altra a seconda della password">' + ico('link') + (linkGroup(a).length === 2 ? ' Stesso link di un\'altra assegnazione' : ' Stesso link di altre ' + (linkGroup(a).length - 1) + ' assegnazioni') + '</span>' : '') + '</div></div>' +
+    return '<div class="as-item" data-id="' + esc(a.id) + '"><div class="as-main"><h3>' + esc(a.name) + '</h3><div class="as-meta"><span class="badge ' + (open ? 'open' : 'closed') + '">' + (open ? 'Aperta' : 'Chiusa') + '</span><span>Creata il ' + fmtDate(a.createdAt) + '</span><span>\u00b7 ' + n + (n === 1 ? ' test consegnato' : ' test consegnati') + '</span><span>\u00b7 password: <b>' + esc(a.password) + '</b></span>' + (a.allowSave === true ? '<span class="badge save">' + ico('save') + ' Salvataggio attivo</span>' : '') + (a.allowAsIs === true ? '<span class="badge save">' + ico('send') + ' Consegna senza recuperi</span>' : '') + (assignTimerNow(a).on ? '<span class="badge save">' + ico('hourglass') + ' ' + secsText(assignTimerNow(a).seconds) + ' per quesito</span>' : '') + (normDays(a.deadlineDays) ? '<span class="badge save">' + ico('clock') + ' Scade ' + daysText(normDays(a.deadlineDays)) + ' dopo l\'inizio</span>' : Number(a.deadline) ? '<span class="badge save">' + ico('clock') + ' Scadenza comune: ' + fmtDate(a.deadline) + ' alle ' + fmtHour(a.deadline) + '</span>' : '') + (linkGroup(a).length > 1 ? '<span class="badge save" title="Stesso link di altre assegnazioni: gli alunni entrano nell\'una o nell\'altra a seconda della password">' + ico('link') + (linkGroup(a).length === 2 ? ' Stesso link di un\'altra assegnazione' : ' Stesso link di altre ' + (linkGroup(a).length - 1) + ' assegnazioni') + '</span>' : '') + '</div></div>' +
       '<div class="as-acts"><button type="button" class="btn primary sm" data-act="open">' + ico('table') + ' Report</button><button type="button" class="btn sm" data-act="link">' + ico('link') + ' Link e password</button><button type="button" class="icon-btn" data-act="menu" title="Altre azioni">' + ico('more') + '</button></div></div>';
   }).join('');
 }
@@ -2618,6 +2620,7 @@ function onAssignClick(e) {
       { label: a.allowAsIs === true ? 'Disattiva la consegna senza recuperi' : 'Attiva la consegna senza recuperi', icon: 'send', onClick: () => toggleAsIs(a) },
       { label: 'Tempo ai quesiti', icon: 'hourglass', onClick: () => assignTimerDialog(a) },
       { label: 'Scadenza', icon: 'clock', onClick: () => assignDeadlineDialog(a) },
+      { label: 'Scadenza comune', icon: 'clock', onClick: () => assignCommonDeadlineDialog(a) },
       { label: 'Duplica (stesso link, password diversa)', icon: 'copy', onClick: () => duplicateAssign(a) },
       { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteAssign(a) }
     ]);
@@ -2639,7 +2642,27 @@ async function pwdClash(a, pwd, exceptId) {
 }
 function clashMsg(name) { return 'Questa password è già usata da «' + name + '», che ha lo stesso link. Scegli una password diversa.'; }
 /* tempo ai quesiti e scadenza dell'assegnazione (nel modulo di creazione e duplicazione) */
-function assignExtraOpts(d, tm, days) {
+/* campi della scadenza comune: giorno scelto dal calendario (nessuna data proposta) e ora, di solito le 23:59 */
+function cdlFieldsHtml() { return '<input type="date" class="cdl-date" aria-label="Giorno della scadenza"> alle <input type="time" class="cdl-time" aria-label="Ora della scadenza">'; }
+function ymd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function openPicker(inp) { try { if (inp && inp.showPicker) inp.showPicker(); } catch (e) { /* il browser apre il calendario al clic */ } }
+function initCdlFields(box, ms) {
+  const di = $('.cdl-date', box), ti = $('.cdl-time', box);
+  di.min = ymd(new Date());
+  if (ms) { const d = new Date(ms); di.value = ymd(d); ti.value = pad2(d.getHours()) + ':' + pad2(d.getMinutes()); } else { di.value = ''; ti.value = '23:59'; }
+  di.addEventListener('click', () => openPicker(di));
+}
+/* restituisce i millisecondi della scadenza scelta, oppure un messaggio di errore */
+function readCdlFields(box) {
+  const dv = $('.cdl-date', box).value, tv = $('.cdl-time', box).value || '23:59';
+  if (!dv) return { err: 'scegli il giorno della scadenza dal calendario.' };
+  const [y, m, d] = dv.split('-').map(Number), [hh, mm] = tv.split(':').map(Number);
+  const ms = new Date(y, m - 1, d, hh || 0, mm || 0, 0, 0).getTime();
+  if (!isFinite(ms)) return { err: 'la data non è valida.' };
+  return { ms };
+}
+function dlConflictText(keep, drop) { return '«Scadenza» e «Scadenza comune» non possono essere attive insieme: è stata attivata «' + keep + '» e disattivata «' + drop + '».'; }
+function assignExtraOpts(d, tm, days, common) {
   tm = normTimer(tm);
   d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-tm"' + (tm.on ? ' checked' : '') + '> Tempo ai quesiti</label>' +
     '<div class="opt-sub as-tm-row"' + (tm.on ? '' : ' hidden') + '><input type="number" class="as-tm-sec" min="5" max="3600" step="1" value="' + tm.seconds + '"> secondi per ogni quesito</div>' +
@@ -2648,12 +2671,28 @@ function assignExtraOpts(d, tm, days) {
   d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-dl"' + (days ? ' checked' : '') + '> Scadenza</label>' +
     '<div class="opt-sub as-dl-row"' + (days ? '' : ' hidden') + '>dopo <input type="number" class="as-dl-days" min="1" max="365" step="1" value="' + (days || 7) + '"> giorni dall\'inizio del test</div>' +
     '<p class="hint">Se la attivi, ogni alunno ha questo numero di giorni per completare il test, a partire dal momento in cui lo inizia: per esempio, con 6 giorni, chi inizia il 5/11 alle 15:45 ha tempo fino all\'11/11 alle 15:45. Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento. Potrai cambiare la scadenza dei singoli alunni nella tabella dei test iniziati.</p></div>'));
+  common = Number(common) || 0;
+  d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-cdl"' + (common && !days ? ' checked' : '') + '> Scadenza comune</label>' +
+    '<div class="opt-sub as-cdl-row"' + (common && !days ? '' : ' hidden') + '>il ' + cdlFieldsHtml() + '</div>' +
+    '<p class="hint">Se la attivi, tutti gli alunni hanno la stessa data e ora di scadenza, in qualunque giorno inizino il test: per esempio, con scadenza il 30/11 alle 23:59, sia chi inizia il 23/11 sia chi inizia il 26/11 ha tempo fino al 30/11 alle 23:59. Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento e nessuno può più iniziarlo. Non si può usare insieme alla «Scadenza» a giorni. Potrai cambiare la scadenza dei singoli alunni nella tabella dei test iniziati.</p></div>'));
+  d.appendChild(el('<div class="msg info as-dl-warn" hidden></div>'));
+  initCdlFields($('.as-cdl-row', d), common && !days ? common : 0);
+  const warn = (txt) => { const w = $('.as-dl-warn', d); w.textContent = txt || ''; w.hidden = !txt; };
+  const sync = () => { $('.as-dl-row', d).hidden = !$('.as-dl', d).checked; $('.as-cdl-row', d).hidden = !$('.as-cdl', d).checked; };
   $('.as-tm', d).addEventListener('change', () => { $('.as-tm-row', d).hidden = !$('.as-tm', d).checked; });
-  $('.as-dl', d).addEventListener('change', () => { $('.as-dl-row', d).hidden = !$('.as-dl', d).checked; });
+  $('.as-dl', d).addEventListener('change', () => {
+    if ($('.as-dl', d).checked && $('.as-cdl', d).checked) { $('.as-cdl', d).checked = false; warn(dlConflictText('Scadenza', 'Scadenza comune')); } else warn('');
+    sync();
+  });
+  $('.as-cdl', d).addEventListener('change', () => {
+    if ($('.as-cdl', d).checked && $('.as-dl', d).checked) { $('.as-dl', d).checked = false; warn(dlConflictText('Scadenza comune', 'Scadenza')); } else warn('');
+    sync();
+    if ($('.as-cdl', d).checked && !$('.cdl-date', d).value) openPicker($('.cdl-date', d));
+  });
 }
 /* legge tempo e scadenza dal modulo: il tempo si salva solo se è diverso da quello del test */
 function readAssignExtra(body, t) {
-  const out = { timer: null, days: 0, err: '' };
+  const out = { timer: null, days: 0, common: 0, err: '' };
   if ($('.as-tm', body).checked) {
     const v = Math.round(Number($('.as-tm-sec', body).value));
     if (!isFinite(v) || v < 5 || v > 3600) { out.err = 'Tempo ai quesiti: scrivi un numero di secondi tra 5 e 3600.'; return out; }
@@ -2666,14 +2705,22 @@ function readAssignExtra(body, t) {
     if (!isFinite(v) || v < 1 || v > 365) { out.err = 'Scadenza: scrivi un numero di giorni tra 1 e 365.'; return out; }
     out.days = v;
   }
+  if ($('.as-cdl', body).checked) {
+    if (out.days) { out.err = dlConflictText('Scadenza', 'Scadenza comune'); return out; }
+    const rc = readCdlFields($('.as-cdl-row', body));
+    if (rc.err) { out.err = 'Scadenza comune: ' + rc.err; return out; }
+    const ms = rc.ms;
+    if (ms <= Date.now()) { out.err = 'Scadenza comune: la data scelta è già passata, scegline una futura.'; return out; }
+    out.common = ms;
+  }
   return out;
 }
 function assignTimerNow(a) { const t = S.tests.find(x => x.id === (a && a.testId)) || S.curTest; return validTmOverride(a && a.timer) || normTimer(t && t.timer); }
-function assignOptsBody(asis, save, tm, dl) {
+function assignOptsBody(asis, save, tm, dl, cdl) {
   const d = el('<div></div>');
   d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-asis"' + (asis ? ' checked' : '') + '> Permetti agli alunni di consegnare il test senza recuperare i quesiti sbagliati</label><p class="hint">Alla fine del test l\'alunno sceglie se consegnarlo così com\'è (vale il punteggio ottenuto) oppure se recuperare i quesiti sbagliati per guadagnare punti. Se non lo attivi, l\'alunno deve recuperare tutti i quesiti sbagliati prima di poter consegnare.</p></div>'));
   d.appendChild(el('<div class="save-opt"><label class="check"><input type="checkbox" class="as-save"' + (save ? ' checked' : '') + '> Permetti agli alunni di salvare il test e riprenderlo più tardi</label><p class="hint">Se lo attivi, ogni alunno sceglie un codice personale di 4 cifre e il suo lavoro viene salvato automaticamente: può interrompere il test (o riprenderlo se chiude la pagina per sbaglio) e completarlo in un secondo momento, anche da un altro dispositivo. Se non lo attivi, il test va svolto in un\'unica volta: chiudendo la pagina si ricomincia da capo.</p></div>'));
-  assignExtraOpts(d, tm, dl);
+  assignExtraOpts(d, tm, dl, cdl);
   return d;
 }
 function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, linkId: linkOf(a), testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, allowAsIs: a.allowAsIs === true, timer: validTmOverride(a.timer), deadlineDays: normDays(a.deadlineDays), deadline: Number(a.deadline) || 0, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
@@ -2706,6 +2753,7 @@ async function newAssignment() {
           const a = { id: aRef.id, ownerUid: S.user.uid, testId: t.id, name, password: pwd, pubKey, open: true, allowSave: $('.as-save', body).checked, allowAsIs: $('.as-asis', body).checked, createdAt: Date.now() };
           if (ex2.timer) a.timer = ex2.timer;
           if (ex2.days) a.deadlineDays = ex2.days;
+          if (ex2.common) a.deadline = ex2.common;
           const bt = writeBatch(db);
           const data = Object.assign({}, a); delete data.id;
           bt.set(aRef, data);
@@ -2728,7 +2776,7 @@ async function duplicateAssign(a) {
     '<label class="fld"><span>Nome della nuova assegnazione</span><input type="text" class="an" maxlength="120"></label></div>');
   body.appendChild(passwordBody(gen));
   body.appendChild(el('<p class="hint">Password già usate con questo link: ' + grp.map(x => '<b>' + esc(x.password) + '</b> (' + esc(x.name) + ')').join(', ') + '.</p>'));
-  body.appendChild(assignOptsBody(a.allowAsIs === true, a.allowSave === true, assignTimerNow(a), normDays(a.deadlineDays)));
+  body.appendChild(assignOptsBody(a.allowAsIs === true, a.allowSave === true, assignTimerNow(a), normDays(a.deadlineDays), Number(a.deadline) > Date.now() ? Number(a.deadline) : 0));
   $('.an', body).value = a.name + ' (copia)';
   const res = await modal({
     title: 'Duplica l\'assegnazione', body, buttons: [{ label: 'Annulla', cls: 'ghost', value: null }, {
@@ -2747,6 +2795,7 @@ async function duplicateAssign(a) {
           const a2 = { id: aRef.id, ownerUid: S.user.uid, testId: a.testId, name, password: pwd, pubKey, linkId: L, open: true, allowSave: $('.as-save', body).checked, allowAsIs: $('.as-asis', body).checked, createdAt: Date.now() };
           if (ex2.timer) a2.timer = ex2.timer;
           if (ex2.days) a2.deadlineDays = ex2.days;
+          if (ex2.common) a2.deadline = ex2.common;
           const bt = writeBatch(db);
           const data = Object.assign({}, a2); delete data.id;
           bt.set(aRef, data);
@@ -2871,17 +2920,20 @@ async function assignTimerDialog(a) {
     return ok;
   } }] });
 }
+function commonDlText(ms) { return fmtDate(ms) + ' alle ' + fmtHour(ms); }
 async function assignDeadlineDialog(a) {
-  const cur = normDays(a.deadlineDays) || (Number(a.deadline) ? 1 : 0);
+  const cur = normDays(a.deadlineDays), common = Number(a.deadline) || 0;
   const body = el('<div><p>Scadenza dell\'assegnazione <b>' + esc(a.name) + '</b>: ogni alunno ha questo numero di giorni per completare il test, a partire dal momento in cui lo inizia (alla stessa ora). Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento.</p>' +
     '<div class="opt-sub" style="margin-left:0">dopo <input type="number" class="dl-days" min="1" max="365" step="1"> giorni dall\'inizio del test</div><div class="err"></div>' +
     '<p class="hint">Vale per gli alunni a cui non hai impostato una scadenza personale nella tabella dei test iniziati, anche per chi ha già iniziato: la sua scadenza si calcola dal momento in cui ha iniziato.</p></div>');
+  if (common) body.insertBefore(el('<div class="msg bad">' + ico('clock') + ' Attenzione: questa assegnazione ha già una <b>Scadenza comune</b> (il ' + commonDlText(common) + '). Le due scadenze non possono essere attive insieme: se salvi questa, la scadenza comune verrà eliminata.</div>'), body.firstChild);
   $('.dl-days', body).value = normDays(a.deadlineDays) || 7;
   const buttons = [{ label: 'Annulla', cls: 'ghost', value: null }];
   if (cur) buttons.push({ html: ico('close') + ' Rimuovi la scadenza', cls: 'danger-ghost', onClick: async () => { const ok = await saveAssignFields(a, { deadlineDays: 0, deadline: 0 }, 'scadenza'); if (ok) toast('Scadenza rimossa.', 'ok'); return ok; } });
   buttons.push({ label: 'Salva la scadenza', cls: 'primary', onClick: async (b, btn) => {
     const v = Math.round(Number($('.dl-days', body).value)), err = $('.err', body); err.textContent = '';
     if (!isFinite(v) || v < 1 || v > 365) { err.textContent = 'Scrivi un numero di giorni tra 1 e 365.'; return false; }
+    if (Number(a.deadline) && !await confirmBox('Conflitto tra scadenze', 'Questa assegnazione ha già una <b>Scadenza comune</b> (il ' + commonDlText(Number(a.deadline)) + '). «Scadenza» e «Scadenza comune» non possono essere attive insieme: vuoi eliminare la scadenza comune e usare la scadenza di ' + daysText(v) + ' dall\'inizio del test?', 'Sì, usa questa scadenza')) return false;
     btn.disabled = true; btn.classList.add('loading');
     const ok = await saveAssignFields(a, { deadlineDays: v, deadline: 0 }, 'scadenza');
     btn.disabled = false; btn.classList.remove('loading');
@@ -2889,6 +2941,31 @@ async function assignDeadlineDialog(a) {
     return ok;
   } });
   await modal({ title: 'Scadenza', body, buttons });
+}
+/* scadenza comune: la stessa data e ora per tutti gli alunni, in qualunque giorno inizino il test */
+async function assignCommonDeadlineDialog(a) {
+  const cur = Number(a.deadline) || 0, days = normDays(a.deadlineDays);
+  const body = el('<div><p>Scadenza comune dell\'assegnazione <b>' + esc(a.name) + '</b>: tutti gli alunni hanno la stessa data e ora di scadenza, in qualunque giorno inizino il test. Per esempio, con scadenza il 30/11 alle 23:59, sia chi inizia il 23/11 sia chi inizia il 26/11 ha tempo fino al 30/11 alle 23:59. Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento e nessuno può più iniziarlo.</p>' +
+    '<div class="fld"><span>Giorno e ora della scadenza comune</span><div class="opt-sub cdl-box" style="margin-left:0">' + cdlFieldsHtml() + '</div></div><div class="err"></div>' +
+    '<p class="hint">Vale per gli alunni a cui non hai impostato una scadenza personale nella tabella dei test iniziati, anche per chi ha già iniziato. Nella tabella dei test iniziati potrai sempre cambiare o eliminare la scadenza dei singoli alunni.</p></div>');
+  if (days) body.insertBefore(el('<div class="msg bad">' + ico('clock') + ' Attenzione: questa assegnazione ha già una <b>Scadenza</b> di ' + daysText(days) + ' dall\'inizio del test. Le due scadenze non possono essere attive insieme: se salvi la scadenza comune, l\'altra verrà eliminata.</div>'), body.firstChild);
+  initCdlFields($('.cdl-box', body), cur);
+  const buttons = [{ label: 'Annulla', cls: 'ghost', value: null }];
+  if (cur) buttons.push({ html: ico('close') + ' Rimuovi la scadenza comune', cls: 'danger-ghost', onClick: async () => { const ok = await saveAssignFields(a, { deadline: 0 }, 'scadenza comune'); if (ok) toast('Scadenza comune rimossa.', 'ok'); return ok; } });
+  buttons.push({ label: 'Salva la scadenza comune', cls: 'primary', onClick: async (b, btn) => {
+    const err = $('.err', body); err.textContent = '';
+    const rc = readCdlFields($('.cdl-box', body));
+    if (rc.err) { err.textContent = rc.err.charAt(0).toUpperCase() + rc.err.slice(1); return false; }
+    const ms = rc.ms;
+    if (ms <= Date.now() && !await confirmBox('Scadenza già passata', 'La data scelta è già passata: i test non ancora consegnati verranno inviati subito con le risposte date finora e nessuno potrà più iniziare il test. Continuare?', 'Continua', true)) return false;
+    if (normDays(a.deadlineDays) && !await confirmBox('Conflitto tra scadenze', 'Questa assegnazione ha già una <b>Scadenza</b> di ' + daysText(normDays(a.deadlineDays)) + ' dall\'inizio del test. «Scadenza» e «Scadenza comune» non possono essere attive insieme: vuoi eliminare la scadenza a giorni e usare la scadenza comune del ' + commonDlText(ms) + '?', 'Sì, usa la scadenza comune')) return false;
+    btn.disabled = true; btn.classList.add('loading');
+    const ok = await saveAssignFields(a, { deadline: ms, deadlineDays: 0 }, 'scadenza comune');
+    btn.disabled = false; btn.classList.remove('loading');
+    if (ok) toast('Scadenza comune: ' + commonDlText(ms) + ' per tutti gli alunni.', 'ok');
+    return ok;
+  } });
+  await modal({ title: 'Scadenza comune', body, buttons });
 }
 async function toggleAsIs(a) {
   const on = a.allowAsIs !== true;
