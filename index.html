@@ -1007,7 +1007,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 18/11/2026 19:09</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 18/11/2026 19:18</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1268,8 +1268,14 @@ function stuTimerCfg() {
   return normTimer(o || (Stu.test && Stu.test.timer));
 }
 /* scadenza dell'alunno: quella decisa per lui (se l'insegnante l'ha impostata o tolta), altrimenti quella dell'assegnazione */
+/* la scadenza personale vale solo se è stata decisa dopo l'ultima adozione della scadenza comune (che le riporta tutte a quella comune) */
+function hasOwnDeadline(st, a) {
+  if (!st || !Object.prototype.hasOwnProperty.call(st, 'deadline')) return false;
+  const reset = Number(a && a.deadlineResetAt) || 0;
+  return !reset || (Number(st.deadlineSetAt) || 0) > reset;
+}
 function effDeadline(st) {
-  if (st && Object.prototype.hasOwnProperty.call(st, 'deadline')) return Number(st.deadline) || 0;
+  if (hasOwnDeadline(st, Stu.pub)) return Number(st.deadline) || 0;
   return assignDeadlineFrom(Stu.pub, st && st.startedAt);
 }
 function setTmOverride(t, live) {
@@ -2723,7 +2729,7 @@ function assignOptsBody(asis, save, tm, dl, cdl) {
   assignExtraOpts(d, tm, dl, cdl);
   return d;
 }
-function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, linkId: linkOf(a), testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, allowAsIs: a.allowAsIs === true, timer: validTmOverride(a.timer), deadlineDays: normDays(a.deadlineDays), deadline: Number(a.deadline) || 0, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
+function pubDoc(a, t, open) { return { ownerUid: S.user.uid, assignmentId: a.id, linkId: linkOf(a), testId: t.id, assignmentName: a.name, open: open, allowSave: a.allowSave === true, allowAsIs: a.allowAsIs === true, timer: validTmOverride(a.timer), deadlineDays: normDays(a.deadlineDays), deadline: Number(a.deadline) || 0, deadlineResetAt: Number(a.deadlineResetAt) || 0, test: pubSnapshot(t), createdAt: a.createdAt || Date.now() }; }
 function passwordBody(value) {
   const body = el('<div><div class="fld"><span>Password per gli alunni</span><div class="copy-row"><input type="text" class="ap" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false"><button type="button" class="btn sm ag">' + ico('refresh') + ' Genera</button></div></div><p class="hint">Scegli una password semplice da comunicare, di almeno 4 caratteri. Maiuscole e minuscole non contano.</p><div class="err"></div></div>');
   $('.ap', body).value = value || genPassword();
@@ -2947,7 +2953,7 @@ async function assignCommonDeadlineDialog(a) {
   const cur = Number(a.deadline) || 0, days = normDays(a.deadlineDays);
   const body = el('<div><p>Scadenza comune dell\'assegnazione <b>' + esc(a.name) + '</b>: tutti gli alunni hanno la stessa data e ora di scadenza, in qualunque giorno inizino il test. Per esempio, con scadenza il 30/11 alle 23:59, sia chi inizia il 23/11 sia chi inizia il 26/11 ha tempo fino al 30/11 alle 23:59. Alla scadenza il test viene inviato automaticamente con le risposte date fino a quel momento e nessuno può più iniziarlo.</p>' +
     '<div class="fld"><span>Giorno e ora della scadenza comune</span><div class="opt-sub cdl-box" style="margin-left:0">' + cdlFieldsHtml() + '</div></div><div class="err"></div>' +
-    '<p class="hint">Vale per gli alunni a cui non hai impostato una scadenza personale nella tabella dei test iniziati, anche per chi ha già iniziato. Nella tabella dei test iniziati potrai sempre cambiare o eliminare la scadenza dei singoli alunni.</p></div>');
+    '<p class="hint">Salvando, la scadenza comune vale per <b>tutti</b> gli alunni, anche per chi ha già iniziato il test e per chi aveva una scadenza personale decisa da te nella tabella dei test iniziati. Dopo, in quella tabella, potrai di nuovo cambiare o eliminare la scadenza dei singoli alunni.</p></div>');
   if (days) body.insertBefore(el('<div class="msg bad">' + ico('clock') + ' Attenzione: questa assegnazione ha già una <b>Scadenza</b> di ' + daysText(days) + ' dall\'inizio del test. Le due scadenze non possono essere attive insieme: se salvi la scadenza comune, l\'altra verrà eliminata.</div>'), body.firstChild);
   initCdlFields($('.cdl-box', body), cur);
   const buttons = [{ label: 'Annulla', cls: 'ghost', value: null }];
@@ -2960,7 +2966,7 @@ async function assignCommonDeadlineDialog(a) {
     if (ms <= Date.now() && !await confirmBox('Scadenza già passata', 'La data scelta è già passata: i test non ancora consegnati verranno inviati subito con le risposte date finora e nessuno potrà più iniziare il test. Continuare?', 'Continua', true)) return false;
     if (normDays(a.deadlineDays) && !await confirmBox('Conflitto tra scadenze', 'Questa assegnazione ha già una <b>Scadenza</b> di ' + daysText(normDays(a.deadlineDays)) + ' dall\'inizio del test. «Scadenza» e «Scadenza comune» non possono essere attive insieme: vuoi eliminare la scadenza a giorni e usare la scadenza comune del ' + commonDlText(ms) + '?', 'Sì, usa la scadenza comune')) return false;
     btn.disabled = true; btn.classList.add('loading');
-    const ok = await saveAssignFields(a, { deadline: ms, deadlineDays: 0 }, 'scadenza comune');
+    const ok = await saveAssignFields(a, { deadline: ms, deadlineDays: 0, deadlineResetAt: Date.now() }, 'scadenza comune');
     btn.disabled = false; btn.classList.remove('loading');
     if (ok) toast('Scadenza comune: ' + commonDlText(ms) + ' per tutti gli alunni.', 'ok');
     return ok;
@@ -3073,7 +3079,7 @@ function progressRows() {
   const row = x => { const k = personKey(x); if (!rows.has(k)) rows.set(k, { key: k, cognome: x.cognome, nome: x.nome, classe: x.classe, starts: [], progs: [], time: 0, first: 0 }); return rows.get(k); };
   /* accesso iniziale: il momento pi\u00f9 vecchio tra l'inizio registrato e l'inizio scritto nel test salvato (non cambia pi\u00f9) */
   const firstAt = (r, t) => { t = Number(t) || 0; if (t > 0 && (!r.first || t < r.first)) r.first = t; };
-  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); const sdl = Object.prototype.hasOwnProperty.call(st, 'deadline') ? Number(st.deadline) || 0 : assignDeadlineFrom(S.curAssign, st.startedAt); if (sdl > (r.deadline || 0)) r.deadline = sdl; if (validTmOverride(st.timer)) r.timer = validTmOverride(st.timer); });
+  (S.starts || []).filter(st => st.status !== 'sent').forEach(st => { const r = row(st); r.starts.push(st); r.time = Math.max(r.time, st.startedAt || 0); firstAt(r, st.startedAt); const sdl = hasOwnDeadline(st, S.curAssign) ? Number(st.deadline) || 0 : assignDeadlineFrom(S.curAssign, st.startedAt); if (sdl > (r.deadline || 0)) r.deadline = sdl; if (validTmOverride(st.timer)) r.timer = validTmOverride(st.timer); });
   (S.progress || []).filter(pr => !(pr.status && pr.status.phase === 'sent')).forEach(pr => {
     const r = row(pr); r.progs.push(pr); r.time = Math.max(r.time, pr.clientUpdatedAt || 0);
     try { firstAt(r, JSON.parse(pr.run || '{}').startedAt); } catch (e) { }
@@ -3942,7 +3948,7 @@ function watchLock() {
       const p = snap && snap.exists && snap.exists() ? snap.data() : null;
       if (!p || !Stu.pub) return;
       const before = JSON.stringify(stuTimerCfg());
-      Stu.pub.timer = p.timer; Stu.pub.deadlineDays = p.deadlineDays; Stu.pub.deadline = p.deadline;
+      Stu.pub.timer = p.timer; Stu.pub.deadlineDays = p.deadlineDays; Stu.pub.deadline = p.deadline; Stu.pub.deadlineResetAt = p.deadlineResetAt;
       timerChangedLive(before);
       if (Stu.lastStart === undefined) return;
       const nd = effDeadline(Stu.lastStart);
