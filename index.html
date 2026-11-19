@@ -728,6 +728,17 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
 
 .cdl-date{cursor:pointer}
 
+/* durante il quesito il video file sparisce del tutto: su alcuni telefoni il video viene disegnato sopra la pagina e ignorerebbe la sfocatura */
+#stuVideoBox.veiled video{visibility:hidden}
+/* sui telefoni: spazio in fondo alla finestra del quesito, così il pulsante di conferma non finisce sotto le barre del browser */
+@media (pointer:coarse){
+  .qov{padding-bottom:calc(env(safe-area-inset-bottom) + 72px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+  .qov .qcard{margin-bottom:auto}
+}
+@media (pointer:coarse) and (orientation:landscape) and (max-height:560px){
+  .qov{padding-bottom:calc(env(safe-area-inset-bottom) + 56px)}
+}
+
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -1007,7 +1018,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 18/11/2026 19:18</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 19/11/2026 10:51</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1628,7 +1639,12 @@ class FileAdapter {
     const v = this.v = document.createElement('video');
     v.setAttribute('playsinline', ''); v.setAttribute('webkit-playsinline', '');
     v.preload = 'metadata'; v.controls = !!teacher;
-    if (!teacher) { v.setAttribute('controlslist', 'nodownload noplaybackrate'); v.disablePictureInPicture = true; }
+    if (!teacher) {
+      v.setAttribute('controlslist', 'nodownload noplaybackrate nofullscreen noremoteplayback'); v.disablePictureInPicture = true;
+      v.setAttribute('disablepictureinpicture', ''); v.setAttribute('disableremoteplayback', ''); v.disableRemotePlayback = true;
+      /* alcuni browser per Android (Xiaomi, UC, QQ...) altrimenti aprono il video nel loro lettore o in una finestrella mobile sopra la pagina */
+      v.setAttribute('x5-playsinline', ''); v.setAttribute('x5-video-player-type', 'h5-page'); v.setAttribute('x-webkit-airplay', 'deny');
+    }
     v.className = 'file-video';
     v.addEventListener('contextmenu', e => { if (!teacher) e.preventDefault(); });
     const setSt = st => { if (this.st !== st) { this.st = st; if (!this.dead && cb.onState) cb.onState(st); } };
@@ -4441,7 +4457,20 @@ function stuStartWatching() {
     tryPlay();
   });
 }
-function veilVideo(on) { const b = $('#stuVideoBox'); if (b) b.classList.toggle('veiled', !!on); setTimeout(syncScrollLock, 0); }
+function veilVideo(on) {
+  const b = $('#stuVideoBox'); if (b) b.classList.toggle('veiled', !!on);
+  /* se il browser ha staccato il video in una finestrella (picture-in-picture), lo rimette nella pagina */
+  if (on) { try { if (document.pictureInPictureElement && document.exitPictureInPicture) document.exitPictureInPicture().catch(() => { }); } catch (e) { } }
+  setTimeout(syncScrollLock, 0); fitQov();
+}
+/* la finestra del quesito occupa solo la parte di schermo davvero visibile (senza le barre del browser), così si può scorrere fino in fondo */
+function fitQov() {
+  const q = document.getElementById('qov'), vv = window.visualViewport; if (!q) return;
+  if (vv && vv.height > 0) { q.style.top = Math.max(0, vv.offsetTop) + 'px'; q.style.height = vv.height + 'px'; q.style.bottom = 'auto'; }
+  else { q.style.top = ''; q.style.height = ''; q.style.bottom = ''; }
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', fitQov); visualViewport.addEventListener('scroll', fitQov); }
+window.addEventListener('orientationchange', () => setTimeout(() => { fitQov(); const q = document.getElementById('qov'); if (q && !q.hidden) q.scrollTop = 0; }, 350));
 function openQuestion(q) {
   veilVideo(true);
   try { Stu.P && Stu.P.pauseVideo(); } catch (e) { }
@@ -4455,7 +4484,7 @@ function openQuestion(q) {
   $('#qcErr').textContent = '';
   renderQuestionBody($('#qcBody'), q);
   $('#qov').hidden = false; $('#bigPlay').hidden = true;
-  $('#qov').scrollTop = 0;
+  fitQov(); $('#qov').scrollTop = 0;
   const f = $('#qcBody input.blank');
   if (f) setTimeout(() => { try { if (Stu.overlayQ === q) f.focus({ preventScroll: true }); } catch (e) { } }, 60);
   /* per ultimo: se il tempo fosse già finito, il quesito si chiude subito e il video riparte */
