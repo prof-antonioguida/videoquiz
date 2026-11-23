@@ -118,6 +118,7 @@ input:focus,textarea:focus,select:focus{outline:none;border-color:var(--primary)
 .crumbs button:hover{text-decoration:underline}
 .crumbs .cur{font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis}
 .crumbs .sep{opacity:.5}
+.crumbs .crumb-back{display:none}
 .user-btn{display:flex;align-items:center;gap:.5em;background:none;border:1px solid transparent;border-radius:99px;padding:.2em .6em .2em .2em;cursor:pointer;font:inherit;color:var(--text);flex:none;max-width:45vw}
 .user-btn:hover{background:var(--soft);border-color:var(--line)}
 .avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#4f6ef7,#2b44b8);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:900;flex:none}
@@ -396,7 +397,12 @@ td.tr.t1{color:var(--ok)} td.tr.t2{color:var(--warn)} td.tr.t3,td.tr.t4{color:va
 @media (max-width:640px){
   h1{font-size:1.35rem}
   .page{padding-top:1rem}
-  .crumbs{display:none}
+  .crumbs{display:flex;justify-content:center;padding:0 .3em}
+  .crumbs > :not(.crumb-back){display:none}
+  .crumbs .crumb-back{display:inline-flex;align-items:center;gap:.25em;max-width:100%;padding:.35em .7em;border-radius:999px;background:var(--primary-l);font-size:.9rem}
+  .crumbs .crumb-back .cb-arrow{font-size:1.25em;line-height:1;margin-top:-.08em}
+  .crumbs .crumb-back .cb-lbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .crumbs .crumb-back:hover{text-decoration:none}
   .topbar{justify-content:space-between}
   .user-email{display:none}
   .user-btn{padding:.2em}
@@ -1018,7 +1024,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 19/11/2026 10:51</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 23/11/2026 17:32</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -1717,17 +1723,40 @@ function showView(id) {
   if (id !== 'v-student') document.body.classList.remove('watching');
   S.view = id;
   $('#topbar').hidden = !['v-archive', 'v-editor', 'v-assign', 'v-reports'].includes(id);
+  if ($('#topbar').hidden) { S.backFn = null; S.depth = 0; }
   closePop();
   window.scrollTo(0, 0);
 }
 function setCrumbs(items) {
   const nav = $('#crumbs'); nav.innerHTML = '';
+  /* sullo smartphone il percorso completo non ci sta: resta solo il pulsante per tornare al livello precedente */
+  const parent = items.length > 1 ? items[items.length - 2] : null;
+  if (parent && parent.go) { const bk = el('<button type="button" class="crumb-back"><span class="cb-arrow" aria-hidden="true">‹</span><span class="cb-lbl"></span></button>'); $('.cb-lbl', bk).textContent = parent.label; bk.title = 'Torna a «' + parent.label + '»'; bk.onclick = parent.go; nav.appendChild(bk); }
+  S.backFn = parent && parent.go ? parent.go : null; S.depth = items.length;
+  syncBackGuard();
   items.forEach((it, i) => {
     if (i) nav.appendChild(el('<span class="sep">\u203a</span>'));
     if (it.go && i < items.length - 1) { const b = el('<button type="button"></button>'); b.textContent = it.label; b.onclick = it.go; nav.appendChild(b); }
     else { const s = el('<span class="cur"></span>'); s.textContent = it.label; nav.appendChild(s); }
   });
 }
+/* tasto «Indietro» del telefono (o del browser): torna al livello precedente invece di uscire dall'app.
+   Quando non si è nell'elenco dei test, nella cronologia c'è una voce in più (la «guardia») che il tasto consuma. */
+let backGuard = false, dropGuard = false;
+function syncBackGuard() {
+  if (S.depth > 1 && !backGuard) { try { history.pushState({ vqBack: 1 }, ''); backGuard = true; } catch (e) { } }
+  else if (S.depth <= 1 && backGuard && history.state && history.state.vqBack) { dropGuard = true; backGuard = false; history.back(); }
+}
+window.addEventListener('popstate', () => {
+  if (dropGuard) { dropGuard = false; return; }
+  backGuard = false;
+  if (S.depth <= 1 || !S.backFn) return;
+  /* prima chiude un menu o una finestra aperta, poi torna indietro */
+  const ov = $$('.modal-ov').pop();
+  if (ov) { const x = $('.modal-x', ov); if (x && !x.hidden && x.offsetParent !== null) x.click(); setTimeout(syncBackGuard, 0); return; }
+  if ($('.pop')) { closePop(); syncBackGuard(); return; }
+  Promise.resolve(S.backFn()).finally(() => setTimeout(syncBackGuard, 0));
+});
 async function nav(fn) {
   if (S.view === 'v-editor' && S.ed) { const ok = await leaveEditor(); if (!ok) return; }
   if (S.unsubReports) { S.unsubReports(); S.unsubReports = null; }
