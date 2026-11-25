@@ -1036,7 +1036,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 25/11/2026 17:41</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 25/11/2026 20:52</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -3108,15 +3108,71 @@ function openReports(aid) {
 }
 /* ricalcola punti e voto con i criteri di valutazione attuali del test */
 function currentGrading() { return normGrading((S.curTest && S.curTest.grading) || null); }
+/* dal testo della risposta salvata nel report si ritrova la risposta data (per valutarla con le risposte corrette attuali) */
+function answerFromText(tq, a) {
+  const t = String(a.a == null ? '' : a.a);
+  if (a.to || /tempo scaduto/i.test(t) && !t.includes(' | ') && tq.type !== 'fill') return undefined;
+  if (tq.type === 'tf') return t === 'Vero' ? true : t === 'Falso' ? false : undefined;
+  if (tq.type === 'fill') {
+    const n = parseFill(tq.fillText).filter(p => p.t === 'blank').length, v = t.split(' | ');
+    return v.length === n ? v : undefined;
+  }
+  if (tq.type === 'mc') {
+    const opts = tq.options || [], out = [];
+    for (const part of t.split(' | ')) {
+      const m = part.match(/^([A-Z]+)\) ([\s\S]*)$/); if (!m) return undefined;
+      const hits = opts.map((o, i) => o === m[2] ? i : -1).filter(i => i >= 0);
+      if (hits.length === 1) { out.push(hits[0]); continue; }
+      /* testo della risposta cambiato: vale la lettera (ordine originale delle risposte) */
+      let idx = 0; for (const ch of m[1]) idx = idx * 26 + (ch.charCodeAt(0) - 64); idx -= 1;
+      if (idx < 0 || idx >= opts.length) return undefined;
+      out.push(idx);
+    }
+    return out.length ? [...new Set(out)].sort((x, y) => x - y) : undefined;
+  }
+  return undefined;
+}
+/* il quesito del report rivalutato con il quesito com'è adesso nel test (risposte corrette modificate dopo la consegna) */
+function rekeyQuestion(q, tq) {
+  if (!tq || tq.type !== q.type || !Array.isArray(q.att) || !q.att.length) return null;
+  let changed = false;
+  const att = q.att.map(a => {
+    const v = answerFromText(tq, a);
+    const b = Object.assign({}, a); delete b.k; delete b.chg;
+    if (v === undefined) return b;
+    let ok = false; try { ok = checkAnswer(tq, v); } catch (e) { return b; }
+    if (ok !== !!a.ok) { b.ok = ok; b.was = !!a.ok; changed = true; }
+    if (a.r === 0 && tq.type === 'mc') b.p = (tq.correct || []).length > 1 && !ok ? partialScore(tq, v) : 0;
+    return b;
+  });
+  const newCorrect = qCorrectText(tq);
+  if (!changed && newCorrect === q.correct) return null;
+  const sorted = att.slice().sort((x, y) => (x.r || 0) - (y.r || 0));
+  const okIdx = sorted.findIndex(a => a.ok);
+  const solved = okIdx >= 0, first = sorted.find(a => a.r === 0);
+  const partial = first && typeof first.p === 'number' ? first.p : (solved ? 0 : Number(q.partial) || 0);
+  return Object.assign({}, q, { att, correct: newCorrect, solved, tries: solved ? okIdx + 1 : 0, partial: changed ? partial : q.partial, rekeyed: changed });
+}
 function regradeReport(r) {
   const g = currentGrading();
-  const qs = (r.questions || []).map(q => {
+  const tqs = new Map(((S.curTest && S.curTest.questions) || []).map(x => [x.id, x]));
+  const rekeyedN = [];
+  const qs = (r.questions || []).map(q0 => {
+    const rk = rekeyQuestion(q0, tqs.get(q0.id));
+    const q = rk || q0;
+    if (rk && rk.rekeyed) rekeyedN.push(q.n);
     if (q.solved === false) return Object.assign({}, q, { value: Math.round((Number(q.partial) || 0) * 1000) / 1000 });
     const tries = Math.max(1, Number(q.tries) || 1);
     return Object.assign({}, q, { value: Math.round(Math.max(valueForTries(tries, g), Number(q.partial) || 0) * 1000) / 1000 });
   });
   const voto = qs.length ? computeVoto(qs.map(q => q.value), g) : (Number(r.voto) || 0);
-  return Object.assign({}, r, { questions: qs, voto, votoOriginale: Number(r.voto) || 0, gradingNow: g });
+  const out = Object.assign({}, r, { questions: qs, voto, votoOriginale: Number(r.voto) || 0, gradingNow: g, rekeyedN });
+  if (rekeyedN.length) {
+    /* conteggi aggiornati con le nuove risposte corrette */
+    out.firstCorrect = qs.filter(q => q.solved && q.tries === 1).length;
+    if (r.sendInfo) out.sendInfo = Object.assign({}, r.sendInfo, { correct: qs.filter(q => q.solved).length, recovered: qs.filter(q => q.solved && q.tries > 1).length });
+  }
+  return out;
 }
 function progressText(st) {
   st = st || {};
@@ -3515,13 +3571,12 @@ function reportDetailHTML(r) {
   const sl = sendLines(r);
   let h = '<div class="rd-head"><div><div class="rd-name">' + esc(r.cognome) + ' ' + esc(r.nome) + '</div><div class="muted">Classe ' + esc(r.classe) + (r.date ? ' \u00b7 test iniziato il ' + esc(r.date) : '') + '</div></div><div class="rd-voto">Voto ' + fmtNum(r.voto, 1) + '</div></div>';
   h += '<div class="msg info rd-send"><b>' + esc(sl.how) + '</b><br>' + esc(sl.state) + '<br><span class="rd-send-det">' + esc(sl.det) + '</span></div>';
-  if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) h += '<div class="msg info">Voto ricalcolato con i criteri di valutazione attuali del test. Al momento della consegna il voto era ' + fmtNum(r.votoOriginale, 1) + '.</div>';
   if ((r.questions || []).some(q => q.type === 'mc')) h += '<p class="hint" style="margin:-.3em 0 .6em">Le risposte multiple vengono mostrate a ogni alunno in ordine diverso: qui le lettere seguono l\'ordine originale del test.</p>';
   h += '<p>Risposte corrette al primo svolgimento: <b>' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '</b> \u00b7 Turni di recupero: <b>' + (r.recoveryRounds || 0) + '</b></p>';
   (r.questions || []).forEach(q => {
     h += '<div class="rd-q"><div class="rd-qh">Quesito ' + q.n + ' <span class="time-chip">' + fmtTime(q.time) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span><span class="muted">\u00b7 punti ' + fmtNum(q.value, 2) + ' \u00b7 ' + triesText(q) + (q.partial > 0 && q.partial < 1 ? ' \u00b7 parziale al 1\u00b0 tentativo ' + Math.round(q.partial * 100) + '%' : '') + '</span></div>' +
       '<div class="rd-qt">' + esc(q.text) + '</div><div class="rd-correct">Risposta corretta: ' + esc(q.correct) + '</div><ol class="rd-att">' +
-      (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b>' + (a.k != null && a.k !== q.correct ? '<div class="rd-oldkey">Valutata con la risposta corretta di quel momento: ' + esc(a.k) + '</div>' : (a.chg ? '<div class="rd-oldkey">La risposta corretta \u00e8 stata modificata dopo questa risposta: l\'esito \u00e8 quello del momento in cui l\'alunno ha risposto.</div>' : '')) + '</li>').join('') + '</ol></div>';
+      (q.att || []).map(a => '<li class="' + (a.ok ? 'ok' : 'bad') + '">' + lab(a.r) + ': \u00ab' + esc(a.a) + '\u00bb \u2192 <b>' + (a.ok ? 'corretta' : 'errata') + '</b>' + '' + '</li>').join('') + '</ol></div>';
   });
   return h;
 }
@@ -3722,7 +3777,6 @@ async function downloadReportPdf(r) {
   y = boxTop + boxH + 6;
   para('Risposte corrette al primo svolgimento: ' + (r.firstCorrect || 0) + ' su ' + (r.total || 0) + '     Turni di recupero: ' + (r.recoveryRounds || 0), 10, 'normal', C.text);
   if ((r.questions || []).some(q => q.type === 'mc')) para('Le risposte multiple vengono mostrate a ogni alunno in ordine diverso: qui le lettere seguono l\'ordine originale del test.', 9, 'italic', C.muted);
-  if (r.votoOriginale != null && Math.abs(r.votoOriginale - r.voto) >= 0.05) para('Voto ricalcolato con i criteri di valutazione attuali del test (al momento della consegna era ' + fmtNum(r.votoOriginale, 1) + ').', 9, 'italic', C.muted);
   rule(3);
 
   // quesiti
@@ -3747,10 +3801,6 @@ async function downloadReportPdf(r) {
         font(10, 'normal'); color(C.text); doc.text(line, M + 4, y - 1);
         if (k === lines.length - 1) { const w = doc.getTextWidth(line); font(10, 'bold'); color(a.ok ? C.ok : C.bad); doc.text(res, M + 4 + w + 1.5, y - 1); }
       });
-      if ((a.k != null && a.k !== q.correct) || a.chg) {
-        font(9, 'normal'); color(C.muted);
-        doc.splitTextToSize(pdfSafe(a.k != null ? 'Valutata con la risposta corretta di quel momento: ' + a.k : 'La risposta corretta \u00e8 stata modificata dopo questa risposta: l\'esito \u00e8 quello del momento in cui l\'alunno ha risposto.'), CW - 10).forEach(line => { ensure(lh(9)); y += lh(9); doc.text(line, M + 8, y - 1); });
-      }
     });
     rule(2.5);
   });
