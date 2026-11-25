@@ -748,6 +748,15 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
 .rd-send{line-height:1.45}
 .rd-send .rd-send-det{font-size:.88em;opacity:.85}
 
+.ak-intro{margin:-.2em 0 .8em}
+.ak-q{border:1px solid var(--line);border-radius:12px;padding:.75em .9em;margin-bottom:.6em}
+.ak-opts{list-style:none;margin:.45em 0 0;padding:0;display:grid;gap:.35em}
+.ak-opts li{display:flex;align-items:flex-start;gap:.55em;padding:.35em .55em;border-radius:9px;border:1px solid var(--line)}
+.ak-opts li.ok{border-color:var(--ok);background:var(--ok-l);color:var(--ok);font-weight:700}
+.ak-box{flex:none;width:1.15em;height:1.15em;margin-top:.12em;border:2px solid var(--muted);border-radius:4px;display:inline-flex;align-items:center;justify-content:center}
+.ak-opts li.ok .ak-box{background:var(--ok);border-color:var(--ok)}
+.ak-box svg{width:.9em;height:.9em;fill:#fff}
+.ak-blank{display:inline-block;min-width:2.4em;text-align:center;border-bottom:2px solid var(--ok);color:var(--ok);font-weight:800;margin:0 .15em}
 </style>
 <script>
 (function(){ try { if (!/[?&]a=/.test(location.search) && localStorage.getItem('vq_theme') === 'dark') document.documentElement.setAttribute('data-theme','dark'); } catch(e){} })();
@@ -1027,7 +1036,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 25/11/2026 08:06</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 25/11/2026 17:41</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -2091,6 +2100,7 @@ function onArchiveClick(e) {
     popMenu(b, [
       { label: 'Rinomina', icon: 'edit', onClick: () => renameTest(id) },
       { label: 'Duplica', icon: 'copy', onClick: () => duplicateTest(id) },
+      { label: 'Chiavi di risposta', icon: 'key', onClick: () => showAnswerKeys(id) },
       { label: 'Elimina', icon: 'delete', danger: true, onClick: () => deleteTest(id) }
     ]);
   }
@@ -3556,6 +3566,116 @@ function reportFileName(r) {
   const n = [r.cognome, r.nome, r.classe].map(x => String(x || '').trim()).filter(Boolean).join(' ')
     .replace(/[\\/:*?"<>|\u0000-\u001F]+/g, '-').replace(/\s+/g, ' ').trim();
   return (n || 'Report') + '.pdf';
+}
+/* =====================================================================
+   CHIAVI DI RISPOSTA DI UN TEST (elenco dei quesiti con le risposte corrette spuntate, e PDF)
+   ===================================================================== */
+function akQuestions(t) { return (t.questions || []).slice().sort((a, b) => (a.time || 0) - (b.time || 0)); }
+/* per ogni quesito: le risposte possibili, con quelle corrette segnate */
+function akItems(q) {
+  if (q.type === 'mc') { const C = new Set(q.correct || []); return (q.options || []).map((o, i) => ({ l: letter(i) + ')', t: o || '', ok: C.has(i) })); }
+  if (q.type === 'tf') return [{ l: '', t: 'Vero', ok: q.tf === true }, { l: '', t: 'Falso', ok: q.tf === false }];
+  return [];
+}
+function akFillParts(q) {
+  let k = 0; const blanks = [];
+  const txt = parseFill(q.fillText).map(p => { if (p.t === 'txt') return p.v; k++; blanks.push(p.alts); return '[' + k + ']'; }).join('');
+  return { txt, blanks };
+}
+function answerKeysHTML(t) {
+  const qs = akQuestions(t);
+  let h = '<p class="muted ak-intro">' + qs.length + (qs.length === 1 ? ' quesito' : ' quesiti') + ', nell\'ordine in cui compaiono nel video. Le risposte corrette sono spuntate in verde.</p>';
+  qs.forEach((q, i) => {
+    h += '<div class="ak-q"><div class="rd-qh">Quesito ' + (i + 1) + ' <span class="time-chip">' + fmtTime(q.time || 0) + '</span><span class="type-chip ' + esc(q.type) + '">' + (TYPE_LABEL[q.type] || '') + '</span>' +
+      (q.type === 'mc' && (q.correct || []).length > 1 ? '<span class="muted">\u00b7 ' + (q.correct || []).length + ' risposte corrette</span>' : '') + '</div>';
+    if (q.type === 'fill') {
+      const f = akFillParts(q);
+      if (q.text) h += '<div class="rd-qt">' + esc(q.text) + '</div>';
+      h += '<div class="rd-qt ak-fill">' + esc(f.txt).replace(/\[(\d+)\]/g, '<span class="ak-blank">$1</span>') + '</div><ul class="ak-opts">' +
+        f.blanks.map((alts, j) => '<li class="ok"><span class="ak-box">' + ico('check') + '</span><span><b>Spazio ' + (j + 1) + ':</b> ' + alts.map(esc).join(' <span class="muted">oppure</span> ') + '</span></li>').join('') + '</ul>';
+    } else {
+      h += '<div class="rd-qt">' + esc(q.text || '') + '</div><ul class="ak-opts">' +
+        akItems(q).map(o => '<li class="' + (o.ok ? 'ok' : '') + '"><span class="ak-box">' + (o.ok ? ico('check') : '') + '</span><span>' + (o.l ? '<b>' + o.l + '</b> ' : '') + esc(o.t) + '</span></li>').join('') + '</ul>';
+    }
+    h += '</div>';
+  });
+  return h;
+}
+function showAnswerKeys(id) {
+  const t = S.tests.find(x => x.id === id); if (!t) return;
+  if (!akQuestions(t).length) { toast('Questo test non ha ancora quesiti.', 'bad'); return; }
+  modal({
+    title: 'Chiavi di risposta \u00b7 ' + (t.title || 'Test'), body: answerKeysHTML(t), wide: true, buttons: [
+      { label: 'Chiudi', cls: 'ghost', value: null },
+      {
+        html: ico('download') + ' Scarica PDF', cls: 'primary', onClick: async (b, btn) => {
+          btn.disabled = true; btn.classList.add('loading');
+          try { await downloadAnswerKeysPdf(t); }
+          catch (e) { console.error(e); toast('Impossibile creare il PDF: controlla la connessione a internet e riprova.', 'bad', 6000); }
+          btn.disabled = false; btn.classList.remove('loading');
+          return false;
+        }
+      }
+    ]
+  });
+}
+async function downloadAnswerKeysPdf(t) {
+  const JsPDF = await loadJsPDF();
+  const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+  const W = 210, H = 297, M = 18, CW = W - 2 * M, BOTTOM = H - 18;
+  const C = { text: [28, 35, 51], muted: [95, 107, 128], primary: [51, 85, 214], ok: [33, 138, 66], line: [215, 221, 232], soft: [236, 247, 239] };
+  let y = M;
+  const color = c => doc.setTextColor(c[0], c[1], c[2]);
+  const font = (size, style) => { doc.setFont('helvetica', style || 'normal'); doc.setFontSize(size); };
+  const lh = size => size * 0.46;
+  const ensure = h => { if (y + h > BOTTOM) { doc.addPage(); y = M + 2; } };
+  const para = (txt, size, style, c, indent) => {
+    indent = indent || 0; font(size, style); color(c || C.text);
+    doc.splitTextToSize(pdfSafe(txt), CW - indent).forEach(line => { ensure(lh(size)); y += lh(size); doc.text(line, M + indent, y - lh(size) * 0.25); });
+  };
+  const rule = gap => { y += gap || 2; doc.setDrawColor(C.line[0], C.line[1], C.line[2]); doc.setLineWidth(0.3); doc.line(M, y, W - M, y); y += gap || 2; };
+  /* una risposta possibile con la sua casella: spuntata e in verde se corretta */
+  const option = (label, txt, ok) => {
+    const ind = 9; font(10.5, ok ? 'bold' : 'normal');
+    const lines = doc.splitTextToSize(pdfSafe((label ? label + ' ' : '') + txt), CW - ind);
+    ensure(lh(10.5) * lines.length + 1.5); y += 1.2;
+    const top = y + 0.6, bx = M + 2.2, bs = 3.6;
+    doc.setLineWidth(0.35);
+    if (ok) {
+      doc.setFillColor(C.ok[0], C.ok[1], C.ok[2]); doc.setDrawColor(C.ok[0], C.ok[1], C.ok[2]); doc.roundedRect(bx, top, bs, bs, 0.6, 0.6, 'FD');
+      doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.55); doc.line(bx + 0.8, top + 1.9, bx + 1.5, top + 2.7); doc.line(bx + 1.5, top + 2.7, bx + 2.9, top + 0.9);
+    } else { doc.setDrawColor(C.muted[0], C.muted[1], C.muted[2]); doc.roundedRect(bx, top, bs, bs, 0.6, 0.6, 'S'); }
+    color(ok ? C.ok : C.text); font(10.5, ok ? 'bold' : 'normal');
+    lines.forEach(line => { y += lh(10.5); doc.text(line, M + ind, y - lh(10.5) * 0.25); });
+  };
+  const qs = akQuestions(t);
+  font(9, 'bold'); color(C.primary); y += 4; doc.text('CHIAVI DI RISPOSTA', M, y);
+  y += 2; para(t.title || 'Test', 16, 'bold', C.text);
+  para(qs.length + (qs.length === 1 ? ' quesito' : ' quesiti') + ', nell\'ordine in cui compaiono nel video. Le risposte corrette sono spuntate in verde.', 9.5, 'normal', C.muted);
+  rule(3);
+  qs.forEach((q, i) => {
+    ensure(24); y += 2;
+    font(11.5, 'bold'); color(C.text); y += lh(11.5); doc.text(pdfSafe('Quesito ' + (i + 1)), M, y);
+    const w1 = doc.getTextWidth('Quesito ' + (i + 1));
+    font(10, 'bold'); color(C.muted); doc.text(pdfSafe('   ' + fmtTime(q.time || 0) + '   ' + (TYPE_LABEL[q.type] || '') + (q.type === 'mc' && (q.correct || []).length > 1 ? '   (' + (q.correct || []).length + ' risposte corrette)' : '')), M + w1, y);
+    y += 1;
+    if (q.type === 'fill') {
+      const f = akFillParts(q);
+      if (q.text) para(q.text, 10.5, 'normal', C.text);
+      para(f.txt.replace(/\[(\d+)\]/g, '[ $1 ]'), 10.5, 'normal', C.text);
+      y += 0.8;
+      f.blanks.forEach((alts, j) => option('Spazio ' + (j + 1) + ':', alts.join('  oppure  '), true));
+    } else {
+      para(q.text || '', 10.5, 'normal', C.text);
+      y += 0.8;
+      akItems(q).forEach(o => option(o.l, o.t, o.ok));
+    }
+    y += 1.5; if (i < qs.length - 1) rule(2.5);
+  });
+  const n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); font(8.5, 'normal'); color(C.muted); doc.text(pdfSafe((t.title || 'Test') + ' - chiavi di risposta'), M, H - 9); doc.text(i + ' / ' + n, W - M, H - 9, { align: 'right' }); }
+  const fn = ('Chiavi di risposta - ' + String(t.title || 'Test')).replace(/[\\/:*?"<>|\u0000-\u001F]+/g, '-').replace(/\s+/g, ' ').trim();
+  doc.save(fn + '.pdf');
 }
 async function downloadReportPdf(r) {
   const JsPDF = await loadJsPDF();
