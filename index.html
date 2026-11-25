@@ -1036,7 +1036,7 @@ html[data-theme="dark"] .tm-btn.off{background:#252b3a}
   </section>
 </main>
 
-<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 25/11/2026 20:52</span></footer>
+<footer class="foot no-print">Videoquiz · app del prof. Antonio Guida · <a href="mailto:furtwangler900@gmail.com">furtwangler900@gmail.com</a><br><span class="ver">versione del 25/11/2026 20:59</span></footer>
 <div id="toasts" class="toasts" aria-live="polite"></div>
 <div id="diag" class="diag" hidden></div>
 
@@ -3150,8 +3150,10 @@ function rekeyQuestion(q, tq) {
   const sorted = att.slice().sort((x, y) => (x.r || 0) - (y.r || 0));
   const okIdx = sorted.findIndex(a => a.ok);
   const solved = okIdx >= 0, first = sorted.find(a => a.r === 0);
+  /* dopo la prima risposta giusta l'alunno non avrebbe più risposto: i tentativi successivi non contano e si tolgono */
+  const kept = solved ? sorted.slice(0, okIdx + 1) : sorted;
   const partial = first && typeof first.p === 'number' ? first.p : (solved ? 0 : Number(q.partial) || 0);
-  return Object.assign({}, q, { att, correct: newCorrect, solved, tries: solved ? okIdx + 1 : 0, partial: changed ? partial : q.partial, rekeyed: changed });
+  return Object.assign({}, q, { att: kept, attempts: kept.length, correct: newCorrect, solved, tries: solved ? okIdx + 1 : 0, partial: changed ? partial : q.partial, rekeyed: changed });
 }
 function regradeReport(r) {
   const g = currentGrading();
@@ -3170,6 +3172,7 @@ function regradeReport(r) {
   if (rekeyedN.length) {
     /* conteggi aggiornati con le nuove risposte corrette */
     out.firstCorrect = qs.filter(q => q.solved && q.tries === 1).length;
+    out.recoveryRounds = qs.reduce((m, q) => Math.max(m, ...(q.att || []).map(a => Number(a.r) || 0)), 0);
     if (r.sendInfo) out.sendInfo = Object.assign({}, r.sendInfo, { correct: qs.filter(q => q.solved).length, recovered: qs.filter(q => q.solved && q.tries > 1).length });
   }
   return out;
